@@ -1,3 +1,5 @@
+![build status](https://travis-ci.com/cfsamson/books-futures-explained.svg?token=zRZ484b4roGgifn6y3ex&branch=master)
+
 # Thought dump
 
 The repository for the book [Future Explained in 200 Lines of Rust](https://cfsamson.github.io/books-futures-explained/)
