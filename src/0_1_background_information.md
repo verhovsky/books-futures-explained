@@ -36,11 +36,7 @@ run the following code:
 
 ```rust
 # use std::mem::size_of;
-trait SomeTrait {
-    fn method(&self) {
-        todo!();
-    }
-}
+trait SomeTrait { }
 
 fn main() {
     println!("Size of Box<i32>: {}", size_of::<Box<i32>>());
