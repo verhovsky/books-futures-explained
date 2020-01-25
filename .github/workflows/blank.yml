@@ -1,0 +1,12 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: mdBook Action
+        uses: peaceiris/actions-mdbook@v1.1.4
