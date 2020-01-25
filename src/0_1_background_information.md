@@ -1,6 +1,6 @@
 # Some background information
 
-Before we start implementing our `Futures`, we'll go through some background
+Before we start implementing our `Futures` , we'll go through some background
 information that will help demystify some of the concepts we encounter.
 
 ## Concurrency in general
@@ -10,22 +10,21 @@ general, I know where you're coming from and I have written some resources to
 try to give a high level overview that will make it easier to learn Rusts 
 `Futures` afterwards:
 
-[Async Basics - The difference between concurrency and parallelism](https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html)
-[Async Basics - Async history](https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html)
-[Async Basics - Strategies for handling I/O](https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html)
-[Async Basics - Epoll, Kqueue and IOCP](https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html)
+* [Async Basics - The difference between concurrency and parallelism](https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html)
+* [Async Basics - Async history](https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html)
+* [Async Basics - Strategies for handling I/O](https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html)
+* [Async Basics - Epoll, Kqueue and IOCP](https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html)
 
 ## Trait objects and dynamic dispatch
 
-The single most confusing topic we encounter when implementing our own `Futures`
-is how we implement a `Waker`. Creating a `Waker` involves creating a `vtable`
+The single most confusing topic we encounter when implementing our own `Futures` 
+is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable` 
 which allows using dynamic dispatch to call methods on a _type erased_ trait 
 object we construct our selves.
 
 If you want to know more about dynamic dispatch in Rust I can recommend this article:
 
 https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/
-
 
 Let's explain this a bit more in detail.
 
@@ -34,7 +33,7 @@ Let's explain this a bit more in detail.
 Let's take a look at the size of some different pointer types in Rust. If we
 run the following code:
 
-```rust
+``` rust
 # use std::mem::size_of;
 trait SomeTrait { }
 
@@ -56,24 +55,25 @@ Most are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.
 
 The 16 byte sized pointers are called "fat pointers" since they carry more extra
-information. 
+information.
 
-**In the case of `&[i32]`:** 
+**In the case of `&[i32]` :** 
 
-- The first 8 bytes is the actual pointer to the first element in the array
+* The first 8 bytes is the actual pointer to the first element in the array
+
 (or part of an array the slice refers to)
 
-- The second 8 bytes is the length of the slice.
+* The second 8 bytes is the length of the slice.
 
 The one we'll concern ourselves about is the references to traits, or
 _trait objects_ as they're called in Rust.
 
- `&dyn SomeTrait` is an example of a _trait object_ 
+`&dyn SomeTrait` is an example of a _trait object_ 
  
  The layout for a pointer to a _trait object_ looks like this: 
 
-- The first 8 bytes points to the `data` for the trait object
-- The second 8 bytes points to the `vtable` for the trait object
+* The first 8 bytes points to the `data` for the trait object
+* The second 8 bytes points to the `vtable` for the trait object
 
 The reason for this is to allow us to refer to an object we know nothing about
 except that it implements the methods defined by our trait. To allow this we use
@@ -82,7 +82,7 @@ dynamic dispatch.
 Let's explain this in code instead of words by implementing our own trait
 object from these parts:
 
-```rust
+``` rust
 // A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&self) -> i32;
@@ -145,7 +145,7 @@ fn main() {
 ```
 
 If you run this code by pressing the "play" button at the top you'll se it
-outputs just what we expect. 
+outputs just what we expect.
 
 This code example is editable so you can change it
 and run it to see what happens.
@@ -154,4 +154,58 @@ The reason we go through this will be clear later on when we implement our own
 `Waker` we'll actually set up a `vtable` like we do here to and knowing what
 it is will make this much less mysterious.
 
+## Reactor/Executor pattern
+
+If you don't know what this is, you should take a few minutes and read about
+it. You will encounter the term `Reactor` and `Executor` a lot when working
+with async code in Rust.
+
+I have written a quick introduction explaining this pattern before which you
+can take a look at here:
+
+
+[![homepage][1]][2]
+
+<div  style="text-align:center">
+<a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern">Epoll, Kqueue and IOCP Explained - The Reactor-Executor Pattern</a>
+</div>
+
+I'll re-iterate the most important parts here.
+
+This pattern consists of at least 2 parts:
+
+1. A reactor
+    - handles some kind of event queue
+    - has the responsibility of respoonding to events
+2. An executor
+    - Often has a scheduler
+    - Holds a set of suspended tasks, and has the responsibility of resuming
+    them when an event has occurred
+3. The concept of a task
+    - A set of operations that can be stopped half way and resumed later on
+
+This is a pattern not only used in Rust, but it's very popular in Rust due to 
+how well it separates concerns between handling and scheduling tasks, and queing
+and responding to I/O events.
+
+The only thing Rust as a language defines is the _task_. In Rust we call an 
+incorruptible task a `Future`. Futures has a  well defined interface, which means
+they can be used across the entire ecosystem.
+
+In addition, Rust provides a way for the Reactor and Executor to communicate
+through the `Waker`. We'll get to know these in the following chapters.
+
+Providing these pieces let's Rust take care a lot of the ergonomic "friction"
+programmers meet when faced with async code, and still not dictate any
+preferred runtime to actually do the scheduling and I/O queues.
+
+It's important to know that Rust doesn't provide a runtime, so you have to choose
+one. [async std](https://github.com/async-rs/async-std) and [tokio](https://github.com/tokio-rs/tokio) are two popular ones.
+
 With that out of the way, let's move on to our main example.
+
+
+
+
+[1]: ./assets/reactorexecutor.png
+[2]: https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern

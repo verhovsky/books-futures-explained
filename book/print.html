@@ -152,20 +152,22 @@
                     <main>
                         <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
-<p>Before we start implementing our <code>Futures</code>, we'll go through some background
+<p>Before we start implementing our <code>Futures</code> , we'll go through some background
 information that will help demystify some of the concepts we encounter.</p>
 <h2><a class="header" href="#concurrency-in-general" id="concurrency-in-general">Concurrency in general</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 
 try to give a high level overview that will make it easier to learn Rusts 
 <code>Futures</code> afterwards:</p>
-<p><a href="https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html">Async Basics - The difference between concurrency and parallelism</a>
-<a href="https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html">Async Basics - Async history</a>
-<a href="https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html">Async Basics - Strategies for handling I/O</a>
-<a href="https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html">Async Basics - Epoll, Kqueue and IOCP</a></p>
+<ul>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html">Async Basics - The difference between concurrency and parallelism</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html">Async Basics - Async history</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html">Async Basics - Strategies for handling I/O</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html">Async Basics - Epoll, Kqueue and IOCP</a></li>
+</ul>
 <h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
-<p>The single most confusing topic we encounter when implementing our own <code>Futures</code>
-is how we implement a <code>Waker</code>. Creating a <code>Waker</code> involves creating a <code>vtable</code>
+<p>The single most confusing topic we encounter when implementing our own <code>Futures</code> 
+is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
 which allows using dynamic dispatch to call methods on a <em>type erased</em> trait 
 object we construct our selves.</p>
 <p>If you want to know more about dynamic dispatch in Rust I can recommend this article:</p>
@@ -193,16 +195,14 @@ fn main() {
 Most are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.</p>
 <p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
-information. </p>
-<p><strong>In the case of <code>&amp;[i32]</code>:</strong> </p>
+information.</p>
+<p><strong>In the case of <code>&amp;[i32]</code> :</strong> </p>
 <ul>
-<li>
-<p>The first 8 bytes is the actual pointer to the first element in the array
-(or part of an array the slice refers to)</p>
-</li>
-<li>
-<p>The second 8 bytes is the length of the slice.</p>
-</li>
+<li>The first 8 bytes is the actual pointer to the first element in the array</li>
+</ul>
+<p>(or part of an array the slice refers to)</p>
+<ul>
+<li>The second 8 bytes is the length of the slice.</li>
 </ul>
 <p>The one we'll concern ourselves about is the references to traits, or
 <em>trait objects</em> as they're called in Rust.</p>
@@ -217,7 +217,7 @@ except that it implements the methods defined by our trait. To allow this we use
 dynamic dispatch.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
-<pre><pre class="playpen"><code class="language-rust editable">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+<pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&amp;self) -&gt; i32;
     fn sub(&amp;self) -&gt; i32;
@@ -278,14 +278,319 @@ fn main() {
 
 </code></pre></pre>
 <p>If you run this code by pressing the &quot;play&quot; button at the top you'll se it
-outputs just what we expect. </p>
+outputs just what we expect.</p>
 <p>This code example is editable so you can change it
 and run it to see what happens.</p>
 <p>The reason we go through this will be clear later on when we implement our own
 <code>Waker</code> we'll actually set up a <code>vtable</code> like we do here to and knowing what
 it is will make this much less mysterious.</p>
+<h2><a class="header" href="#reactorexecutor-pattern" id="reactorexecutor-pattern">Reactor/Executor pattern</a></h2>
+<p>If you don't know what this is, you should take a few minutes and read about
+it. You will encounter the term <code>Reactor</code> and <code>Executor</code> a lot when working
+with async code in Rust.</p>
+<p>I have written a quick introduction explaining this pattern before which you
+can take a look at here:</p>
+<p><a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern"><img src="./assets/reactorexecutor.png" alt="homepage" /></a></p>
+<div  style="text-align:center">
+<a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern">Epoll, Kqueue and IOCP Explained - The Reactor-Executor Pattern</a>
+</div>
+<p>I'll re-iterate the most important parts here.</p>
+<p>This pattern consists of at least 2 parts:</p>
+<ol>
+<li>A reactor
+<ul>
+<li>handles some kind of event queue</li>
+<li>has the responsibility of respoonding to events</li>
+</ul>
+</li>
+<li>An executor
+<ul>
+<li>Often has a scheduler</li>
+<li>Holds a set of suspended tasks, and has the responsibility of resuming
+them when an event has occurred</li>
+</ul>
+</li>
+<li>The concept of a task
+<ul>
+<li>A set of operations that can be stopped half way and resumed later on</li>
+</ul>
+</li>
+</ol>
+<p>This is a pattern not only used in Rust, but it's very popular in Rust due to 
+how well it separates concerns between handling and scheduling tasks, and queing
+and responding to I/O events.</p>
+<p>The only thing Rust as a language defines is the <em>task</em>. In Rust we call an 
+incorruptible task a <code>Future</code>. Futures has a  well defined interface, which means
+they can be used across the entire ecosystem.</p>
+<p>In addition, Rust provides a way for the Reactor and Executor to communicate
+through the <code>Waker</code>. We'll get to know these in the following chapters.</p>
+<p>Providing these pieces let's Rust take care a lot of the ergonomic &quot;friction&quot;
+programmers meet when faced with async code, and still not dictate any
+preferred runtime to actually do the scheduling and I/O queues.</p>
+<p>It's important to know that Rust doesn't provide a runtime, so you have to choose
+one. <a href="https://github.com/async-rs/async-std">async std</a> and <a href="">tokio</a> are two popular ones.</p>
 <p>With that out of the way, let's move on to our main example.</p>
 <h1><a class="header" href="#naive-example" id="naive-example">Naive example</a></h1>
+<pre><pre class="playpen"><code class="language-rust">use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
+
+fn main() {
+    let readylist = Arc::new(Mutex::new(vec![]));
+    let mut reactor = Reactor::new();
+
+    let mywaker = MyWaker::new(1, thread::current(), readylist.clone());
+    reactor.register(2, mywaker);
+
+    let mywaker = MyWaker::new(2, thread::current(), readylist.clone());
+    reactor.register(2, mywaker);
+    
+    executor_run(reactor, readylist);
+}
+// ====== EXECUTOR ======
+fn executor_run(mut reactor: Reactor, rl: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) {
+    let start = Instant::now();
+        loop {
+        let mut rl_locked = rl.lock().unwrap();
+        while let Some(event) = rl_locked.pop() {
+            let dur = (Instant::now() - start).as_secs_f32(); 
+            println!(&quot;Event {} just happened at time: {:.2}.&quot;, event, dur);
+            reactor.outstanding.fetch_sub(1, Ordering::Relaxed);
+        }
+        drop(rl_locked);
+
+        if reactor.outstanding.load(Ordering::Relaxed) == 0 {
+            reactor.close();
+            break;
+        }
+
+        thread::park();
+    }
+}
+
+// ====== &quot;FUTURE&quot; IMPL ======
+#[derive(Debug)]
+struct MyWaker {
+    id: usize,
+    thread: thread::Thread,
+    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+}
+
+impl MyWaker {
+    fn new(id: usize, thread: thread::Thread, readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) -&gt; Self {
+        MyWaker {
+            id,
+            thread,
+            readylist,
+        }
+    }
+
+    fn wake(&amp;self) {
+        self.readylist.lock().map(|mut rl| rl.push(self.id)).unwrap();
+        self.thread.unpark();
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct Task {
+    id: usize,
+    pending: bool, 
+}
+
+// ===== REACTOR =====
+struct Reactor {
+    dispatcher: Sender&lt;Event&gt;,
+    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+    outstanding: AtomicUsize,
+}
+#[derive(Debug)]
+enum Event {
+    Close,
+    Simple(MyWaker, u64),
+}
+
+impl Reactor {
+    fn new() -&gt; Self {
+        let (tx, rx) = channel::&lt;Event&gt;();
+        let mut handles = vec![];
+        let handle = thread::spawn(move || {
+            // This simulates some I/O resource
+            for event in rx {
+                match event {
+                    Event::Close =&gt; break,
+                    Event::Simple(mywaker, duration) =&gt; {
+                        let event_handle = thread::spawn(move || {
+                            thread::sleep(Duration::from_secs(duration));
+                            mywaker.wake();
+                        });
+                        handles.push(event_handle);
+                    }
+                }
+            }
+
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+
+        Reactor {
+            dispatcher: tx,
+            handle: Some(handle),
+            outstanding: AtomicUsize::new(0),
+        }
+    }
+
+    fn register(&amp;mut self, duration: u64, mywaker: MyWaker) {
+        self.dispatcher
+            .send(Event::Simple(mywaker, duration))
+            .unwrap();
+        self.outstanding.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn close(&amp;mut self) {
+        self.dispatcher.send(Event::Close).unwrap();
+    }
+}
+
+impl Drop for Reactor {
+    fn drop(&amp;mut self) {
+        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+    }
+}
+</code></pre></pre>
+<pre><pre class="playpen"><code class="language-rust editable">use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
+
+fn main() {
+    let readylist = Arc::new(Mutex::new(vec![]));
+    let mut reactor = Reactor::new();
+
+    let mywaker = MyWaker::new(1, thread::current(), readylist.clone());
+    reactor.register(2, mywaker);
+
+    let mywaker = MyWaker::new(2, thread::current(), readylist.clone());
+    reactor.register(2, mywaker);
+    
+    executor_run(reactor, readylist);
+}
+<span class="boring">// ====== EXECUTOR ======
+</span><span class="boring">fn executor_run(mut reactor: Reactor, rl: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) {
+</span><span class="boring">    let start = Instant::now();
+</span><span class="boring">        loop {
+</span><span class="boring">        let mut rl_locked = rl.lock().unwrap();
+</span><span class="boring">        while let Some(event) = rl_locked.pop() {
+</span><span class="boring">            let dur = (Instant::now() - start).as_secs_f32(); 
+</span><span class="boring">            println!(&quot;Event {} just happened at time: {:.2}.&quot;, event, dur);
+</span><span class="boring">            reactor.outstanding.fetch_sub(1, Ordering::Relaxed);
+</span><span class="boring">        }
+</span><span class="boring">        drop(rl_locked);
+</span><span class="boring">
+</span><span class="boring">        if reactor.outstanding.load(Ordering::Relaxed) == 0 {
+</span><span class="boring">            reactor.close();
+</span><span class="boring">            break;
+</span><span class="boring">        }
+</span><span class="boring">
+</span><span class="boring">        thread::park();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">// ====== &quot;FUTURE&quot; IMPL ======
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct MyWaker {
+</span><span class="boring">    id: usize,
+</span><span class="boring">    thread: thread::Thread,
+</span><span class="boring">    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl MyWaker {
+</span><span class="boring">    fn new(id: usize, thread: thread::Thread, readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) -&gt; Self {
+</span><span class="boring">        MyWaker {
+</span><span class="boring">            id,
+</span><span class="boring">            thread,
+</span><span class="boring">            readylist,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn wake(&amp;self) {
+</span><span class="boring">        self.readylist.lock().map(|mut rl| rl.push(self.id)).unwrap();
+</span><span class="boring">        self.thread.unpark();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, Clone)]
+</span><span class="boring">pub struct Task {
+</span><span class="boring">    id: usize,
+</span><span class="boring">    pending: bool, 
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">// ===== REACTOR =====
+</span><span class="boring">struct Reactor {
+</span><span class="boring">    dispatcher: Sender&lt;Event&gt;,
+</span><span class="boring">    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+</span><span class="boring">    outstanding: AtomicUsize,
+</span><span class="boring">}
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">enum Event {
+</span><span class="boring">    Close,
+</span><span class="boring">    Simple(MyWaker, u64),
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Reactor {
+</span><span class="boring">    fn new() -&gt; Self {
+</span><span class="boring">        let (tx, rx) = channel::&lt;Event&gt;();
+</span><span class="boring">        let mut handles = vec![];
+</span><span class="boring">        let handle = thread::spawn(move || {
+</span><span class="boring">            // This simulates some I/O resource
+</span><span class="boring">            for event in rx {
+</span><span class="boring">                match event {
+</span><span class="boring">                    Event::Close =&gt; break,
+</span><span class="boring">                    Event::Simple(mywaker, duration) =&gt; {
+</span><span class="boring">                        let event_handle = thread::spawn(move || {
+</span><span class="boring">                            thread::sleep(Duration::from_secs(duration));
+</span><span class="boring">                            mywaker.wake();
+</span><span class="boring">                        });
+</span><span class="boring">                        handles.push(event_handle);
+</span><span class="boring">                    }
+</span><span class="boring">                }
+</span><span class="boring">            }
+</span><span class="boring">
+</span><span class="boring">            for handle in handles {
+</span><span class="boring">                handle.join().unwrap();
+</span><span class="boring">            }
+</span><span class="boring">        });
+</span><span class="boring">
+</span><span class="boring">        Reactor {
+</span><span class="boring">            dispatcher: tx,
+</span><span class="boring">            handle: Some(handle),
+</span><span class="boring">            outstanding: AtomicUsize::new(0),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn register(&amp;mut self, duration: u64, mywaker: MyWaker) {
+</span><span class="boring">        self.dispatcher
+</span><span class="boring">            .send(Event::Simple(mywaker, duration))
+</span><span class="boring">            .unwrap();
+</span><span class="boring">        self.outstanding.fetch_add(1, Ordering::Relaxed);
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn close(&amp;mut self) {
+</span><span class="boring">        self.dispatcher.send(Event::Close).unwrap();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Drop for Reactor {
+</span><span class="boring">    fn drop(&amp;mut self) {
+</span><span class="boring">        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
 <h1><a class="header" href="#proper-waker" id="proper-waker">Proper Waker</a></h1>
 <h1><a class="header" href="#proper-future" id="proper-future">Proper Future</a></h1>
 <h1><a class="header" href="#supporting-asyncawait" id="supporting-asyncawait">Supporting async/await</a></h1>
@@ -312,6 +617,21 @@ it is will make this much less mysterious.</p>
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         
