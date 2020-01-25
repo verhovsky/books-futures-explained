@@ -1,5 +1,7 @@
 # Thought dump
 
+The repository for the book [Future Explained in 200 Lines of Rust](https://cfsamson.github.io/books-futures-explained/)
+
 ### Data + Vtable
 
 We need to get a basic grasp of this to be able to understand how we implement a Waker.
