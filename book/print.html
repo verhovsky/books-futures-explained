@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js">
+<html lang="en" class="sidebar-visible no-js light">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -34,11 +34,11 @@
 
         
     </head>
-    <body class="light">
+    <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -62,8 +62,11 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            document.body.className = theme;
-            document.querySelector('html').className = theme + ' js';
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -79,8 +82,8 @@
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_Introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="0_1_BackgroundInformation.html"><strong aria-hidden="true">2.</strong> Some background information</a></li></ol>
+            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
+                <ol class="chapter"><li class="expanded "><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="expanded "><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li class="expanded "><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li class="expanded "><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li class="expanded "><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li class="expanded "><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li class="expanded "><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,6 +152,144 @@
                     <main>
                         <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
+<p>Before we start implementing our <code>Futures</code>, we'll go through some background
+information that will help demystify some of the concepts we encounter.</p>
+<h2><a class="header" href="#concurrency-in-general" id="concurrency-in-general">Concurrency in general</a></h2>
+<p>If you find the concepts of concurrency and async programming confusing in
+general, I know where you're coming from and I have written some resources to 
+try to give a high level overview that will make it easier to learn Rusts 
+<code>Futures</code> afterwards:</p>
+<p><a href="https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html">Async Basics - The difference between concurrency and parallelism</a>
+<a href="https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html">Async Basics - Async history</a>
+<a href="https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html">Async Basics - Strategies for handling I/O</a>
+<a href="https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html">Async Basics - Epoll, Kqueue and IOCP</a></p>
+<h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
+<p>The single most confusing topic we encounter when implementing our own <code>Futures</code>
+is how we implement a <code>Waker</code>. Creating a <code>Waker</code> involves creating a <code>vtable</code>
+which allows using dynamic dispatch to call methods on a <em>type erased</em> trait 
+object we construct our selves.</p>
+<p>If you want to know more about dynamic dispatch in Rust I can recommend this article:</p>
+<p>https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/</p>
+<p>Let's explain this a bit more in detail.</p>
+<h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
+<p>Let's take a look at the size of some different pointer types in Rust. If we
+run the following code:</p>
+<pre><pre class="playpen"><code class="language-rust"><span class="boring">use std::mem::size_of;
+</span>trait SomeTrait { }
+
+fn main() {
+    println!(&quot;Size of Box&lt;i32&gt;: {}&quot;, size_of::&lt;Box&lt;i32&gt;&gt;());
+    println!(&quot;Size of &amp;i32: {}&quot;, size_of::&lt;&amp;i32&gt;());
+    println!(&quot;Size of &amp;Box&lt;i32&gt;: {}&quot;, size_of::&lt;&amp;Box&lt;i32&gt;&gt;());
+    println!(&quot;Size of Box&lt;Trait&gt;: {}&quot;, size_of::&lt;Box&lt;SomeTrait&gt;&gt;());
+    println!(&quot;Size of &amp;dyn Trait: {}&quot;, size_of::&lt;&amp;dyn SomeTrait&gt;());
+    println!(&quot;Size of &amp;[i32]: {}&quot;, size_of::&lt;&amp;[i32]&gt;());
+    println!(&quot;Size of &amp;[&amp;dyn Trait]: {}&quot;, size_of::&lt;&amp;[&amp;dyn SomeTrait]&gt;());
+    println!(&quot;Size of [i32; 10]: {}&quot;, size_of::&lt;[i32; 10]&gt;());
+    println!(&quot;Size of [&amp;dyn Trait; 10]: {}&quot;, size_of::&lt;[&amp;dyn SomeTrait; 10]&gt;());
+}
+</code></pre></pre>
+<p>As you see from the output after running this, the sizes of the references varies.
+Most are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
+bytes.</p>
+<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
+information. </p>
+<p><strong>In the case of <code>&amp;[i32]</code>:</strong> </p>
+<ul>
+<li>
+<p>The first 8 bytes is the actual pointer to the first element in the array
+(or part of an array the slice refers to)</p>
+</li>
+<li>
+<p>The second 8 bytes is the length of the slice.</p>
+</li>
+</ul>
+<p>The one we'll concern ourselves about is the references to traits, or
+<em>trait objects</em> as they're called in Rust.</p>
+<p><code>&amp;dyn SomeTrait</code> is an example of a <em>trait object</em> </p>
+<p>The layout for a pointer to a <em>trait object</em> looks like this: </p>
+<ul>
+<li>The first 8 bytes points to the <code>data</code> for the trait object</li>
+<li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
+</ul>
+<p>The reason for this is to allow us to refer to an object we know nothing about
+except that it implements the methods defined by our trait. To allow this we use
+dynamic dispatch.</p>
+<p>Let's explain this in code instead of words by implementing our own trait
+object from these parts:</p>
+<pre><pre class="playpen"><code class="language-rust editable">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+trait Test {
+    fn add(&amp;self) -&gt; i32;
+    fn sub(&amp;self) -&gt; i32;
+    fn mul(&amp;self) -&gt; i32;
+}
+
+// This will represent our home brewn fat pointer to a trait object
+#[repr(C)]
+struct FatPointer&lt;'a&gt; {
+    /// A reference is a pointer to an instantiated `Data` instance
+    data: &amp;'a mut Data,
+    /// Since we need to pass in literal values like length and alignment it's
+    /// easiest for us to convert pointers to usize-integers instead of the other way around.
+    vtable: *const usize,
+}
+
+// This is the data in our trait object. It's just two numbers we want to operate on.
+struct Data {
+    a: i32,
+    b: i32,
+}
+
+// ====== function definitions ======
+fn add(s: &amp;Data) -&gt; i32 {
+    s.a + s.b
+}
+fn sub(s: &amp;Data) -&gt; i32 {
+    s.a - s.b
+}
+fn mul(s: &amp;Data) -&gt; i32 {
+    s.a * s.b
+}
+
+fn main() {
+    let mut data = Data {a: 3, b: 2};
+    // vtable is like special purpose array of pointer-length types with a fixed
+    // format where the three first values has a special meaning like the
+    // length of the array is encoded in the array itself as the second value.
+    let vtable = vec![
+        0,            // pointer to `Drop` (which we're not implementing here)
+        6,            // lenght of vtable
+        8,            // alignment
+        // we need to make sure we add these in the same order as defined in the Trait.
+        // Try changing the order of add and sub and see what happens.
+        add as usize, // function pointer
+        sub as usize, // function pointer 
+        mul as usize, // function pointer
+    ];
+
+    let fat_pointer = FatPointer { data: &amp;mut data, vtable: vtable.as_ptr()};
+    let test = unsafe { std::mem::transmute::&lt;FatPointer, &amp;dyn Test&gt;(fat_pointer) };
+
+    // And voalá, it's now a trait object we can call methods on
+    println!(&quot;Add: 3 + 2 = {}&quot;, test.add());
+    println!(&quot;Sub: 3 - 2 = {}&quot;, test.sub());
+    println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
+}
+
+</code></pre></pre>
+<p>If you run this code by pressing the &quot;play&quot; button at the top you'll se it
+outputs just what we expect. </p>
+<p>This code example is editable so you can change it
+and run it to see what happens.</p>
+<p>The reason we go through this will be clear later on when we implement our own
+<code>Waker</code> we'll actually set up a <code>vtable</code> like we do here to and knowing what
+it is will make this much less mysterious.</p>
+<p>With that out of the way, let's move on to our main example.</p>
+<h1><a class="header" href="#naive-example" id="naive-example">Naive example</a></h1>
+<h1><a class="header" href="#proper-waker" id="proper-waker">Proper Waker</a></h1>
+<h1><a class="header" href="#proper-future" id="proper-future">Proper Future</a></h1>
+<h1><a class="header" href="#supporting-asyncawait" id="supporting-asyncawait">Supporting async/await</a></h1>
+<h1><a class="header" href="#bonus-concurrent-futures" id="bonus-concurrent-futures">Bonus: concurrent futures</a></h1>
 
                     </main>
 
@@ -175,6 +316,20 @@
 
         
 
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
         
 
         

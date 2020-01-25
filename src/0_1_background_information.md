@@ -55,21 +55,29 @@ As you see from the output after running this, the sizes of the references varie
 Most are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.
 
-The reason for this varies. For example, in the case of `&[i32]` the first 8
-bytes is the pointer to the first element in an array, and the second 8 bytes is
-the length of the slice.
+The 16 byte sized pointers are called "fat pointers" since they carry more extra
+information. 
+
+**In the case of `&[i32]`:** 
+
+- The first 8 bytes is the actual pointer to the first element in the array
+(or part of an array the slice refers to)
+
+- The second 8 bytes is the length of the slice.
 
 The one we'll concern ourselves about is the references to traits, or
-_trait objects_ as they're called in Rust when we're referring to any type that
-implements this trait. `&dyn SomeTrait` is a pointer to such a _trait object_ 
-and as you see it has a size of 16 bytes.
+_trait objects_ as they're called in Rust.
+
+ `&dyn SomeTrait` is an example of a _trait object_ 
+ 
+ The layout for a pointer to a _trait object_ looks like this: 
 
 - The first 8 bytes points to the `data` for the trait object
 - The second 8 bytes points to the `vtable` for the trait object
 
-When implementing a `Trait` you pass in `self` as the first parameter. The
-`data` pointer is a pointer to this `self` object which is then passed in to
-the functions in the `vtable`.
+The reason for this is to allow us to refer to an object we know nothing about
+except that it implements the methods defined by our trait. To allow this we use
+dynamic dispatch.
 
 Let's explain this in code instead of words by implementing our own trait
 object from these parts:
@@ -137,11 +145,13 @@ fn main() {
 ```
 
 If you run this code by pressing the "play" button at the top you'll se it
-outputs just what we expect. This code example is editable so you can change it
+outputs just what we expect. 
+
+This code example is editable so you can change it
 and run it to see what happens.
 
-The reason we go through this will be apparent when we implement our own
-`Waker` later on since we'll actually set up a `vtable` like we do here to
-define methods like `wake`.
+The reason we go through this will be clear later on when we implement our own
+`Waker` we'll actually set up a `vtable` like we do here to and knowing what
+it is will make this much less mysterious.
 
-Let's move on to actually implement an example.
+With that out of the way, let's move on to our main example.
