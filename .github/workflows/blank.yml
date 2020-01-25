@@ -1,14 +1,17 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
-  build:
-
+  build-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: mdBook Action
+      - uses: actions/checkout@v2
+        
+      - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1.1.4
         with:
           mdbook-version: 'latest'
