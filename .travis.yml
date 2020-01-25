@@ -18,8 +18,8 @@ script:
 deploy:
   provider: pages
   skip-cleanup: true
-  github-token: $GITHUB_DEPLOY_KEY
+  github-token: $GITHUB_TOKEN
   local-dir: path/to/mybook/book
   keep-history: false
   on:
-    branch: master
+    branch: gh-pages
