@@ -3,9 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Futures Explained in 200 Lines of Rust</title>
-        
-        <meta name="robots" content="noindex" />
+        <title>Some background information - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -83,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded "><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="expanded "><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li class="expanded "><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li class="expanded "><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li class="expanded "><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li class="expanded "><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li class="expanded "><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
+                <ol class="chapter"><li class="expanded "><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="expanded "><a href="0_1_background_information.html" class="active"><strong aria-hidden="true">2.</strong> Some background information</a></li><li class="expanded "><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li class="expanded "><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li class="expanded "><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li class="expanded "><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li class="expanded "><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -150,8 +148,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
-<h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
+                        <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
 <p>Before we start implementing our <code>Futures</code> , we'll go through some background
 information that will help demystify some of the concepts we encounter.</p>
 <h2><a class="header" href="#concurrency-in-general" id="concurrency-in-general">Concurrency in general</a></h2>
@@ -330,278 +327,21 @@ preferred runtime to actually do the scheduling and I/O queues.</p>
 <p>It's important to know that Rust doesn't provide a runtime, so you have to choose
 one. <a href="https://github.com/async-rs/async-std">async std</a> and <a href="https://github.com/tokio-rs/tokio">tokio</a> are two popular ones.</p>
 <p>With that out of the way, let's move on to our main example.</p>
-<h1><a class="header" href="#naive-example" id="naive-example">Naive example</a></h1>
-<pre><pre class="playpen"><code class="language-rust">use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant};
-
-fn main() {
-    let readylist = Arc::new(Mutex::new(vec![]));
-    let mut reactor = Reactor::new();
-
-    let mywaker = MyWaker::new(1, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-
-    let mywaker = MyWaker::new(2, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-    
-    executor_run(reactor, readylist);
-}
-// ====== EXECUTOR ======
-fn executor_run(mut reactor: Reactor, rl: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) {
-    let start = Instant::now();
-        loop {
-        let mut rl_locked = rl.lock().unwrap();
-        while let Some(event) = rl_locked.pop() {
-            let dur = (Instant::now() - start).as_secs_f32(); 
-            println!(&quot;Event {} just happened at time: {:.2}.&quot;, event, dur);
-            reactor.outstanding.fetch_sub(1, Ordering::Relaxed);
-        }
-        drop(rl_locked);
-
-        if reactor.outstanding.load(Ordering::Relaxed) == 0 {
-            reactor.close();
-            break;
-        }
-
-        thread::park();
-    }
-}
-
-// ====== &quot;FUTURE&quot; IMPL ======
-#[derive(Debug)]
-struct MyWaker {
-    id: usize,
-    thread: thread::Thread,
-    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
-}
-
-impl MyWaker {
-    fn new(id: usize, thread: thread::Thread, readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) -&gt; Self {
-        MyWaker {
-            id,
-            thread,
-            readylist,
-        }
-    }
-
-    fn wake(&amp;self) {
-        self.readylist.lock().map(|mut rl| rl.push(self.id)).unwrap();
-        self.thread.unpark();
-    }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct Task {
-    id: usize,
-    pending: bool, 
-}
-
-// ===== REACTOR =====
-struct Reactor {
-    dispatcher: Sender&lt;Event&gt;,
-    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-    outstanding: AtomicUsize,
-}
-#[derive(Debug)]
-enum Event {
-    Close,
-    Simple(MyWaker, u64),
-}
-
-impl Reactor {
-    fn new() -&gt; Self {
-        let (tx, rx) = channel::&lt;Event&gt;();
-        let mut handles = vec![];
-        let handle = thread::spawn(move || {
-            // This simulates some I/O resource
-            for event in rx {
-                match event {
-                    Event::Close =&gt; break,
-                    Event::Simple(mywaker, duration) =&gt; {
-                        let event_handle = thread::spawn(move || {
-                            thread::sleep(Duration::from_secs(duration));
-                            mywaker.wake();
-                        });
-                        handles.push(event_handle);
-                    }
-                }
-            }
-
-            for handle in handles {
-                handle.join().unwrap();
-            }
-        });
-
-        Reactor {
-            dispatcher: tx,
-            handle: Some(handle),
-            outstanding: AtomicUsize::new(0),
-        }
-    }
-
-    fn register(&amp;mut self, duration: u64, mywaker: MyWaker) {
-        self.dispatcher
-            .send(Event::Simple(mywaker, duration))
-            .unwrap();
-        self.outstanding.fetch_add(1, Ordering::Relaxed);
-    }
-
-    fn close(&amp;mut self) {
-        self.dispatcher.send(Event::Close).unwrap();
-    }
-}
-
-impl Drop for Reactor {
-    fn drop(&amp;mut self) {
-        self.handle.take().map(|h| h.join().unwrap()).unwrap();
-    }
-}
-</code></pre></pre>
-<pre><pre class="playpen"><code class="language-rust">use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant};
-
-fn main() {
-    let readylist = Arc::new(Mutex::new(vec![]));
-    let mut reactor = Reactor::new();
-
-    let mywaker = MyWaker::new(1, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-
-    let mywaker = MyWaker::new(2, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-    
-    executor_run(reactor, readylist);
-}
-<span class="boring">// ====== EXECUTOR ======
-</span><span class="boring">fn executor_run(mut reactor: Reactor, rl: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) {
-</span><span class="boring">    let start = Instant::now();
-</span><span class="boring">        loop {
-</span><span class="boring">        let mut rl_locked = rl.lock().unwrap();
-</span><span class="boring">        while let Some(event) = rl_locked.pop() {
-</span><span class="boring">            let dur = (Instant::now() - start).as_secs_f32(); 
-</span><span class="boring">            println!(&quot;Event {} just happened at time: {:.2}.&quot;, event, dur);
-</span><span class="boring">            reactor.outstanding.fetch_sub(1, Ordering::Relaxed);
-</span><span class="boring">        }
-</span><span class="boring">        drop(rl_locked);
-</span><span class="boring">
-</span><span class="boring">        if reactor.outstanding.load(Ordering::Relaxed) == 0 {
-</span><span class="boring">            reactor.close();
-</span><span class="boring">            break;
-</span><span class="boring">        }
-</span><span class="boring">
-</span><span class="boring">        thread::park();
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">// ====== &quot;FUTURE&quot; IMPL ======
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct MyWaker {
-</span><span class="boring">    id: usize,
-</span><span class="boring">    thread: thread::Thread,
-</span><span class="boring">    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl MyWaker {
-</span><span class="boring">    fn new(id: usize, thread: thread::Thread, readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) -&gt; Self {
-</span><span class="boring">        MyWaker {
-</span><span class="boring">            id,
-</span><span class="boring">            thread,
-</span><span class="boring">            readylist,
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn wake(&amp;self) {
-</span><span class="boring">        self.readylist.lock().map(|mut rl| rl.push(self.id)).unwrap();
-</span><span class="boring">        self.thread.unpark();
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">
-</span><span class="boring">#[derive(Debug, Clone)]
-</span><span class="boring">pub struct Task {
-</span><span class="boring">    id: usize,
-</span><span class="boring">    pending: bool, 
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">// ===== REACTOR =====
-</span><span class="boring">struct Reactor {
-</span><span class="boring">    dispatcher: Sender&lt;Event&gt;,
-</span><span class="boring">    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-</span><span class="boring">    outstanding: AtomicUsize,
-</span><span class="boring">}
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">enum Event {
-</span><span class="boring">    Close,
-</span><span class="boring">    Simple(MyWaker, u64),
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Reactor {
-</span><span class="boring">    fn new() -&gt; Self {
-</span><span class="boring">        let (tx, rx) = channel::&lt;Event&gt;();
-</span><span class="boring">        let mut handles = vec![];
-</span><span class="boring">        let handle = thread::spawn(move || {
-</span><span class="boring">            // This simulates some I/O resource
-</span><span class="boring">            for event in rx {
-</span><span class="boring">                match event {
-</span><span class="boring">                    Event::Close =&gt; break,
-</span><span class="boring">                    Event::Simple(mywaker, duration) =&gt; {
-</span><span class="boring">                        let event_handle = thread::spawn(move || {
-</span><span class="boring">                            thread::sleep(Duration::from_secs(duration));
-</span><span class="boring">                            mywaker.wake();
-</span><span class="boring">                        });
-</span><span class="boring">                        handles.push(event_handle);
-</span><span class="boring">                    }
-</span><span class="boring">                }
-</span><span class="boring">            }
-</span><span class="boring">
-</span><span class="boring">            for handle in handles {
-</span><span class="boring">                handle.join().unwrap();
-</span><span class="boring">            }
-</span><span class="boring">        });
-</span><span class="boring">
-</span><span class="boring">        Reactor {
-</span><span class="boring">            dispatcher: tx,
-</span><span class="boring">            handle: Some(handle),
-</span><span class="boring">            outstanding: AtomicUsize::new(0),
-</span><span class="boring">        }
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn register(&amp;mut self, duration: u64, mywaker: MyWaker) {
-</span><span class="boring">        self.dispatcher
-</span><span class="boring">            .send(Event::Simple(mywaker, duration))
-</span><span class="boring">            .unwrap();
-</span><span class="boring">        self.outstanding.fetch_add(1, Ordering::Relaxed);
-</span><span class="boring">    }
-</span><span class="boring">
-</span><span class="boring">    fn close(&amp;mut self) {
-</span><span class="boring">        self.dispatcher.send(Event::Close).unwrap();
-</span><span class="boring">    }
-</span><span class="boring">}
-</span><span class="boring">
-</span><span class="boring">impl Drop for Reactor {
-</span><span class="boring">    fn drop(&amp;mut self) {
-</span><span class="boring">        self.handle.take().map(|h| h.join().unwrap()).unwrap();
-</span><span class="boring">    }
-</span><span class="boring">}
-</span></code></pre></pre>
-<h1><a class="header" href="#proper-waker" id="proper-waker">Proper Waker</a></h1>
-<h1><a class="header" href="#proper-future" id="proper-future">Proper Future</a></h1>
-<h1><a class="header" href="#supporting-asyncawait" id="supporting-asyncawait">Supporting async/await</a></h1>
-<h1><a class="header" href="#bonus-concurrent-futures" id="bonus-concurrent-futures">Bonus: concurrent futures</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="0_0_introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
+                        
+                            <a rel="next" href="0_2_naive_implementation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -611,7 +351,15 @@ fn main() {
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a href="0_0_introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
+                
+                    <a href="0_2_naive_implementation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                 
             </nav>
 
@@ -665,14 +413,6 @@ fn main() {
         <!-- Custom JS scripts -->
         
 
-        
-        
-        <script type="text/javascript">
-        window.addEventListener('load', function() {
-            window.setTimeout(window.print, 100);
-        });
-        </script>
-        
         
 
     </body>

@@ -133,7 +133,7 @@ impl Drop for Reactor {
 }
 ```
 
-```rust,editable
+```rust
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
