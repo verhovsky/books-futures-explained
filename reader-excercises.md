@@ -36,5 +36,13 @@ What about CPU intensice tasks? Right now they'll prevent our executor thread fr
 
 In both `async_std` and `tokio` this method is called `spawn_blocking`, a good place to start is to read the documentation and the code thy use to implement that.
 
+### Further reading
+
+There are many great resources for further study. Here are some of my suggestions:
+
+The Asyc book:
+
+
+
 
 
