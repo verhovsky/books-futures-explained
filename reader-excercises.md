@@ -22,7 +22,7 @@ Next , using a `Mutex` as a synchonization mechanism might be overkill since man
 * Could you use any of the synchonization mechanisms in [Crossbeam](https://github.com/crossbeam-rs/crossbeam)?
 * Do you want to dig into [atomics in Rust and implement a synchonization mechanism](https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/atomics-in-rust) of your own?
 
-### Creating a new Waker for every event
+### Avoid creating a new Waker for every event
 
 Right now we create a new instance of a Waker for every event we create. Is this really needed? 
 
@@ -32,7 +32,7 @@ Right now we create a new instance of a Waker for every event we create. Is this
 
 ### Could we implement more methods on our executor?
 
-What about CPU intensice tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the threadpool instead and make it wake you up when done?
+What about CPU intensice tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the threadpool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?
 
 In both `async_std` and `tokio` this method is called `spawn_blocking`, a good place to start is to read the documentation and the code thy use to implement that.
 
