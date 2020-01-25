@@ -1,0 +1,5 @@
+- name: mdBook Action
+  uses: peaceiris/actions-mdbook@v1.1.4
+  with:
+    # The mdBook version to download (if necessary) and use. Example: 0.3.5
+    mdbook-version: # optional, default is latest
