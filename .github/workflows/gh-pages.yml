@@ -1,4 +1,4 @@
-name: mdbook
+name: github pages
 
 on:
   push:
@@ -14,7 +14,8 @@ jobs:
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
-          mdbook-version: 'latest'
+          mdbook-version: '0.3.5'
+          # mdbook-version: 'latest'
 
       - run: mdbook build
 
