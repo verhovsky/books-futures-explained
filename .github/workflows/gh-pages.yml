@@ -19,9 +19,11 @@ jobs:
         # mdbook-version: '0.3.4'
 
     - run: mdbook build
-
+    
     - name: Deploy
+      uses: peaceiris/actions-gh-pages@v2.5.0
       env:
-        ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        PUBLISH_BRANCH: gh-pages
-        PUBLISH_DIR: ./book
+         ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+         # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         PUBLISH_BRANCH: gh-pages
+         PUBLISH_DIR: ./book
