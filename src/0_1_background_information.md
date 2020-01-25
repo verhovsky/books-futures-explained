@@ -35,5 +35,23 @@ Let's take a look at the size of some different pointer types in Rust. If we
 run the following code:
 
 ```rust
+# use std::mem::size_of;
+trait SomeTrait {
+    fn method(&self) {
+        todo!();
+    }
+}
 
+fn main() {
+    println!("Size of Box<i32>: {}", size_of::<Box<i32>>());
+    println!("Size of &i32: {}", size_of::<&i32>());
+    println!("Size of &Box<i32>: {}", size_of::<&Box<i32>>());
+    println!("Size of Box<Trait>: {}", size_of::<Box<SomeTrait>>());
+    println!("Size of &dyn Trait: {}", size_of::<&dyn SomeTrait>());
+    println!("Size of Rc<Trait>: {}", size_of::<Rc<SomeTrait>>());
+    println!("Size of &[i32]: {}", size_of::<&[i32]>());
+    println!("Size of &[&dyn Trait]: {}", size_of::<&[&dyn SomeTrait]>());
+    println!("Size of [i32; 10]: {}", size_of::<[i32; 10]>());
+    println!("Size of [&dyn Trait; 10]: {}", size_of::<[&dyn SomeTrait; 10]>());
+}
 ```
