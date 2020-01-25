@@ -44,10 +44,104 @@ fn main() {
     println!("Size of &Box<i32>: {}", size_of::<&Box<i32>>());
     println!("Size of Box<Trait>: {}", size_of::<Box<SomeTrait>>());
     println!("Size of &dyn Trait: {}", size_of::<&dyn SomeTrait>());
-    println!("Size of Rc<Trait>: {}", size_of::<Rc<SomeTrait>>());
     println!("Size of &[i32]: {}", size_of::<&[i32]>());
     println!("Size of &[&dyn Trait]: {}", size_of::<&[&dyn SomeTrait]>());
     println!("Size of [i32; 10]: {}", size_of::<[i32; 10]>());
     println!("Size of [&dyn Trait; 10]: {}", size_of::<[&dyn SomeTrait; 10]>());
 }
 ```
+
+As you see from the output after running this, the sizes of the references varies.
+Most are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
+bytes.
+
+The reason for this varies. For example, in the case of `&[i32]` the first 8
+bytes is the pointer to the first element in an array, and the second 8 bytes is
+the length of the slice.
+
+The one we'll concern ourselves about is the references to traits, or
+_trait objects_ as they're called in Rust when we're referring to any type that
+implements this trait. `&dyn SomeTrait` is a pointer to such a _trait object_ 
+and as you see it has a size of 16 bytes.
+
+- The first 8 bytes points to the `data` for the trait object
+- The second 8 bytes points to the `vtable` for the trait object
+
+When implementing a `Trait` you pass in `self` as the first parameter. The
+`data` pointer is a pointer to this `self` object which is then passed in to
+the functions in the `vtable`.
+
+Let's explain this in code instead of words by implementing our own trait
+object from these parts:
+
+```rust, editable
+// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+trait Test {
+    fn add(&self) -> i32;
+    fn sub(&self) -> i32;
+    fn mul(&self) -> i32;
+}
+
+// This will represent our home brewn fat pointer to a trait object
+#[repr(C)]
+struct FatPointer<'a> {
+    /// A reference is a pointer to an instantiated `Data` instance
+    data: &'a mut Data,
+    /// Since we need to pass in literal values like length and alignment it's
+    /// easiest for us to convert pointers to usize-integers instead of the other way around.
+    vtable: *const usize,
+}
+
+// This is the data in our trait object. It's just two numbers we want to operate on.
+struct Data {
+    a: i32,
+    b: i32,
+}
+
+// ====== function definitions ======
+fn add(s: &Data) -> i32 {
+    s.a + s.b
+}
+fn sub(s: &Data) -> i32 {
+    s.a - s.b
+}
+fn mul(s: &Data) -> i32 {
+    s.a * s.b
+}
+
+fn main() {
+    let mut data = Data {a: 3, b: 2};
+    // vtable is like special purpose array of pointer-length types with a fixed
+    // format where the three first values has a special meaning like the
+    // length of the array is encoded in the array itself as the second value.
+    let vtable = vec![
+        0,            // pointer to `Drop` (which we're not implementing here)
+        6,            // lenght of vtable
+        8,            // alignment
+        // we need to make sure we add these in the same order as defined in the Trait.
+        // Try changing the order of add and sub and see what happens.
+        add as usize, // function pointer
+        sub as usize, // function pointer 
+        mul as usize, // function pointer
+    ];
+
+    let fat_pointer = FatPointer { data: &mut data, vtable: vtable.as_ptr()};
+    let test = unsafe { std::mem::transmute::<FatPointer, &dyn Test>(fat_pointer) };
+
+    // And voalá, it's now a trait object we can call methods on
+    println!("Add: 3 + 2 = {}", test.add());
+    println!("Sub: 3 - 2 = {}", test.sub());
+    println!("Mul: 3 * 2 = {}", test.mul());
+}
+
+```
+
+If you run this code by pressing the "play" button at the top you'll se it
+outputs just what we expect. This code example is editable so you can change it
+and run it to see what happens.
+
+The reason we go through this will be apparent when we implement our own
+`Waker` later on since we'll actually set up a `vtable` like we do here to
+define methods like `wake`.
+
+Let's move on to actually implement an example.
