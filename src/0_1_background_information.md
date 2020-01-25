@@ -82,7 +82,7 @@ dynamic dispatch.
 Let's explain this in code instead of words by implementing our own trait
 object from these parts:
 
-```rust, editable
+```rust
 // A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&self) -> i32;
