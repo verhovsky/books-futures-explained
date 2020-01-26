@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="sidebar-visible no-js">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -32,11 +32,11 @@
 
         
     </head>
-    <body>
+    <body class="light">
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+            var default_theme = "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -60,11 +60,8 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
-            html.classList.remove('no-js')
-            html.classList.remove('light')
-            html.classList.add(theme);
-            html.classList.add('js');
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -80,8 +77,8 @@
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded "><a href="0_0_introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="expanded "><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li class="expanded "><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li class="expanded "><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li class="expanded "><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li class="expanded "><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li class="expanded "><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li><a href="0_0_introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="0_1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="0_1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li></ol></li><li><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -148,7 +145,77 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+                        <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
+<p>This book aims to explain <code>Futures</code> in Rust using an example driven approach.</p>
+<p>The goal is to get a better understanding of <code>Futures</code> by implementing a toy
+<code>Reactor</code>, a very simple <code>Executor</code> and our own <code>Futures</code>. </p>
+<p>We'll start off solving a small problem without <code>Futures</code>, <code>Wakers</code> or async/await 
+and then gradually adapt our example so it implements all these concepts, and
+can be solved using the executor provided by both <code>tokio</code> and <code>async_str</code>.</p>
+<p>In the end I've made some reader excercises you can do if you want to fix some
+of the most glaring ommissions and shortcuts we took and create a slightly better
+example yourself.</p>
+<h2><a class="header" href="#what-does-this-book-give-you-that-isnt-covered-elsewhere" id="what-does-this-book-give-you-that-isnt-covered-elsewhere">What does this book give you that isn't covered elsewhere?</a></h2>
+<p>That's a valid question. There are many good resources and examples already. First
+of all, this book will point you to some background information that I have found
+very valuable to get an understanding of concurrent programming in general.</p>
+<p>I find that many discussions arise, not because <code>Futures</code> is a hard concept to
+grasp, but that concurrent programming is a hard concept in general.</p>
+<p>Secondly, I've always found small runnable examples very exiting to learn from. It's
+all code that you can download, play with and learn from.</p>
+<h2><a class="header" href="#what-well-do-and-not" id="what-well-do-and-not">What we'll do and not</a></h2>
+<p><strong>We'll:</strong></p>
+<ul>
+<li>Implement our own <code>Futures</code> and get to know the <code>Reactor/Executor</code> pattern</li>
+<li>Implement our own waker and learn why it's a bit foreign compared to other types</li>
+<li>Talk a bit about runtime complexity and what to keep in mind when writing async Rust.</li>
+<li>Make sure all examples can be run on the playground</li>
+<li>Not rely on any helpers or libraries, but try to face the complexity and learn</li>
+</ul>
+<p><strong>We'll not:</strong></p>
+<ul>
+<li>Talk about how futures are implemented in Rust the language, the state machine and so on</li>
+<li>Explain how the different runtimes differ, however, you'll hopefully be a bit
+better off if you read this before you go research them</li>
+<li>Explain concurrent programming, but I will supply sources</li>
+</ul>
+<p>I do want to explore Rusts internal implementation but that will be for a later
+book.</p>
+<h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
+<p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
+<code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
+much is built upon. Reading and exploring some of this code is nothing less than
+impressive.</p>
+<h2><a class="header" href="#why-is-futures-in-rust-hard-to-understand" id="why-is-futures-in-rust-hard-to-understand">Why is <code>Futures</code> in Rust hard to understand</a></h2>
+<p>Well, I think it has to do with several things:</p>
+<ol>
+<li>
+<p>Futures has a very interesting implementation, compiling down to a state
+machine using generators to suspend and resume execution. In a language such as
+Rust this is pretty hard to do ergonomically and safely. You are exposed to some
+if this complexity when working with futures and want to understand them, not
+only learn how to use them.</p>
+</li>
+<li>
+<p>Rust doesn't provide a runtime. That means you'll actually have to choose one
+yourself and actually know what a <code>Reactor</code> and an <code>Executor</code> is. While not
+too difficult, you need to make more choices than you need in GO and other
+languages designed with a concurrent programming in mind and ships with a
+runtime.</p>
+</li>
+<li>
+<p>Futures exist in two versions, Futures 1.0 and Futures 3.0. Futures 1.0 was
+known to have some issues regarding ergonomics. Turns out that modelling 
+async coding after <code>Promises</code> in JavaScript can turn in to extremely long errors 
+and type signatures with a type system as Rust.</p>
+</li>
+</ol>
+<p>Futures 3.0 are not compatible with Futures 1.0 without performing some work.</p>
+<ol start="4">
+<li>Async await syntax was recently stabilized</li>
+</ol>
+<p>what we'll
+really do is to stub out a <code>Reactor</code>, and <code>Executor</code> and implement</p>
 
                     </main>
 
@@ -180,30 +247,7 @@
         </div>
 
         
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload(true); // force reload from server (not from cache)
-                }
-            };
 
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
-        
-
-        
-
-        
-        
-        
-        <script type="text/javascript">
-            window.playpen_copyable = true;
-        </script>
         
 
         

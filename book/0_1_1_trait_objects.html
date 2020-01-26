@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Naive example - Futures Explained in 200 Lines of Rust</title>
+        <title>Trait objects and fat pointers - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="0_1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="0_1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li></ol></li><li><a href="0_2_naive_implementation.html" class="active"><strong aria-hidden="true">3.</strong> Naive example</a></li><li><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="0_1_1_trait_objects.html" class="active"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="0_1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li></ol></li><li><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li><a href="0_6_concurrent_futures.html"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -145,280 +145,20 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#naive-example" id="naive-example">Naive example</a></h1>
-<pre><pre class="playpen"><code class="language-rust">use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant};
-
-fn main() {
-    let readylist = Arc::new(Mutex::new(vec![]));
-    let mut reactor = Reactor::new();
-
-    let mywaker = MyWaker::new(1, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-
-    let mywaker = MyWaker::new(2, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-    
-    executor_run(reactor, readylist);
-}
-// ====== EXECUTOR ======
-fn executor_run(mut reactor: Reactor, rl: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) {
-    let start = Instant::now();
-        loop {
-        let mut rl_locked = rl.lock().unwrap();
-        while let Some(event) = rl_locked.pop() {
-            let dur = (Instant::now() - start).as_secs_f32(); 
-            println!(&quot;Event {} just happened at time: {:.2}.&quot;, event, dur);
-            reactor.outstanding.fetch_sub(1, Ordering::Relaxed);
-        }
-        drop(rl_locked);
-
-        if reactor.outstanding.load(Ordering::Relaxed) == 0 {
-            reactor.close();
-            break;
-        }
-
-        thread::park();
-    }
-}
-
-// ====== &quot;FUTURE&quot; IMPL ======
-#[derive(Debug)]
-struct MyWaker {
-    id: usize,
-    thread: thread::Thread,
-    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
-}
-
-impl MyWaker {
-    fn new(id: usize, thread: thread::Thread, readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) -&gt; Self {
-        MyWaker {
-            id,
-            thread,
-            readylist,
-        }
-    }
-
-    fn wake(&amp;self) {
-        self.readylist.lock().map(|mut rl| rl.push(self.id)).unwrap();
-        self.thread.unpark();
-    }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct Task {
-    id: usize,
-    pending: bool, 
-}
-
-// ===== REACTOR =====
-struct Reactor {
-    dispatcher: Sender&lt;Event&gt;,
-    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-    outstanding: AtomicUsize,
-}
-#[derive(Debug)]
-enum Event {
-    Close,
-    Simple(MyWaker, u64),
-}
-
-impl Reactor {
-    fn new() -&gt; Self {
-        let (tx, rx) = channel::&lt;Event&gt;();
-        let mut handles = vec![];
-        let handle = thread::spawn(move || {
-            // This simulates some I/O resource
-            for event in rx {
-                match event {
-                    Event::Close =&gt; break,
-                    Event::Simple(mywaker, duration) =&gt; {
-                        let event_handle = thread::spawn(move || {
-                            thread::sleep(Duration::from_secs(duration));
-                            mywaker.wake();
-                        });
-                        handles.push(event_handle);
-                    }
-                }
-            }
-
-            for handle in handles {
-                handle.join().unwrap();
-            }
-        });
-
-        Reactor {
-            dispatcher: tx,
-            handle: Some(handle),
-            outstanding: AtomicUsize::new(0),
-        }
-    }
-
-    fn register(&amp;mut self, duration: u64, mywaker: MyWaker) {
-        self.dispatcher
-            .send(Event::Simple(mywaker, duration))
-            .unwrap();
-        self.outstanding.fetch_add(1, Ordering::Relaxed);
-    }
-
-    fn close(&amp;mut self) {
-        self.dispatcher.send(Event::Close).unwrap();
-    }
-}
-
-impl Drop for Reactor {
-    fn drop(&amp;mut self) {
-        self.handle.take().map(|h| h.join().unwrap()).unwrap();
-    }
-}
-</code></pre></pre>
-<pre><pre class="playpen"><code class="language-rust">use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Sender};
-use std::sync::{Arc, Mutex};
-use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant};
-
-fn main() {
-    let readylist = Arc::new(Mutex::new(vec![]));
-    let mut reactor = Reactor::new();
-
-    let mywaker = MyWaker::new(1, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-
-    let mywaker = MyWaker::new(2, thread::current(), readylist.clone());
-    reactor.register(2, mywaker);
-    
-    executor_run(reactor, readylist);
-}
-# // ====== EXECUTOR ======
-# fn executor_run(mut reactor: Reactor, rl: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) {
-#     let start = Instant::now();
-#         loop {
-#         let mut rl_locked = rl.lock().unwrap();
-#         while let Some(event) = rl_locked.pop() {
-#             let dur = (Instant::now() - start).as_secs_f32(); 
-#             println!(&quot;Event {} just happened at time: {:.2}.&quot;, event, dur);
-#             reactor.outstanding.fetch_sub(1, Ordering::Relaxed);
-#         }
-#         drop(rl_locked);
-# 
-#         if reactor.outstanding.load(Ordering::Relaxed) == 0 {
-#             reactor.close();
-#             break;
-#         }
-# 
-#         thread::park();
-#     }
-# }
-# 
-# // ====== &quot;FUTURE&quot; IMPL ======
-# #[derive(Debug)]
-# struct MyWaker {
-#     id: usize,
-#     thread: thread::Thread,
-#     readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
-# }
-# 
-# impl MyWaker {
-#     fn new(id: usize, thread: thread::Thread, readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;) -&gt; Self {
-#         MyWaker {
-#             id,
-#             thread,
-#             readylist,
-#         }
-#     }
-# 
-#     fn wake(&amp;self) {
-#         self.readylist.lock().map(|mut rl| rl.push(self.id)).unwrap();
-#         self.thread.unpark();
-#     }
-# }
-# 
-# 
-# #[derive(Debug, Clone)]
-# pub struct Task {
-#     id: usize,
-#     pending: bool, 
-# }
-# 
-# // ===== REACTOR =====
-# struct Reactor {
-#     dispatcher: Sender&lt;Event&gt;,
-#     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-#     outstanding: AtomicUsize,
-# }
-# #[derive(Debug)]
-# enum Event {
-#     Close,
-#     Simple(MyWaker, u64),
-# }
-# 
-# impl Reactor {
-#     fn new() -&gt; Self {
-#         let (tx, rx) = channel::&lt;Event&gt;();
-#         let mut handles = vec![];
-#         let handle = thread::spawn(move || {
-#             // This simulates some I/O resource
-#             for event in rx {
-#                 match event {
-#                     Event::Close =&gt; break,
-#                     Event::Simple(mywaker, duration) =&gt; {
-#                         let event_handle = thread::spawn(move || {
-#                             thread::sleep(Duration::from_secs(duration));
-#                             mywaker.wake();
-#                         });
-#                         handles.push(event_handle);
-#                     }
-#                 }
-#             }
-# 
-#             for handle in handles {
-#                 handle.join().unwrap();
-#             }
-#         });
-# 
-#         Reactor {
-#             dispatcher: tx,
-#             handle: Some(handle),
-#             outstanding: AtomicUsize::new(0),
-#         }
-#     }
-# 
-#     fn register(&amp;mut self, duration: u64, mywaker: MyWaker) {
-#         self.dispatcher
-#             .send(Event::Simple(mywaker, duration))
-#             .unwrap();
-#         self.outstanding.fetch_add(1, Ordering::Relaxed);
-#     }
-# 
-#     fn close(&amp;mut self) {
-#         self.dispatcher.send(Event::Close).unwrap();
-#     }
-# }
-# 
-# impl Drop for Reactor {
-#     fn drop(&amp;mut self) {
-#         self.handle.take().map(|h| h.join().unwrap()).unwrap();
-#     }
-# }
-</code></pre></pre>
+                        <h1><a class="header" href="#trait-objects-and-fat-pointers" id="trait-objects-and-fat-pointers">Trait objects and fat pointers</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="0_1_2_generators_pin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="0_1_background_information.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="0_3_proper_waker.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="0_1_2_generators_pin.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -430,13 +170,13 @@ fn main() {
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="0_1_2_generators_pin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a href="0_1_background_information.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a href="0_3_proper_waker.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a href="0_1_2_generators_pin.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
