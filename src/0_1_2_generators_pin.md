@@ -20,9 +20,117 @@ async/await as it does about generators).
 Basically, there were three main options that were discussed when Rust was 
 desiging how the language would handle concurrency:
 
-1. Stackfull coroutines, better known as green threads.
+1. Stackful coroutines, better known as green threads.
 2. Using combinators.
 3. Stackless coroutines, better known as generators.
 
+### Stackful coroutines/green threads
+
+I've written about green threads before. Go check out 
+[Green Threads Explained in 200 lines of Rust][greenthreads] if you're interested.
+
+Green threads uses the same mechanisms as an OS does by creating a thread for
+each task, setting up a stack and forcing the CPU to save it's state and jump
+from one task(thread) to another. We yield control to the scheduler which then
+continues running a different task.
+
+Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no need
+for `async`, `await`, `Futures` or `Pin`. All this would be implementation
+details for the library.
+
+### Combinators
+
+`Futures 1.0` used combinators. If you've worked with `Promises` in JavaScript,
+you already know combinators. In Rust they look like this:
+
+```rust
+let future = Connection::connect(conn_str).and_then(|conn| {
+    conn.query("somerequest").map(|row|{
+        SomeStruct::from(row)
+    }).collect::<Vec<SomeStruct>>()
+});
+
+let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future).unwrap();
+
+```
+While an effective solution there are mainly two downsides I'll focus on:
+
+1. The error messages produced could be extremely long and arcane
+2. Not optimal memory usage
+
+The reason for the higher than optimal memory usage is that this is basically
+a callback-based approach, where each closure stores all the data it needs
+for computation. This means that as we chain these, the memory required to store
+the needed state increases with each added step.
+
+### Stackless coroutines/generators
+
+This is the model used in Async/Await today. It has two advantages:
+
+1. It's easy to convert normal Rust code to a stackless corotuine using using
+async/await as keywords (it can even be done using a macro).
+2. It uses memory very efficiently
+
+The second point is in contrast to `Futures 1.0` (well, both are efficient in
+practice but thats beside the point). Generators are implemented as state
+machines. The memory footprint of a chain of computations is only defined by
+the largest footprint any single step requires. That means that adding steps to
+a chain of computations might not require any added memory at all.
+
+## How generators work
+
+In Nightly Rust today you can use the `yield` keyword. Basically using this 
+keyword in a closure, converts it to a generator. A closure looking like this 
+(I'm going to use the terminology that's currently in Rust):
+
+```rust
+|a: i32| {
+    let arr: Vec<i32> = (0..a).enumerate().map((i,_) i).collect();
+    for n in arr {
+        yield n;
+    }
+    println!("The sum is: {}", arr.iter().sum());
+}
+|a: i32| {
+    yield a * 2;
+    println!("Hello!");
+}
+
+```
+
+Compiles into something looking more like this:
+
+```rust
+// If you've ever wondered why the parameters are called Y and R the naming from
+// the original rfc most likely holds the answer
+enum GeneratorState<Y, R> { // originally called `CoResult`
+    Yielded(Y),             // originally called `Yield(Y)`
+    Complete(R),            // originally called `Return(R)`
+}
+
+struct GeneratorA {
+    state: GeneratorState<i32, ()>,
+}
+
+impl FnMut<()> for GeneratorA {
+    type Output = GeneratorState<i32, ()>;
+    fn call_mut(&mut self) -> Self::Output {
+        
+    }
+}
+
+|a: i32| {
+    CoResult {
+
+    }
+}
+
+```
+
+>The `yield` keyword was discussed first in [RFC#1823][rfc1823] and in [RFC#1832][rfc1832].
 
 [rfc2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
+[greenthreads]: https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/
+[rfc1823]: https://github.com/rust-lang/rfcs/pull/1823
+[rfc1832]: https://github.com/rust-lang/rfcs/pull/1832
