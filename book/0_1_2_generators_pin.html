@@ -146,6 +146,179 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#generators-and-pin" id="generators-and-pin">Generators and Pin</a></h1>
+<p>So the second difficult part that there seems to be a lot of questions about
+is Generators and the <code>Pin</code> type.</p>
+<h2><a class="header" href="#generators" id="generators">Generators</a></h2>
+<pre><code>**Relevant for:**
+
+- Understanding how the async/await syntax works
+- Why we need `Pin`
+- Why Rusts async model is extremely efficient
+</code></pre>
+<p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
+well written and I can recommend reading through it (it talks as much about
+async/await as it does about generators).</p>
+<p>Basically, there were three main options that were discussed when Rust was 
+desiging how the language would handle concurrency:</p>
+<ol>
+<li>Stackful coroutines, better known as green threads.</li>
+<li>Using combinators.</li>
+<li>Stackless coroutines, better known as generators.</li>
+</ol>
+<h3><a class="header" href="#stackful-coroutinesgreen-threads" id="stackful-coroutinesgreen-threads">Stackful coroutines/green threads</a></h3>
+<p>I've written about green threads before. Go check out 
+<a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust</a> if you're interested.</p>
+<p>Green threads uses the same mechanisms as an OS does by creating a thread for
+each task, setting up a stack and forcing the CPU to save it's state and jump
+from one task(thread) to another. We yield control to the scheduler which then
+continues running a different task.</p>
+<p>Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no need
+for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation
+details for the library.</p>
+<h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
+<p><code>Futures 1.0</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
+you already know combinators. In Rust they look like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let future = Connection::connect(conn_str).and_then(|conn| {
+    conn.query(&quot;somerequest&quot;).map(|row|{
+        SomeStruct::from(row)
+    }).collect::&lt;Vec&lt;SomeStruct&gt;&gt;()
+});
+
+let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(future).unwrap();
+
+#}</code></pre></pre>
+<p>While an effective solution there are mainly two downsides I'll focus on:</p>
+<ol>
+<li>The error messages produced could be extremely long and arcane</li>
+<li>Not optimal memory usage</li>
+</ol>
+<p>The reason for the higher than optimal memory usage is that this is basically
+a callback-based approach, where each closure stores all the data it needs
+for computation. This means that as we chain these, the memory required to store
+the needed state increases with each added step.</p>
+<h3><a class="header" href="#stackless-coroutinesgenerators" id="stackless-coroutinesgenerators">Stackless coroutines/generators</a></h3>
+<p>This is the model used in Async/Await today. It has two advantages:</p>
+<ol>
+<li>It's easy to convert normal Rust code to a stackless corotuine using using
+async/await as keywords (it can even be done using a macro).</li>
+<li>It uses memory very efficiently</li>
+</ol>
+<p>The second point is in contrast to <code>Futures 1.0</code> (well, both are efficient in
+practice but thats beside the point). Generators are implemented as state
+machines. The memory footprint of a chain of computations is only defined by
+the largest footprint any single step requires. That means that adding steps to
+a chain of computations might not require any added memory at all.</p>
+<h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
+<p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this 
+keyword in a closure, converts it to a generator. A closure looking like this 
+(I'm going to use the terminology that's currently in Rust):</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+let a = 4;
+let b = move || {
+        println!(&quot;Hello&quot;);
+        yield a * 2;
+        println!(&quot;world!&quot;);
+    };
+
+if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+};
+#}</code></pre></pre>
+<p>Early on, before there was a consensus about the design of <code>Pin</code>, this
+compiled to something looking similar to this:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut gen = GeneratorA::start(4);
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+
+// If you've ever wondered why the parameters are called Y and R the naming from
+// the original rfc most likely holds the answer
+enum GeneratorState&lt;Y, R&gt; {
+    // originally called `CoResult`
+    Yielded(Y),  // originally called `Yield(Y)`
+    Complete(R), // originally called `Return(R)`
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+}
+
+enum GeneratorA {
+    Enter(i32),
+    Yield1(i32),
+    Exit,
+}
+
+impl GeneratorA {
+    fn start(a1: i32) -&gt; Self {
+        GeneratorA::Enter(a1)
+    }
+}
+
+impl Generator for GeneratorA {
+    type Yield = i32;
+    type Return = ();
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+        // lets us get ownership over current state
+        match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
+            GeneratorA::Enter(a1) =&gt; {
+
+          /*|---code before yield1---|*/
+          /*|*/ println!(&quot;Hello&quot;); /*|*/ 
+          /*|*/ let a = a1 * 2;    /*|*/
+          /*|------------------------|*/
+
+                *self = GeneratorA::Yield1(a);
+                GeneratorState::Yielded(a)
+            }
+            GeneratorA::Yield1(_) =&gt; {
+
+          /*|----code after yield1----|*/
+          /*|*/ println!(&quot;world!&quot;); /*|*/ 
+          /*|-------------------------|*/
+
+                *self = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+</code></pre></pre>
+<blockquote>
+<p>The <code>yield</code> keyword was discussed first in <a href="https://github.com/rust-lang/rfcs/pull/1823">RFC#1823</a> and in <a href="https://github.com/rust-lang/rfcs/pull/1832">RFC#1832</a>.</p>
+</blockquote>
+<pre><code>|| {
+    let arr: Vec&lt;i32&gt; = (0..a).enumerate().map((i,_) i).collect();
+    for n in arr {
+        yield n;
+    }
+    println!(&quot;The sum is: {}&quot;, arr.iter().sum());
+}
+|| {
+    yield a * 2;
+    println!(&quot;Hello!&quot;);
+}
+</code></pre>
 
                     </main>
 
@@ -184,6 +357,21 @@
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

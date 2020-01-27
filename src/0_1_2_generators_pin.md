@@ -5,13 +5,12 @@ is Generators and the `Pin` type.
 
 ## Generators
 
-```
-**Relevant for:**
 
-- Understanding how the async/await syntax works
-- Why we need `Pin`
-- Why Rusts async model is extremely efficient
-```
+>**Relevant for:**
+
+>- Understanding how the async/await syntax works
+>- Why we need `Pin`
+>- Why Rusts async model is extremely efficient
 
 The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -44,7 +43,7 @@ details for the library.
 `Futures 1.0` used combinators. If you've worked with `Promises` in JavaScript,
 you already know combinators. In Rust they look like this:
 
-```rust
+```rust,noplaypen,ignore
 let future = Connection::connect(conn_str).and_then(|conn| {
     conn.query("somerequest").map(|row|{
         SomeStruct::from(row)
@@ -84,51 +83,113 @@ In Nightly Rust today you can use the `yield` keyword. Basically using this
 keyword in a closure, converts it to a generator. A closure looking like this 
 (I'm going to use the terminology that's currently in Rust):
 
+```rust,noplaypen,ignore
+let a = 4;
+let b = move || {
+        println!("Hello");
+        yield a * 2;
+        println!("world!");
+    };
+
+if let GeneratorState::Yielded(n) = gen.resume() {
+        println!("Got value {}", n);
+    }
+
+if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+};
+```
+
+Early on, before there was a consensus about the design of `Pin`, this
+compiled to something looking similar to this:
+
 ```rust
-|a: i32| {
+fn main() {
+    let mut gen = GeneratorA::start(4);
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!("Got value {}", n);
+    }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+
+// If you've ever wondered why the parameters are called Y and R the naming from
+// the original rfc most likely holds the answer
+enum GeneratorState<Y, R> {
+    // originally called `CoResult`
+    Yielded(Y),  // originally called `Yield(Y)`
+    Complete(R), // originally called `Return(R)`
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(&mut self) -> GeneratorState<Self::Yield, Self::Return>;
+}
+
+enum GeneratorA {
+    Enter(i32),
+    Yield1(i32),
+    Exit,
+}
+
+impl GeneratorA {
+    fn start(a1: i32) -> Self {
+        GeneratorA::Enter(a1)
+    }
+}
+
+impl Generator for GeneratorA {
+    type Yield = i32;
+    type Return = ();
+    fn resume(&mut self) -> GeneratorState<Self::Yield, Self::Return> {
+        // lets us get ownership over current state
+        match std::mem::replace(&mut *self, GeneratorA::Exit) {
+            GeneratorA::Enter(a1) => {
+
+          /*|---code before yield1---|*/
+          /*|*/ println!("Hello"); /*|*/ 
+          /*|*/ let a = a1 * 2;    /*|*/
+          /*|------------------------|*/
+
+                *self = GeneratorA::Yield1(a);
+                GeneratorState::Yielded(a)
+            }
+            GeneratorA::Yield1(_) => {
+
+          /*|----code after yield1----|*/
+          /*|*/ println!("world!"); /*|*/ 
+          /*|-------------------------|*/
+
+                *self = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit => panic!("Can't advance an exited generator!"),
+        }
+    }
+}
+```
+
+>The `yield` keyword was discussed first in [RFC#1823][rfc1823] and in [RFC#1832][rfc1832].
+
+
+```ignore
+|| {
     let arr: Vec<i32> = (0..a).enumerate().map((i,_) i).collect();
     for n in arr {
         yield n;
     }
     println!("The sum is: {}", arr.iter().sum());
 }
-|a: i32| {
+|| {
     yield a * 2;
     println!("Hello!");
 }
-
 ```
 
-Compiles into something looking more like this:
-
-```rust
-// If you've ever wondered why the parameters are called Y and R the naming from
-// the original rfc most likely holds the answer
-enum GeneratorState<Y, R> { // originally called `CoResult`
-    Yielded(Y),             // originally called `Yield(Y)`
-    Complete(R),            // originally called `Return(R)`
-}
-
-struct GeneratorA {
-    state: GeneratorState<i32, ()>,
-}
-
-impl FnMut<()> for GeneratorA {
-    type Output = GeneratorState<i32, ()>;
-    fn call_mut(&mut self) -> Self::Output {
-        
-    }
-}
-
-|a: i32| {
-    CoResult {
-
-    }
-}
-
-```
-
->The `yield` keyword was discussed first in [RFC#1823][rfc1823] and in [RFC#1832][rfc1832].
 
 [rfc2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
 [greenthreads]: https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/
