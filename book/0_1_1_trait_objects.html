@@ -146,6 +146,171 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#trait-objects-and-fat-pointers" id="trait-objects-and-fat-pointers">Trait objects and fat pointers</a></h1>
+<h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
+<p>The single most confusing topic we encounter when implementing our own <code>Futures</code> 
+is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
+which allows using dynamic dispatch to call methods on a <em>type erased</em> trait 
+object we construct our selves.</p>
+<p>If you want to know more about dynamic dispatch in Rust I can recommend this article:</p>
+<p>https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/</p>
+<p>Let's explain this a bit more in detail.</p>
+<h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
+<p>Let's take a look at the size of some different pointer types in Rust. If we
+run the following code:</p>
+<pre><pre class="playpen"><code class="language-rust"># use std::mem::size_of;
+trait SomeTrait { }
+
+fn main() {
+    println!(&quot;Size of Box&lt;i32&gt;: {}&quot;, size_of::&lt;Box&lt;i32&gt;&gt;());
+    println!(&quot;Size of &amp;i32: {}&quot;, size_of::&lt;&amp;i32&gt;());
+    println!(&quot;Size of &amp;Box&lt;i32&gt;: {}&quot;, size_of::&lt;&amp;Box&lt;i32&gt;&gt;());
+    println!(&quot;Size of Box&lt;Trait&gt;: {}&quot;, size_of::&lt;Box&lt;SomeTrait&gt;&gt;());
+    println!(&quot;Size of &amp;dyn Trait: {}&quot;, size_of::&lt;&amp;dyn SomeTrait&gt;());
+    println!(&quot;Size of &amp;[i32]: {}&quot;, size_of::&lt;&amp;[i32]&gt;());
+    println!(&quot;Size of &amp;[&amp;dyn Trait]: {}&quot;, size_of::&lt;&amp;[&amp;dyn SomeTrait]&gt;());
+    println!(&quot;Size of [i32; 10]: {}&quot;, size_of::&lt;[i32; 10]&gt;());
+    println!(&quot;Size of [&amp;dyn Trait; 10]: {}&quot;, size_of::&lt;[&amp;dyn SomeTrait; 10]&gt;());
+}
+</code></pre></pre>
+<p>As you see from the output after running this, the sizes of the references varies.
+Most are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
+bytes.</p>
+<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
+information.</p>
+<p><strong>In the case of <code>&amp;[i32]</code> :</strong> </p>
+<ul>
+<li>The first 8 bytes is the actual pointer to the first element in the array</li>
+</ul>
+<p>(or part of an array the slice refers to)</p>
+<ul>
+<li>The second 8 bytes is the length of the slice.</li>
+</ul>
+<p>The one we'll concern ourselves about is the references to traits, or
+<em>trait objects</em> as they're called in Rust.</p>
+<p><code>&amp;dyn SomeTrait</code> is an example of a <em>trait object</em> </p>
+<p>The layout for a pointer to a <em>trait object</em> looks like this: </p>
+<ul>
+<li>The first 8 bytes points to the <code>data</code> for the trait object</li>
+<li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
+</ul>
+<p>The reason for this is to allow us to refer to an object we know nothing about
+except that it implements the methods defined by our trait. To allow this we use
+dynamic dispatch.</p>
+<p>Let's explain this in code instead of words by implementing our own trait
+object from these parts:</p>
+<pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+trait Test {
+    fn add(&amp;self) -&gt; i32;
+    fn sub(&amp;self) -&gt; i32;
+    fn mul(&amp;self) -&gt; i32;
+}
+
+// This will represent our home brewn fat pointer to a trait object
+#[repr(C)]
+struct FatPointer&lt;'a&gt; {
+    /// A reference is a pointer to an instantiated `Data` instance
+    data: &amp;'a mut Data,
+    /// Since we need to pass in literal values like length and alignment it's
+    /// easiest for us to convert pointers to usize-integers instead of the other way around.
+    vtable: *const usize,
+}
+
+// This is the data in our trait object. It's just two numbers we want to operate on.
+struct Data {
+    a: i32,
+    b: i32,
+}
+
+// ====== function definitions ======
+fn add(s: &amp;Data) -&gt; i32 {
+    s.a + s.b
+}
+fn sub(s: &amp;Data) -&gt; i32 {
+    s.a - s.b
+}
+fn mul(s: &amp;Data) -&gt; i32 {
+    s.a * s.b
+}
+
+fn main() {
+    let mut data = Data {a: 3, b: 2};
+    // vtable is like special purpose array of pointer-length types with a fixed
+    // format where the three first values has a special meaning like the
+    // length of the array is encoded in the array itself as the second value.
+    let vtable = vec![
+        0,            // pointer to `Drop` (which we're not implementing here)
+        6,            // lenght of vtable
+        8,            // alignment
+        // we need to make sure we add these in the same order as defined in the Trait.
+        // Try changing the order of add and sub and see what happens.
+        add as usize, // function pointer
+        sub as usize, // function pointer 
+        mul as usize, // function pointer
+    ];
+
+    let fat_pointer = FatPointer { data: &amp;mut data, vtable: vtable.as_ptr()};
+    let test = unsafe { std::mem::transmute::&lt;FatPointer, &amp;dyn Test&gt;(fat_pointer) };
+
+    // And voalá, it's now a trait object we can call methods on
+    println!(&quot;Add: 3 + 2 = {}&quot;, test.add());
+    println!(&quot;Sub: 3 - 2 = {}&quot;, test.sub());
+    println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
+}
+
+</code></pre></pre>
+<p>If you run this code by pressing the &quot;play&quot; button at the top you'll se it
+outputs just what we expect.</p>
+<p>This code example is editable so you can change it
+and run it to see what happens.</p>
+<p>The reason we go through this will be clear later on when we implement our own
+<code>Waker</code> we'll actually set up a <code>vtable</code> like we do here to and knowing what
+it is will make this much less mysterious.</p>
+<h2><a class="header" href="#reactorexecutor-pattern" id="reactorexecutor-pattern">Reactor/Executor pattern</a></h2>
+<p>If you don't know what this is, you should take a few minutes and read about
+it. You will encounter the term <code>Reactor</code> and <code>Executor</code> a lot when working
+with async code in Rust.</p>
+<p>I have written a quick introduction explaining this pattern before which you
+can take a look at here:</p>
+<p><a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern"><img src="./assets/reactorexecutor.png" alt="homepage" /></a></p>
+<div  style="text-align:center">
+<a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern">Epoll, Kqueue and IOCP Explained - The Reactor-Executor Pattern</a>
+</div>
+<p>I'll re-iterate the most important parts here.</p>
+<p>This pattern consists of at least 2 parts:</p>
+<ol>
+<li>A reactor
+<ul>
+<li>handles some kind of event queue</li>
+<li>has the responsibility of respoonding to events</li>
+</ul>
+</li>
+<li>An executor
+<ul>
+<li>Often has a scheduler</li>
+<li>Holds a set of suspended tasks, and has the responsibility of resuming
+them when an event has occurred</li>
+</ul>
+</li>
+<li>The concept of a task
+<ul>
+<li>A set of operations that can be stopped half way and resumed later on</li>
+</ul>
+</li>
+</ol>
+<p>This is a pattern not only used in Rust, but it's very popular in Rust due to 
+how well it separates concerns between handling and scheduling tasks, and queing
+and responding to I/O events.</p>
+<p>The only thing Rust as a language defines is the <em>task</em>. In Rust we call an 
+incorruptible task a <code>Future</code>. Futures has a  well defined interface, which means
+they can be used across the entire ecosystem.</p>
+<p>In addition, Rust provides a way for the Reactor and Executor to communicate
+through the <code>Waker</code>. We'll get to know these in the following chapters.</p>
+<p>Providing these pieces let's Rust take care a lot of the ergonomic &quot;friction&quot;
+programmers meet when faced with async code, and still not dictate any
+preferred runtime to actually do the scheduling and I/O queues.</p>
+<p>It's important to know that Rust doesn't provide a runtime, so you have to choose
+one. <a href="https://github.com/async-rs/async-std">async std</a> and <a href="https://github.com/tokio-rs/tokio">tokio</a> are two popular ones.</p>
+<p>With that out of the way, let's move on to our main example.</p>
 
                     </main>
 
@@ -184,6 +349,21 @@
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         
