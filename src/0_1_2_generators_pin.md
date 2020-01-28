@@ -268,29 +268,27 @@ That means turning to unsafe.
 Now, as you'll notice, this compiles:
 
 ```rust
-pub fn test2() {
+pub fn main() {
     let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
 
     if let GeneratorState::Yielded(n) = gen.resume() {
         println!("Got value {}", n);
     }
-
-    let mut gen2 = GeneratorA::start();
     // If you uncomment this, very bad things can happen. This is why we need `Pin`
-    // let mut gen2 = GeneratorA::start();
-    //std::mem::swap(&mut gen, &mut gen2);
+    // std::mem::swap(&mut gen, &mut gen2);
 
-    if let GeneratorState::Complete(()) = gen2.resume() {
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!("Got value {}", n);
+    }
+
+    // if you uncomment `mem::swap`.. this should now start gen2.
+    if let GeneratorState::Complete(()) = gen.resume() {
         ()
     };
 }
 
-use std::ptr::NonNull;
-
-// If you've ever wondered why the parameters are called Y and R the naming from
-// the original rfc most likely holds the answer
 enum GeneratorState<Y, R> {
-    // originally called `CoResult`
     Yielded(Y),  // originally called `Yield(Y)`
     Complete(R), // originally called `Return(R)`
 }
@@ -336,7 +334,7 @@ impl Generator for GeneratorA {
                 GeneratorState::Yielded(res)
             }
 
-            GeneratorA::Yield1 {to_borrow, borrowed} => {
+            GeneratorA::Yield1 {borrowed, ..} => {
                 let borrowed: &String = unsafe {&**borrowed};
                 println!("{} world", borrowed);
                 *self = GeneratorA::Exit;
@@ -351,47 +349,50 @@ impl Generator for GeneratorA {
 
 But now, let's prevent the segfault from happening using `Pin`:
 
-```rust, nightly
+```rust,editable
 #![feature(optin_builtin_traits)]
-pub fn test2() {
-    let mut gen = GeneratorA::start();
-    let mut gen2 = GeneratorA::start();
+use std::pin::Pin;
 
-    std::mem::swap(&mut gen, &mut gen2);
+pub fn test2() {
+    let mut gen1 = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
+    // Before we pin the pointers, this is safe to do
+    // std::mem::swap(&mut gen, &mut gen2);
 
     // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
-    // However, as I mentioned in the start a Boxed type automatically implements `Unpin`
-    // so to stay in safe Rust we can use that to avoid unsafe. You can also use crates
-    // like `pin_utils` to do this safely, just remember that they use unsafe under the hood
-    // so it's like using an already-reviewed unsafe implementation.
+    // However, as I mentioned in the start of the next chapter about `Pin` a
+    // boxed type automatically implements `Unpin` so to stay in safe Rust we can use 
+    // that to avoid unsafe. You can also use crates like `pin_utils` to do this safely, 
+    // just remember that they use unsafe under the hood so it's like using an already-reviewed 
+    // unsafe implementation.
 
-    let mut boxed_gen = Box::pin(gen);
+    let mut pinned1 = Box::pin(gen1);
+    let mut pinned2 = Box::pin(gen2);
+    // Uncomment these if you think it's safe to pin the values to the stack instead 
+    // (it is in this case)
+    //let mut pinned1 = unsafe { Pin::new_unchecked(&mut gen1) };
+    //let mut pinned2 = unsafe { Pin::new_unchecked(&mut gen2) };
 
-    if let GeneratorState::Yielded(n) = boxed_gen.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
         println!("Got value {}", n);
     }
 
-    let mut boxed_gen2 = Box::pin(gen2);
     
-    if let GeneratorState::Yielded(n) = boxed_gen2.as_mut().resume() {
+    
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
         println!("Gen2 got value {}", n);
     };
 
     // This won't work
     // std::mem::swap(&mut gen, &mut gen2);
     // This will work but will just swap the pointers. Nothing inherently bad happens here.
-    // std::mem::swap(&mut boxed_gen, &mut boxed_gen2);
+    // std::mem::swap(&mut pinned1, &mut pinned2);
 
-    let _ = boxed_gen.as_mut().resume();
-    let _ = boxed_gen2.as_mut().resume();
+    let _ = pinned1.as_mut().resume();
+    let _ = pinned2.as_mut().resume();
     
 }
 
-use std::ptr::NonNull;
-use std::pin::Pin;
-
-// If you've ever wondered why the parameters are called Y and R the naming from
-// the original rfc most likely holds the answer
 enum GeneratorState<Y, R> {
     // originally called `CoResult`
     Yielded(Y),  // originally called `Yield(Y)`
