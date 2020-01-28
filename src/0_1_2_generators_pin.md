@@ -175,6 +175,113 @@ impl Generator for GeneratorA {
 
 >The `yield` keyword was discussed first in [RFC#1823][rfc1823] and in [RFC#1832][rfc1832].
 
+## Pin
+
+Pin is used to allow for self referential structs. An example:
+
+```rust,editable
+use std::pin::Pin;
+
+fn main() {
+    let mut test1 = Test::new("test1");
+    test1.init();
+    let mut test2 = Test::new("test2");
+    test2.init();
+
+    println!("a: {}, b: {}", test1.a(), test1.b());
+    std::mem::swap(&mut test1, &mut test2); // try commenting out this line
+    println!("a: {}, b: {}", test2.a(), test2.b());
+
+}
+
+#[derive(Debug)]
+struct Test {
+    a: String,
+    b: *const String,
+}
+
+impl Test {
+    fn new(txt: &str) -> Self {
+        let a = String::from(txt);
+        Test {
+            a,
+            b: std::ptr::null(),
+        }
+    }
+    
+    fn init(&mut self) {
+        let self_ref: *const String = &self.a;
+        self.b = self_ref;
+    }
+    
+    fn a(&self) -> &str {
+        &self.a
+    } 
+    
+    fn b(&self) -> &String {
+        unsafe {&*(self.b)}
+    }
+}
+```
+
+As you can see this results in unwanted behavior. The pointer to `b` stays the
+same and points to the old value. It's easy to get this to segfault, and fail
+in other spectacular ways as well.
+
+Pin essentially prevents the **user** of your unsafe code 
+(even if that means yourself) to do such actions.
+
+If we change the example to using `Pin` instead:
+
+```rust,editable,compile_fail
+use std::pin::Pin;
+
+fn main() {
+    let mut test1 = Test::new("test1");
+    let mut test1_pin = test1.init();
+    let mut test2 = Test::new("test2");
+    let mut test2_pin = test2.init();
+
+    println!("a: {}, b: {}", test1_pin.as_ref().a(), test1_pin.as_ref().b());
+
+    // try fixing as the compiler suggests. Is there any `swap` happening?
+    // Look closely at the printout.
+    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    println!("a: {}, b: {}", test2_pin.as_ref().a(), test2_pin.as_ref().b());
+
+}
+
+#[derive(Debug)]
+struct Test {
+    a: String,
+    b: *const String,
+}
+
+impl Test {
+    fn new(txt: &str) -> Self {
+        let a = String::from(txt);
+        Test {
+            a,
+            b: std::ptr::null(),
+        }
+    }
+    
+    fn init(&mut self) -> Pin<&mut Self> {
+        let self_ptr: *const String = &self.a;
+        self.b = self_ptr;
+        Pin::new(self)
+    }
+    
+    fn a(&self) -> &str {
+        &self.a
+    } 
+    
+    fn b(&self) -> &String {
+        unsafe {&*(self.b)}
+    }
+}
+
+```
 
 ```ignore
 || {
