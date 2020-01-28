@@ -349,9 +349,114 @@ impl Generator for GeneratorA {
 
 ```
 
-But now, let's
+But now, let's prevent the segfault from happening using `Pin`:
 
-```rust
+```rust, nightly
+#![feature(optin_builtin_traits)]
+pub fn test2() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
+
+    std::mem::swap(&mut gen, &mut gen2);
+
+    // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
+    // However, as I mentioned in the start a Boxed type automatically implements `Unpin`
+    // so to stay in safe Rust we can use that to avoid unsafe. You can also use crates
+    // like `pin_utils` to do this safely, just remember that they use unsafe under the hood
+    // so it's like using an already-reviewed unsafe implementation.
+
+    let mut boxed_gen = Box::pin(gen);
+
+    if let GeneratorState::Yielded(n) = boxed_gen.as_mut().resume() {
+        println!("Got value {}", n);
+    }
+
+    let mut boxed_gen2 = Box::pin(gen2);
+    
+    if let GeneratorState::Yielded(n) = boxed_gen2.as_mut().resume() {
+        println!("Gen2 got value {}", n);
+    };
+
+    // This won't work
+    // std::mem::swap(&mut gen, &mut gen2);
+    // This will work but will just swap the pointers. Nothing inherently bad happens here.
+    // std::mem::swap(&mut boxed_gen, &mut boxed_gen2);
+
+    let _ = boxed_gen.as_mut().resume();
+    let _ = boxed_gen2.as_mut().resume();
+    
+}
+
+use std::ptr::NonNull;
+use std::pin::Pin;
+
+// If you've ever wondered why the parameters are called Y and R the naming from
+// the original rfc most likely holds the answer
+enum GeneratorState<Y, R> {
+    // originally called `CoResult`
+    Yielded(Y),  // originally called `Yield(Y)`
+    Complete(R), // originally called `Return(R)`
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(mut self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return>;
+}
+
+enum GeneratorA {
+    Enter,
+    Yield1 {
+        to_borrow: String,
+        borrowed: *const String, // Normally you'll see `std::ptr::NonNull` used instead of *ptr
+    },
+    Exit,
+}
+
+impl GeneratorA {
+    fn start() -> Self {
+        GeneratorA::Enter
+    }
+}
+
+// This tells us that the underlying pointer is not safe to move after pinning. In this case,
+// only we as implementors "feel" this, however, if someone is relying on our Pinned pointer
+// this will prevent them from moving it. You need to enable the feature flag 
+// `#![feature(optin_builtin_traits)]` and use the nightly compiler to implement `!Unpin`.
+impl !Unpin for GeneratorA { }
+
+impl Generator for GeneratorA {
+    type Yield = usize;
+    type Return = ();
+    fn resume(mut self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
+        // lets us get ownership over current state
+        let this = unsafe { self.get_unchecked_mut() };
+            match this {
+            GeneratorA::Enter => {
+                let to_borrow = String::from("Hello");
+                let borrowed = &to_borrow;
+                let res = borrowed.len();
+
+                // Tricks to actually get a self reference
+                *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+                match this {
+                 GeneratorA::Yield1{to_borrow, borrowed} => *borrowed = to_borrow,
+                 _ => ()  
+                };
+
+                GeneratorState::Yielded(res)
+            }
+
+            GeneratorA::Yield1 {borrowed, ..} => {
+                let borrowed: &String = unsafe {&**borrowed};
+                println!("{} world", borrowed);
+                *this = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit => panic!("Can't advance an exited generator!"),
+        }
+    }
+}
 ```
 
 However, this is also the point where we need to talk about one more concept to 

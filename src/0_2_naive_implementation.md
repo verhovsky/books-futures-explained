@@ -2,6 +2,7 @@
 
 
 ```rust
+#![feature(duration_float)]
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
@@ -134,6 +135,7 @@ impl Drop for Reactor {
 ```
 
 ```rust
+#![feature(duration_float)]
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
