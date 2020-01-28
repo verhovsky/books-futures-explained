@@ -53,17 +53,17 @@ let future = Connection::connect(conn_str).and_then(|conn| {
 let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future).unwrap();
 
 ```
-While an effective solution there are mainly two downsides I'll focus on:
+While an effective solution there are mainly three downsides I'll focus on:
 
 1. The error messages produced could be extremely long and arcane
 2. Not optimal memory usage
 3. Did not allow to borrow across combinator steps.
 
-#3, is actually a major drawback with `Futures 1.0`, there were no way to borrow
-data across callbacks in Rust.
+Point #3, is actually a major drawback with `Futures 1.0`.
 
-This ends up being very un-ergonomic and often requiring extra allocations or 
-copying to accomplish some tasks which is inefficient.
+Not allowing borrows across suspension points ends up being very 
+un-ergonomic and often requiring extra allocations or copying to accomplish 
+some tasks which is inefficient.
 
 The reason for the higher than optimal memory usage is that this is basically
 a callback-based approach, where each closure stores all the data it needs
@@ -72,19 +72,29 @@ the needed state increases with each added step.
 
 ### Stackless coroutines/generators
 
-This is the model used in Async/Await today. It has two advantages:
+This is the model used in Rust today. It a few notable advantages:
 
 1. It's easy to convert normal Rust code to a stackless corotuine using using
 async/await as keywords (it can even be done using a macro).
 2. No need for context switching and saving/restoring CPU state
 3. No need to handle dynamic stack allocation
-4. It uses memory very efficiently
+4. Very memory efficient
+5. Allowed for borrows across suspension points
 
-The second point is in contrast to `Futures 1.0` (well, both are efficient in
-practice but thats beside the point). Generators are implemented as state
-machines. The memory footprint of a chain of computations is only defined by
-the largest footprint any single step requires. That means that adding steps to
-a chain of computations might not require any added memory at all.
+The last point is in contrast to `Futures 1.0`. With async/await we can do this:
+
+```rust
+async fn myfn() {
+    let text = String::from("Hello world");
+    let borrowed = &text[0..5];
+}
+```
+
+
+Generators are implemented as state machines. The memory footprint of a chain 
+of computations is only defined by the largest footprint any single step 
+requires. That means that adding steps to a chain of computations might not 
+require any added memory at all.
 
 ## How generators work
 
