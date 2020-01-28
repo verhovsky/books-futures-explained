@@ -353,9 +353,9 @@ But now, let's prevent the segfault from happening using `Pin`:
 #![feature(optin_builtin_traits)]
 use std::pin::Pin;
 
-pub fn test2() {
-    let mut gen1 = GeneratorA::start();
-    let mut gen2 = GeneratorA::start();
+pub fn main() {
+    let gen1 = GeneratorA::start();
+    let gen2 = GeneratorA::start();
     // Before we pin the pointers, this is safe to do
     // std::mem::swap(&mut gen, &mut gen2);
 
@@ -402,7 +402,7 @@ enum GeneratorState<Y, R> {
 trait Generator {
     type Yield;
     type Return;
-    fn resume(mut self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return>;
+    fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return>;
 }
 
 enum GeneratorA {
@@ -429,7 +429,7 @@ impl !Unpin for GeneratorA { }
 impl Generator for GeneratorA {
     type Yield = usize;
     type Return = ();
-    fn resume(mut self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
+    fn resume(self: Pin<&mut Self>) -> GeneratorState<Self::Yield, Self::Return> {
         // lets us get ownership over current state
         let this = unsafe { self.get_unchecked_mut() };
             match this {
