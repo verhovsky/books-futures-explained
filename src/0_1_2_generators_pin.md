@@ -8,7 +8,7 @@ is Generators and the `Pin` type.
 
 >**Relevant for:**
 
->- Understanding how the async/await syntax works, and how they're implemented
+>- Understanding how the async/await syntax works since it's how `await` is implemented
 >- Why we need `Pin`
 >- Why Rusts async model is extremely efficient
 
@@ -57,6 +57,13 @@ While an effective solution there are mainly two downsides I'll focus on:
 
 1. The error messages produced could be extremely long and arcane
 2. Not optimal memory usage
+3. Did not allow to borrow across combinator steps.
+
+#3, is actually a major drawback with `Futures 1.0`, there were no way to borrow
+data across callbacks in Rust.
+
+This ends up being very un-ergonomic and often requiring extra allocations or 
+copying to accomplish some tasks which is inefficient.
 
 The reason for the higher than optimal memory usage is that this is basically
 a callback-based approach, where each closure stores all the data it needs
@@ -69,7 +76,9 @@ This is the model used in Async/Await today. It has two advantages:
 
 1. It's easy to convert normal Rust code to a stackless corotuine using using
 async/await as keywords (it can even be done using a macro).
-2. It uses memory very efficiently
+2. No need for context switching and saving/restoring CPU state
+3. No need to handle dynamic stack allocation
+4. It uses memory very efficiently
 
 The second point is in contrast to `Futures 1.0` (well, both are efficient in
 practice but thats beside the point). Generators are implemented as state
@@ -181,8 +190,8 @@ you'll also know the basics of how `await` works. It's very similar.
 Now, there are some limitations in our naive state machine above. What happens when you have a 
 `borrow` across a `yield` point?
 
-We could forbid that, but **one of the major design goals** for the async/await syntax has been
-to allow this. These kinds of borrows were not possible using `Futures 1.0` so we can't let this
+We could forbid that, but **one of the major design goals for the async/await syntax has been
+to allow this**. These kinds of borrows were not possible using `Futures 1.0` so we can't let this
 limitation just slip and call it a day yet.
 
 Instead of discussing it in theory, let's look at some code. 
@@ -261,11 +270,15 @@ If you try to compile this you'll get an error (just try it yourself by pressing
 
 What is the lifetime of `&String`. It's not the same as the lifetime of `Self`. It's not `static`.
 Turns out that it's not possible for us in Rusts syntax to describe this lifetime, which means, that
-to make this work, we'll have to let the compiler know that _we_ control this correctlt.
+to make this work, we'll have to let the compiler know that _we_ control this correct.
 
 That means turning to unsafe.
 
-Now, as you'll notice, this compiles:
+Let's try to write an implementation that will compiler using `unsafe`. As you'll
+see we end up in a _self referential struct_. A struct which holds references
+into itself.
+
+As you'll notice, this compiles just fine!
 
 ```rust,editable
 pub fn main() {
@@ -344,10 +357,16 @@ impl Generator for GeneratorA {
         }
     }
 }
-
 ```
+> Try to uncomment the line with `mem::swap` and see the result of running this code.
 
-But now, let's prevent the segfault from happening using `Pin`:
+While the example above compiles just fine, we expose users of this code to
+both possible undefined behavior and other memory errors while using just safe
+Rust. This is a big problem!
+
+But now, let's prevent the segfault from happening using `Pin`. We'll discuss
+`Pin` more below, but you'll get an introduction here by just reading the
+comments.
 
 ```rust,editable
 #![feature(optin_builtin_traits)]
@@ -369,7 +388,7 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
     // Uncomment these if you think it's safe to pin the values to the stack instead 
-    // (it is in this case)
+    // (it is in this case). Remember to comment out the two previous lines first.
     //let mut pinned1 = unsafe { Pin::new_unchecked(&mut gen1) };
     //let mut pinned2 = unsafe { Pin::new_unchecked(&mut gen2) };
 
@@ -438,7 +457,10 @@ impl Generator for GeneratorA {
                 let borrowed = &to_borrow;
                 let res = borrowed.len();
 
-                // Tricks to actually get a self reference
+                // Trick to actually get a self reference. We can't reference
+                // the `String` earlier since these references will point to the
+                // location in this stack frame which will not be valid anymore
+                // when this function returns.
                 *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match this {
                  GeneratorA::Yield1{to_borrow, borrowed} => *borrowed = to_borrow,
@@ -460,15 +482,24 @@ impl Generator for GeneratorA {
 }
 ```
 
-However, this is also the point where we need to talk about one more concept to 
+Now, as you see, the user of this code must either:
+
+1. Box the value and thereby allocating it on the heap
+2. Use `unsafe` and pin the value to the stack. The user knows that if they move
+the value afterwards it will violate the guarantee they promise to uphold when
+they did their unsafe implementation.
+
+Now, the code which is created and the need for `Pin` to allow for borrowing
+across `yield` points should be pretty clear. 
 
 ## Pin
 
 > Why
 >
 > 1. To understand `Generators` and `Futures`
-> 2. Knowing how to use `Pin` when implementing your own `Future`
-> 3. Understand self-referential types in Rust
+> 2. Knowing how to use `Pin` is required when implementing your own `Future`
+> 3. To understand self-referential types in Rust
+> 4. This is the way borrowing across `await` points is accomplished
 >
 > `Pin` was suggested in [RFC#2349][rfc2349]
 
@@ -476,14 +507,14 @@ Ping consists of the `Pin` type and the `Unpin` marker. Let's start off with som
 
 1. Pin does nothing special, it only prevents the user of an API to violate some assumtions you make when writing your (most likely) unsafe code.
 2. Most standard library types implement `Unpin`
-3. `Unpin` means it's OK for this type.
+3. `Unpin` means it's OK for this type to be moved even when pinned.
 4. If you `Box` a value, that boxed value automatcally implements `Unpin`.
-5. The absolute main use case for `Pin` is to allow self referential types
-6. The implementation behind objects that doens't implement `Unpin` is always unsafe
+5. The main use case for `Pin` is to allow self referential types
+6. The implementation behind objects that doens't implement `Unpin` is most likely unsafe
    1. `Pin` prevents users from your code to break the assumtions you make when writing the `unsafe` implementation
    2. It doesn't solve the fact that you'll have to write unsafe code to actually implement it
+7. You're not really meant to be implementing `!Unpin`, but you can on nightly with a feature flag
 
-To get a 
 
 > Unsafe code does not mean it's litterally "unsafe", it only relieves the guarantees you normally get from the compiler.
 > An `unsafe` implementation can be perfectly safe to do, but you have no safety net.
