@@ -267,7 +267,7 @@ That means turning to unsafe.
 
 Now, as you'll notice, this compiles:
 
-```rust
+```rust,editable
 pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
