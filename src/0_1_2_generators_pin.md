@@ -283,20 +283,21 @@ impl Test {
 
 ```
 
+pinning
 ```ignore
-|| {
-    let arr: Vec<i32> = (0..a).enumerate().map((i,_) i).collect();
-    for n in arr {
-        yield n;
-    }
-    println!("The sum is: {}", arr.iter().sum());
-}
-|| {
-    yield a * 2;
-    println!("Hello!");
-}
-```
+// If we borrow through yield points, we end up with this error
 
+  --> src\main.rs:12:11
+   |
+5  |     match gen.resume() {
+   |           --- first mutable borrow occurs here
+...
+12 |     match gen.resume() {
+   |           ^^^
+   |           |
+   |           second mutable borrow occurs here
+   |           first borrow later used here
+```
 
 [rfc2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
 [greenthreads]: https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/
