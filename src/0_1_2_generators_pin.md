@@ -7,14 +7,14 @@ is Generators and the `Pin` type.
 
 
 >**Relevant for:**
-
+>
 >- Understanding how the async/await syntax works since it's how `await` is implemented
 >- Why we need `Pin`
 >- Why Rusts async model is extremely efficient
-
-The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
-well written and I can recommend reading through it (it talks as much about
-async/await as it does about generators).
+>
+>The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
+>well written and I can recommend reading through it (it talks as much about
+>async/await as it does about generators).
 
 Basically, there were three main options that were discussed when Rust was 
 desiging how the language would handle concurrency:
@@ -89,7 +89,6 @@ async fn myfn() {
     let borrowed = &text[0..5];
 }
 ```
-
 
 Generators are implemented as state machines. The memory footprint of a chain 
 of computations is only defined by the largest footprint any single step 
@@ -368,6 +367,7 @@ impl Generator for GeneratorA {
     }
 }
 ```
+
 > Try to uncomment the line with `mem::swap` and see the result of running this code.
 
 While the example above compiles just fine, we expose users of this code to
@@ -405,8 +405,6 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
         println!("Got value {}", n);
     }
-
-    
     
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
         println!("Gen2 got value {}", n);
@@ -419,7 +417,6 @@ pub fn main() {
 
     let _ = pinned1.as_mut().resume();
     let _ = pinned2.as_mut().resume();
-    
 }
 
 enum GeneratorState<Y, R> {
@@ -453,6 +450,8 @@ impl GeneratorA {
 // only we as implementors "feel" this, however, if someone is relying on our Pinned pointer
 // this will prevent them from moving it. You need to enable the feature flag 
 // `#![feature(optin_builtin_traits)]` and use the nightly compiler to implement `!Unpin`.
+// Normally, you would use `std::marker::PhantomPinned` to indicate that the
+// struct is `!Unpin`.
 impl !Unpin for GeneratorA { }
 
 impl Generator for GeneratorA {
@@ -504,7 +503,7 @@ across `yield` points should be pretty clear.
 
 ## Pin
 
-> Why
+> **Relevant for**
 >
 > 1. To understand `Generators` and `Futures`
 > 2. Knowing how to use `Pin` is required when implementing your own `Future`
@@ -526,8 +525,9 @@ Ping consists of the `Pin` type and the `Unpin` marker. Let's start off with som
 7. You're not really meant to be implementing `!Unpin`, but you can on nightly with a feature flag
 
 
-> Unsafe code does not mean it's litterally "unsafe", it only relieves the guarantees you normally get from the compiler.
-> An `unsafe` implementation can be perfectly safe to do, but you have no safety net.
+> Unsafe code does not mean it's litterally "unsafe", it only relieves the 
+> guarantees you normally get from the compiler. An `unsafe` implementation can 
+> be perfectly safe to do, but you have no safety net.
 
 Let's take a look at an example:
 
@@ -581,73 +581,21 @@ same and points to the old value. It's easy to get this to segfault, and fail
 in other spectacular ways as well.
 
 Pin essentially prevents the **user** of your unsafe code 
-(even if that means yourself) to do such actions.
+(even if that means yourself) move the value after it's pinned.
 
 If we change the example to using `Pin` instead:
 
 ```rust,editable,compile_fail
 use std::pin::Pin;
+use std::marker::PhantomPinned;
 
-fn main() {
-    let mut test1 = Test::new("test1");
-    let mut test1_pin = test1.init();
-    let mut test2 = Test::new("test2");
-    let mut test2_pin = test2.init();
-
-    println!("a: {}, b: {}", test1_pin.as_ref().a(), test1_pin.as_ref().b());
-
-    // try fixing as the compiler suggests. Is there any `swap` happening?
-    // Look closely at the printout.
-    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!("a: {}, b: {}", test2_pin.as_ref().a(), test2_pin.as_ref().b());
-
-}
-
-#[derive(Debug)]
-struct Test {
-    a: String,
-    b: *const String,
-}
-
-impl Test {
-    fn new(txt: &str) -> Self {
-        let a = String::from(txt);
-        Test {
-            a,
-            b: std::ptr::null(),
-        }
-    }
-    
-    fn init(&mut self) -> Pin<&mut Self> {
-        let self_ptr: *const String = &self.a;
-        self.b = self_ptr;
-        Pin::new(self)
-    }
-    
-    fn a(&self) -> &str {
-        &self.a
-    } 
-    
-    fn b(&self) -> &String {
-        unsafe {&*(self.b)}
-    }
-}
-
-```
-
-However, to get to know the normal way of implementing such an API which is what we'll see going
-forward, we can rewrite the code above into this:
-
-```rust, editbable, compile_fail
-use std::pin::Pin;
-
-pub fn test1() {
+pub fn main() {
     let mut test1 = Test::new("test1");
     test1.init();
-    let mut test1_pin = Pin::new(&mut test1); 
+    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) }; 
     let mut test2 = Test::new("test2");
     test2.init();
-    let mut test2_pin = Pin::new(&mut test2);
+    let mut test2_pin = unsafe { Pin::new_unchecked(&mut test2) };
 
     println!(
         "a: {}, b: {}",
@@ -655,9 +603,8 @@ pub fn test1() {
         Test::b(test1_pin.as_ref())
     );
 
-    // try fixing as the compiler suggests. Is there any `swap` happening?
-    // Look closely at the printout.
-    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    // Try to uncomment this and see what happens
+    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
     println!(
         "a: {}, b: {}",
         Test::a(test2_pin.as_ref()),
@@ -669,6 +616,7 @@ pub fn test1() {
 struct Test {
     a: String,
     b: *const String,
+    _marker: PhantomPinned,
 }
 
 
@@ -678,6 +626,8 @@ impl Test {
         Test {
             a,
             b: std::ptr::null(),
+            // This makes our type `!Unpin`
+            _marker: PhantomPinned,
         }
     }
     fn init(&mut self) {
@@ -693,30 +643,103 @@ impl Test {
         unsafe { &*(self.b) }
     }
 }
+
 ```
 
-There is one caviat here. Our struct `Test` implements `Unpin`. Now this will be the "normal case"
-since most types implement `Unpin`. However, a type which 
+Now, what we've done here is pinning a stack address. That will always be
+`unsafe` if our type implements `!Unpin`, in other words. That our type is not
+`Unpin` which is the norm.
+
+We use some tricks here, including requiring an `init`. If we want to fix that
+and let users avoid `unsafe` we need to place our data on the heap.
+
+Stack pinning will always depend on the current stack frame we're in, so we
+can't create a self referential object in one stack frame and return it since
+any pointers we take to "self" is invalidated.
+
+The next example solves some of our friction at the cost of a heap allocation.
+
+```rust, editbable
+use std::pin::Pin;
+use std::marker::PhantomPinned;
+
+pub fn main() {
+    let mut test1 = Test::new("test1");
+    let mut test2 = Test::new("test2");
+
+    println!("a: {}, b: {}",test1.as_ref().a(), test1.as_ref().b());
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(&mut test1, &mut test2);
+    println!("a: {}, b: {}",test2.as_ref().a(), test2.as_ref().b());
+}
+
+#[derive(Debug)]
+struct Test {
+    a: String,
+    b: *const String,
+    _marker: PhantomPinned,
+}
+
+impl Test {
+    fn new(txt: &str) -> Pin<Box<Self>> {
+        let a = String::from(txt);
+        let t = Test {
+            a,
+            b: std::ptr::null(),
+            _marker: PhantomPinned,
+        };
+        let mut boxed = Box::pin(t);
+        let self_ptr: *const String = &boxed.as_ref().a;
+        unsafe { boxed.as_mut().get_unchecked_mut().b = self_ptr };
+
+        boxed
+    }
+
+    fn a<'a>(self: Pin<&'a Self>) -> &'a str {
+        &self.get_ref().a
+    }
+
+    fn b<'a>(self: Pin<&'a Self>) -> &'a String {
+        unsafe { &*(self.b) }
+    }
+}
+```
+
+Seeing this we're ready to sum up with a few more points to remember about
+pinning:
+
+1. Pinning only makes sense to do for types that are `!Unpin`
+2. Pinning a `!Unpin` pointer to the stack will requires `unsafe`
+3. Pinning a boxed value will not require `unsafe`, even if the type is `!Unpin`
+4. If T: Unpin (which is the default), then Pin<'a, T> is entirely equivalent to &'a mut T.
+5. Getting a `&mut T` to a pinned pointer requires unsafe if `T: !Unpin`
+6. Pinning is really only useful when implementing self-referential types.  
+For all intents and purposes you can think of `!Unpin` = self-referential-type
+
+The fact that boxing (heap allocating) a value that implements `!Unpin` is safe
+makes sense. Once the data is allocated on the heap it will have a stable address. 
+
+There are ways to safely give some guarantees on stack pinning as well, but right
+now you need to use a crate like [pin_utils]:[pin_utils] to do that.
+
+### Projection/structural pinning
+
+In short, projection is using a field on your type. `mystruct.field1` is a
+projection. Structural pinning is using `Pin` on struct fields. This has several
+caveats and is not something you'll normally see so I refer to the documentation
+for that.
+
+### Pin and Drop
+
+The `Pin` guarantee exists from the moment the value is pinned until it's dropped.
+In the `Drop` implementation you take a mutabl reference to `self`, which means
+extra care must be taken when implementing `Drop` for pinned types.
 
 ## Putting it all together
 
-Now that we've seen how `Pin` works 
-
-pinning
-```ignore
-// If we borrow through yield points, we end up with this error
-
-  --> src\main.rs:12:11
-   |
-5  |     match gen.resume() {
-   |           --- first mutable borrow occurs here
-...
-12 |     match gen.resume() {
-   |           ^^^
-   |           |
-   |           second mutable borrow occurs here
-   |           first borrow later used here
-```
+This is exactly what we'll do when we implement our own `Futures` stay tuned, 
+we're soon finished.
 
 [rfc2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
 [greenthreads]: https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/
@@ -724,3 +747,4 @@ pinning
 [rfc1832]: https://github.com/rust-lang/rfcs/pull/1832
 [rfc2349]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
 [optimizing-await]: https://tmandry.gitlab.io/blog/posts/optimizing-await-1/
+[pin_utils]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
