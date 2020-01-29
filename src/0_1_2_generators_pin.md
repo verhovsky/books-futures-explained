@@ -83,10 +83,12 @@ async/await as keywords (it can even be done using a macro).
 
 The last point is in contrast to `Futures 1.0`. With async/await we can do this:
 
-```rust
+```rust, ignore
 async fn myfn() {
     let text = String::from("Hello world");
     let borrowed = &text[0..5];
+    somefuture.await;
+    println!("{}", borrowed);
 }
 ```
 
@@ -585,7 +587,7 @@ Pin essentially prevents the **user** of your unsafe code
 
 If we change the example to using `Pin` instead:
 
-```rust,editable,compile_fail
+```rust,editable
 use std::pin::Pin;
 use std::marker::PhantomPinned;
 
