@@ -1,11 +1,9 @@
 # Summary
 
 - [Introduction](./0_0_introduction.md)
-- [Some background information](./0_1_background_information.md)
-  - [Trait objects and fat pointers](./0_1_1_trait_objects.md)
-  - [Generators and Pin](./0_1_2_generators_pin.md)
-- [Naive example](./0_2_naive_implementation.md)
-- [Proper Waker](./0_3_proper_waker.md)
-- [Proper Future](0_4_proper_future.md)
-- [Supporting async/await](0_5_async_wait.md)
-- [Bonus: concurrent futures](0_6_concurrent_futures.md)
+- [Some background information](./1_0_background_information.md)
+  - [Trait objects and fat pointers](./1_1_trait_objects.md)
+  - [Generators and Pin](./1_2_generators_pin.md)
+  - [Pin](./1_3_pin.md)
+- [The main example](./2_0_future_example.md)
+- [Bonus 1: concurrent futures](2_1_concurrent_futures.md)

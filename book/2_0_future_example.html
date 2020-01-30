@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Bonus: concurrent futures - Futures Explained in 200 Lines of Rust</title>
+        <title>The main example - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="0_1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="0_1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="0_1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li></ol></li><li><a href="0_2_naive_implementation.html"><strong aria-hidden="true">3.</strong> Naive example</a></li><li><a href="0_3_proper_waker.html"><strong aria-hidden="true">4.</strong> Proper Waker</a></li><li><a href="0_4_proper_future.html"><strong aria-hidden="true">5.</strong> Proper Future</a></li><li><a href="0_5_async_wait.html"><strong aria-hidden="true">6.</strong> Supporting async/await</a></li><li><a href="0_6_concurrent_futures.html" class="active"><strong aria-hidden="true">7.</strong> Bonus: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">2.3.</strong> Pin</a></li></ol></li><li><a href="2_0_future_example.html" class="active"><strong aria-hidden="true">3.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">4.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -145,18 +145,221 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#bonus-concurrent-futures" id="bonus-concurrent-futures">Bonus: concurrent futures</a></h1>
+                        <pre><pre class="playpen"><code class="language-rust">use std::{
+    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    thread::{self, JoinHandle}, time::{Duration, Instant}
+};
+
+fn main() {
+    let start = Instant::now();
+    let reactor = Reactor::new();
+    let reactor = Arc::new(Mutex::new(reactor));
+    let future1 = Task::new(reactor.clone(), 3, 1);
+    let future2 = Task::new(reactor.clone(), 1, 2);
+
+    let fut1 = async {
+        let val = future1.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let fut2 = async {
+        let val = future2.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let mainfut = async {
+        let handle1 = spawn(fut1);
+        let handle2 = spawn(fut2);
+        handle1.await;
+        handle2.await;
+    };
+
+    block_on(mainfut);
+    reactor.lock().map(|mut r| r.close()).unwrap();
+}
+
+//// ============================ EXECUTOR ====================================
+fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let waker = waker_into_waker(Arc::into_raw(mywaker));
+    let mut cx = Context::from_waker(&amp;waker);
+    let val = loop {
+        let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
+        match Future::poll(pinned, &amp;mut cx) {
+            Poll::Ready(val) =&gt; break val,
+            Poll::Pending =&gt; thread::park(),
+        };
+    };
+    val
+}
+
+fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let waker = waker_into_waker(Arc::into_raw(mywaker)); 
+    let mut cx = Context::from_waker(&amp;waker); 
+    let mut boxed = Box::pin(future);
+    let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
+    boxed
+}
+
+// ====================== FUTURE IMPLEMENTATION ==============================
+#[derive(Clone)]
+struct MyWaker {
+    thread: thread::Thread,
+}
+
+#[derive(Clone)]
+pub struct Task {
+    id: usize,
+    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    data: u64,
+    is_registered: bool,
+}
+
+fn mywaker_wake(s: &amp;MyWaker) {
+    let waker_ptr: *const MyWaker = s;
+    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+    waker_arc.thread.unpark();
+}
+
+fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+    let arc = unsafe { Arc::from_raw(s).clone() };
+    std::mem::forget(arc.clone()); // increase ref count
+    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+}
+
+const VTABLE: RawWakerVTable = unsafe {
+    RawWakerVTable::new(
+        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
+        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
+        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
+        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+    )
+};
+
+fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+    unsafe { Waker::from_raw(raw_waker) }
+}
+
+impl Task {
+    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task {
+            id,
+            reactor,
+            data,
+            is_registered: false,
+        }
+    }
+}
+
+impl Future for Task {
+    type Output = usize;
+    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+        let mut r = self.reactor.lock().unwrap();
+        if r.is_ready(self.id) {
+            Poll::Ready(self.id)
+        } else if self.is_registered {
+            Poll::Pending
+        } else {
+            r.register(self.data, cx.waker().clone(), self.id);
+            drop(r);
+            self.is_registered = true;
+            Poll::Pending
+        }
+    }
+}
+
+// =============================== REACTOR ===================================
+struct Reactor {
+    dispatcher: Sender&lt;Event&gt;,
+    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+}
+#[derive(Debug)]
+enum Event {
+    Close,
+    Simple(Waker, u64, usize),
+}
+
+impl Reactor {
+    fn new() -&gt; Self {
+        let (tx, rx) = channel::&lt;Event&gt;();
+        let readylist = Arc::new(Mutex::new(vec![]));
+        let rl_clone = readylist.clone();
+        let mut handles = vec![];
+        let handle = thread::spawn(move || {
+            // This simulates some I/O resource
+            for event in rx {
+                let rl_clone = rl_clone.clone();
+                match event {
+                    Event::Close =&gt; break,
+                    Event::Simple(waker, duration, id) =&gt; {
+                        let event_handle = thread::spawn(move || {
+                            thread::sleep(Duration::from_secs(duration));
+                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
+                            waker.wake();
+                        });
+
+                        handles.push(event_handle);
+                    }
+                }
+            }
+
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+
+        Reactor {
+            readylist,
+            dispatcher: tx,
+            handle: Some(handle),
+        }
+    }
+
+    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
+        self.dispatcher
+            .send(Event::Simple(waker, duration, data))
+            .unwrap();
+    }
+
+    fn close(&amp;mut self) {
+        self.dispatcher.send(Event::Close).unwrap();
+    }
+
+    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
+        self.readylist
+            .lock()
+            .map(|rl| rl.iter().any(|id| *id == id_to_check))
+            .unwrap()
+    }
+}
+
+impl Drop for Reactor {
+    fn drop(&amp;mut self) {
+        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+    }
+}
+</code></pre></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="0_5_async_wait.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="1_3_pin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
+                        
+                            <a rel="next" href="2_1_concurrent_futures.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -166,31 +369,20 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="0_5_async_wait.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a href="1_3_pin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
+                    <a href="2_1_concurrent_futures.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
             </nav>
 
         </div>
 
-        
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload(true); // force reload from server (not from cache)
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
         
 
         
