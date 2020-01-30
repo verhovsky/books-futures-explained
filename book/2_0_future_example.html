@@ -145,7 +145,8 @@
 
                 <div id="content" class="content">
                     <main>
-                        <pre><pre class="playpen"><code class="language-rust">use std::{
+                        <pre><pre class="playpen"><code class="language-rust">
+use std::{
     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
     thread::{self, JoinHandle}, time::{Duration, Instant}
@@ -153,9 +154,12 @@
 
 fn main() {
     let start = Instant::now();
+
+    // Many runtimes create a glocal `reactor` we pass it as an argument
     let reactor = Reactor::new();
     let reactor = Arc::new(Mutex::new(reactor));
-    let future1 = Task::new(reactor.clone(), 3, 1);
+    
+    let future1 = Task::new(reactor.clone(), 2, 1);
     let future2 = Task::new(reactor.clone(), 1, 2);
 
     let fut1 = async {
@@ -171,10 +175,8 @@ fn main() {
     };
 
     let mainfut = async {
-        let handle1 = spawn(fut1);
-        let handle2 = spawn(fut2);
-        handle1.await;
-        handle2.await;
+        fut1.await;
+        fut2.await;
     };
 
     block_on(mainfut);
@@ -194,15 +196,6 @@ fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
         };
     };
     val
-}
-
-fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-    let waker = waker_into_waker(Arc::into_raw(mywaker)); 
-    let mut cx = Context::from_waker(&amp;waker); 
-    let mut boxed = Box::pin(future);
-    let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
-    boxed
 }
 
 // ====================== FUTURE IMPLEMENTATION ==============================
@@ -383,6 +376,21 @@ impl Drop for Reactor {
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

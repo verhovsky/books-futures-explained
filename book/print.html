@@ -1080,13 +1080,13 @@ caveats and is not something you'll normally see so I refer to the documentation
 for that.</p>
 <h3><a class="header" href="#pin-and-drop" id="pin-and-drop">Pin and Drop</a></h3>
 <p>The <code>Pin</code> guarantee exists from the moment the value is pinned until it's dropped.
-In the <code>Drop</code> implementation you take a mutabl reference to <code>self</code>, which means
+In the <code>Drop</code> implementation you take a mutable reference to <code>self</code>, which means
 extra care must be taken when implementing <code>Drop</code> for pinned types.</p>
 <h2><a class="header" href="#putting-it-all-together" id="putting-it-all-together">Putting it all together</a></h2>
 <p>This is exactly what we'll do when we implement our own <code>Futures</code> stay tuned, 
 we're soon finished.</p>
-<h1><a class="header" href="#pin-1" id="pin-1">Pin</a></h1>
-<pre><pre class="playpen"><code class="language-rust">use std::{
+<pre><pre class="playpen"><code class="language-rust">
+use std::{
     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
     thread::{self, JoinHandle}, time::{Duration, Instant}
@@ -1094,9 +1094,12 @@ we're soon finished.</p>
 
 fn main() {
     let start = Instant::now();
+
+    // Many runtimes create a glocal `reactor` we pass it as an argument
     let reactor = Reactor::new();
     let reactor = Arc::new(Mutex::new(reactor));
-    let future1 = Task::new(reactor.clone(), 3, 1);
+    
+    let future1 = Task::new(reactor.clone(), 2, 1);
     let future2 = Task::new(reactor.clone(), 1, 2);
 
     let fut1 = async {
@@ -1112,10 +1115,8 @@ fn main() {
     };
 
     let mainfut = async {
-        let handle1 = spawn(fut1);
-        let handle2 = spawn(fut2);
-        handle1.await;
-        handle2.await;
+        fut1.await;
+        fut2.await;
     };
 
     block_on(mainfut);
@@ -1135,15 +1136,6 @@ fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
         };
     };
     val
-}
-
-fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-    let waker = waker_into_waker(Arc::into_raw(mywaker)); 
-    let mut cx = Context::from_waker(&amp;waker); 
-    let mut boxed = Box::pin(future);
-    let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
-    boxed
 }
 
 // ====================== FUTURE IMPLEMENTATION ==============================
@@ -1309,6 +1301,21 @@ impl Drop for Reactor {
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

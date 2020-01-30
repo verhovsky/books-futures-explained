@@ -1,6 +1,6 @@
-# Implementing our own Future
 
 ```rust
+
 use std::{
     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
@@ -193,3 +193,13 @@ impl Drop for Reactor {
     }
 }
 ```
+
+> Unfortunately there seems to be a bug which causes a compiler error when
+> trying to run code including the `async` keyword in Mdbook. I've filed an [issue
+> for it][mdbook_issue] Until that is
+> resolved you can test and run it in [the playground][playground_example].
+
+
+
+[playground_example]:https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=ca43dba55c6e3838c5494de45875677f
+[mdbook_issue]: https://github.com/rust-lang/mdBook/issues/1134
