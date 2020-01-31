@@ -19,7 +19,7 @@ deploy:
   provider: pages
   skip-cleanup: true
   github-token: $GITHUB_TOKEN
-  local-dir: ./book
+  local-dir: ./
   keep-history: false
   on:
-    branch: master
+    branch: gh-pages
