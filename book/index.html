@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">2.3.</strong> Pin</a></li></ol></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">3.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">4.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,73 +149,31 @@
 <p>This book aims to explain <code>Futures</code> in Rust using an example driven approach.</p>
 <p>The goal is to get a better understanding of <code>Futures</code> by implementing a toy
 <code>Reactor</code>, a very simple <code>Executor</code> and our own <code>Futures</code>. </p>
-<p>We'll start off solving a small problem without <code>Futures</code>, <code>Wakers</code> or async/await 
-and then gradually adapt our example so it implements all these concepts, and
-can be solved using the executor provided by both <code>tokio</code> and <code>async_str</code>.</p>
-<p>In the end I've made some reader excercises you can do if you want to fix some
-of the most glaring ommissions and shortcuts we took and create a slightly better
+<p>We'll start off a bit differently than most other explanations. Instead of 
+deferring some of the details about what's special about futures in Rust we 
+try to tackle that head on first. We'll be as brief as possible, but as thorough 
+as needed. This way, most question will be answered and explored up front. </p>
+<p>We'll end up with futures that can run an any executor like <code>tokio</code> and <code>async_str</code>.</p>
+<p>In the end I've made some reader exercises you can do if you want to fix some
+of the most glaring omissions and shortcuts we took and create a slightly better
 example yourself.</p>
 <h2><a class="header" href="#what-does-this-book-give-you-that-isnt-covered-elsewhere" id="what-does-this-book-give-you-that-isnt-covered-elsewhere">What does this book give you that isn't covered elsewhere?</a></h2>
 <p>That's a valid question. There are many good resources and examples already. First
-of all, this book will point you to some background information that I have found
-very valuable to get an understanding of concurrent programming in general.</p>
-<p>I find that many discussions arise, not because <code>Futures</code> is a hard concept to
-grasp, but that concurrent programming is a hard concept in general.</p>
-<p>Secondly, I've always found small runnable examples very exiting to learn from. It's
+of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
+not in the context of any specific runtime.</p>
+<p>Secondly, I've always found small runnable examples very exiting to learn from. 
+Thanks to Mdbook the examples can even be edited and explored further. It's
 all code that you can download, play with and learn from.</p>
-<h2><a class="header" href="#what-well-do-and-not" id="what-well-do-and-not">What we'll do and not</a></h2>
-<p><strong>We'll:</strong></p>
-<ul>
-<li>Implement our own <code>Futures</code> and get to know the <code>Reactor/Executor</code> pattern</li>
-<li>Implement our own waker and learn why it's a bit foreign compared to other types</li>
-<li>Talk a bit about runtime complexity and what to keep in mind when writing async Rust.</li>
-<li>Make sure all examples can be run on the playground</li>
-<li>Not rely on any helpers or libraries, but try to face the complexity and learn</li>
-</ul>
-<p><strong>We'll not:</strong></p>
-<ul>
-<li>Talk about how futures are implemented in Rust the language, the state machine and so on</li>
-<li>Explain how the different runtimes differ, however, you'll hopefully be a bit
-better off if you read this before you go research them</li>
-<li>Explain concurrent programming, but I will supply sources</li>
-</ul>
-<p>I do want to explore Rusts internal implementation but that will be for a later
-book.</p>
+<p>We'll and end up with an understandable example including a <code>Future</code>
+implementation, an <code>Executor</code> and a <code>Reactor</code> in less than 200 lines of code. 
+We don't rely on any dependencies or real I/O which means it's very easy to 
+explore further and try your own ideas.</p>
 <h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
 <p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
 <code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
 much is built upon. Reading and exploring some of this code is nothing less than
-impressive.</p>
-<h2><a class="header" href="#why-is-futures-in-rust-hard-to-understand" id="why-is-futures-in-rust-hard-to-understand">Why is <code>Futures</code> in Rust hard to understand</a></h2>
-<p>Well, I think it has to do with several things:</p>
-<ol>
-<li>
-<p>Futures has a very interesting implementation, compiling down to a state
-machine using generators to suspend and resume execution. In a language such as
-Rust this is pretty hard to do ergonomically and safely. You are exposed to some
-if this complexity when working with futures and want to understand them, not
-only learn how to use them.</p>
-</li>
-<li>
-<p>Rust doesn't provide a runtime. That means you'll actually have to choose one
-yourself and actually know what a <code>Reactor</code> and an <code>Executor</code> is. While not
-too difficult, you need to make more choices than you need in GO and other
-languages designed with a concurrent programming in mind and ships with a
-runtime.</p>
-</li>
-<li>
-<p>Futures exist in two versions, Futures 1.0 and Futures 3.0. Futures 1.0 was
-known to have some issues regarding ergonomics. Turns out that modelling 
-async coding after <code>Promises</code> in JavaScript can turn in to extremely long errors 
-and type signatures with a type system as Rust.</p>
-</li>
-</ol>
-<p>Futures 3.0 are not compatible with Futures 1.0 without performing some work.</p>
-<ol start="4">
-<li>Async await syntax was recently stabilized</li>
-</ol>
-<p>what we'll
-really do is to stub out a <code>Reactor</code>, and <code>Executor</code> and implement</p>
+impressive. Even the RFCs that much of the design is built upon is written in a
+way that mortal people can understand, and that requires a lot of work. So thanks!</p>
 
                     </main>
 

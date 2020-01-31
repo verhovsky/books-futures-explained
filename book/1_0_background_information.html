@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html" class="active"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">2.3.</strong> Pin</a></li></ol></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">3.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">4.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html" class="active"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -146,9 +146,71 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
+<blockquote>
+<p><strong>Relevant for:</strong></p>
+<ul>
+<li>High level introduction to concurrency in Rust</li>
+<li>Knowing what Rust provides and not when working with async</li>
+<li>Understanding why we need runtimes </li>
+<li>Knowing that Rust has <code>Futures 1.0</code> and <code>Futures 3.0</code>, and how to deal with them</li>
+<li>Getting pointers to further reading on concurrency in general</li>
+</ul>
+</blockquote>
 <p>Before we start implementing our <code>Futures</code> , we'll go through some background
 information that will help demystify some of the concepts we encounter.</p>
-<h2><a class="header" href="#concurrency-in-general" id="concurrency-in-general">Concurrency in general</a></h2>
+<p>Actually, after going through these concepts, implementing futures will seem
+pretty simple. I promise.</p>
+<h2><a class="header" href="#async-in-rust" id="async-in-rust">Async in Rust</a></h2>
+<p>Let's get some of the common roadblocks out of the way first.</p>
+<p>Async in Rust is different from most other languages in the sense that Rust
+has an extremely lightweight runtime.</p>
+<p>In languages like C#, JavaScript, Java and GO, the runtime is already there. So
+if you come from one of those languages this will seem a bit strange to you.</p>
+<h3><a class="header" href="#what-rusts-standard-library-takes-care-of" id="what-rusts-standard-library-takes-care-of">What Rust's standard library takes care of</a></h3>
+<ol>
+<li>The definition of an interruptible task</li>
+<li>An extremely efficient technique to start, suspend, resume and store tasks
+which are executed concurrently. </li>
+<li>A defined way to wake up a suspended task</li>
+</ol>
+<p>That's really what Rusts standard library does. As you see there is no definition
+of non-blocking I/O, how these tasks are created or how they're run.</p>
+<h3><a class="header" href="#what-you-need-to-find-elsewhere" id="what-you-need-to-find-elsewhere">What you need to find elsewhere</a></h3>
+<p>A runtime. Well, in Rust we normally divide the runtime into two parts:</p>
+<ul>
+<li>The Reactor</li>
+<li>The Executor</li>
+</ul>
+<p>Reactors create leaf <code>Futures</code>, and provides things like non-blocking sockets,
+an event queue and so on.</p>
+<p>Executors, accepts one or more asynchronous tasks called <code>Futures</code> and takes
+care of actually running the code we write, suspend the tasks when they're
+waiting for I/O and resumes them.</p>
+<p>In theory, we could choose one <code>Reactor</code> and one <code>Executor</code> that have nothing
+to do with each other besides one creates leaf <code>Futures</code> and one runs them, but
+in reality today you'll most often get both in a <code>Runtime</code>.</p>
+<p>There are mainly two such runtimes today <a href="https://github.com/async-rs/async-std">async_std</a> and <a href="https://github.com/tokio-rs/tokio">tokio</a>.</p>
+<p>Quite a bit of complexity attributed to <code>Futures</code> are actually complexity rooted
+in runtimes. Creating an efficient runtime is hard. Learning how to use one
+correctly can be hard as well, but both are excellent and it's just like 
+learning any new library.</p>
+<p>The difference between Rust and other languages is that you have to make an
+active choice when it comes to picking a runtime. Most often you'll just use
+the one provided for you.</p>
+<h2><a class="header" href="#futures-10-and-futures-30" id="futures-10-and-futures-30">Futures 1.0 and Futures 3.0</a></h2>
+<p>I'll not spend too much time on this, but it feels wrong to not mention that
+there have been several iterations on how async should work in Rust.</p>
+<p><code>Futures 3.0</code> works with the relatively new <code>async/await</code> syntax in Rust and
+it's what we'll learn.</p>
+<p>Now, since this is rather recent, you can encounter creates that use <code>Futures 1.0</code>
+still. This will get resolved in time, but unfortunately it's not always easy
+to know in advance.</p>
+<p>A good sign is that if you're required to use combinators like <code>and_then</code> then
+you're using <code>Futures 1.0</code>.</p>
+<p>While not directly compatible, there is a tool that let's you relatively easily
+convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a verca. You can find all you
+need in the <a href="https://github.com/rust-lang/futures-rs"><code>futures-rs</code></a> crate and all <a href="https://rust-lang.github.io/futures-rs/blog/2019/04/18/compatibility-layer.html">information you need here</a>.</p>
+<h2><a class="header" href="#first-things-first" id="first-things-first">First things first</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 
 try to give a high level overview that will make it easier to learn Rusts 
@@ -159,7 +221,11 @@ try to give a high level overview that will make it easier to learn Rusts
 <li><a href="https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html">Async Basics - Strategies for handling I/O</a></li>
 <li><a href="https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html">Async Basics - Epoll, Kqueue and IOCP</a></li>
 </ul>
-<p>r</p>
+<p>Now learning these concepts by studying futures is making it much harder than
+it needs to be, so go on and read these chapters. I'll be right here when
+you're back. </p>
+<p>However, if you feel that you have the basics covered, then go right on. </p>
+<p>Let's get moving!</p>
 
                     </main>
 

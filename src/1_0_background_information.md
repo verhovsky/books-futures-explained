@@ -1,5 +1,13 @@
 # Some background information
 
+> **Relevant for:**
+>
+> - High level introduction to concurrency in Rust
+> - Knowing what Rust provides and not when working with async
+> - Understanding why we need runtimes 
+> - Knowing that Rust has `Futures 1.0` and `Futures 3.0`, and how to deal with them
+> - Getting pointers to further reading on concurrency in general
+
 Before we start implementing our `Futures` , we'll go through some background
 information that will help demystify some of the concepts we encounter.
 
@@ -91,12 +99,7 @@ Now learning these concepts by studying futures is making it much harder than
 it needs to be, so go on and read these chapters. I'll be right here when
 you're back. 
 
-However, if you feel that you have the basics covered, then go right on. The concepts we need to
-learn are:
-
-1. Trait Objects and fat pointers
-2. Generators/stackless coroutines
-3. Pinning, what it is and why we need it
+However, if you feel that you have the basics covered, then go right on. 
 
 Let's get moving!
 

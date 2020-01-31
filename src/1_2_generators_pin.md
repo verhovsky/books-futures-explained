@@ -1,12 +1,5 @@
 # Generators
 
-So the second difficult part that there seems to be a lot of questions about
-is Generators and the `Pin` type. Since they're related we'll start off by
-undertanding generators first. By doing that we'll soon get to see why
-we need to be able to "pin" some data to a fixed location in memory and
-get an introduction to `Pin` as well.
-
-
 >**Relevant for:**
 >
 >- Understanding how the async/await syntax works since it's how `await` is implemented
@@ -16,6 +9,12 @@ get an introduction to `Pin` as well.
 >The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
 >well written and I can recommend reading through it (it talks as much about
 >async/await as it does about generators).
+
+The second difficult part that there seems to be a lot of questions about
+is Generators and the `Pin` type. Since they're related we'll start off by
+exploring generators first. By doing that we'll soon get to see why
+we need to be able to "pin" some data to a fixed location in memory and
+get an introduction to `Pin` as well.
 
 Basically, there were three main options that were discussed when Rust was 
 desiging how the language would handle concurrency:

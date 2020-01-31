@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><ol class="section"><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">2.1.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html" class="active"><strong aria-hidden="true">2.2.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">2.3.</strong> Pin</a></li></ol></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">3.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">4.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html" class="active"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -145,10 +145,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#generators-and-pin" id="generators-and-pin">Generators and Pin</a></h1>
-<p>So the second difficult part that there seems to be a lot of questions about
-is Generators and the <code>Pin</code> type.</p>
-<h2><a class="header" href="#generators" id="generators">Generators</a></h2>
+                        <h1><a class="header" href="#generators" id="generators">Generators</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
 <ul>
@@ -160,6 +157,11 @@ is Generators and the <code>Pin</code> type.</p>
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
+<p>The second difficult part that there seems to be a lot of questions about
+is Generators and the <code>Pin</code> type. Since they're related we'll start off by
+exploring generators first. By doing that we'll soon get to see why
+we need to be able to &quot;pin&quot; some data to a fixed location in memory and
+get an introduction to <code>Pin</code> as well.</p>
 <p>Basically, there were three main options that were discussed when Rust was 
 desiging how the language would handle concurrency:</p>
 <ol>
@@ -171,8 +173,8 @@ desiging how the language would handle concurrency:</p>
 <p>I've written about green threads before. Go check out 
 <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust</a> if you're interested.</p>
 <p>Green threads uses the same mechanisms as an OS does by creating a thread for
-each task, setting up a stack and forcing the CPU to save it's state and jump
-from one task(thread) to another. We yield control to the scheduler which then
+each task, setting up a stack, save the CPU's state and jump
+from one task(thread) to another by doing a &quot;context switch&quot;. We yield control to the scheduler which then
 continues running a different task.</p>
 <p>Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no need

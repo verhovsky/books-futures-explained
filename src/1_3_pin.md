@@ -1,4 +1,4 @@
-## Pin
+# Pin
 
 > **Relevant for**
 >
@@ -9,20 +9,53 @@
 >
 > `Pin` was suggested in [RFC#2349][rfc2349]
 
-Pin consists of the `Pin` type and the `Unpin` marker. Let's start off with some general rules:
+We already got a brief introduction of `Pin` in the previous chapters, so we'll
+start off here with some definitions and a set of rules to remember.
 
-1. Pin does nothing special, it only prevents the user of an API to violate some assumtions you make when writing your (most likely) unsafe code.
-2. Most standard library types implement `Unpin`
-3. `Unpin` means it's OK for this type to be moved even when pinned.
-4. If you `Box` a value, that boxed value automatcally implements `Unpin`.
-5. The main use case for `Pin` is to allow self referential types
-6. The implementation behind objects that doens't implement `Unpin` is most likely unsafe
-   1. `Pin` prevents users from your code to break the assumtions you make when writing the `unsafe` implementation
-   2. It doesn't solve the fact that you'll have to write unsafe code to actually implement it
-7. You're not really meant to be implementing `!Unpin`, but you can on nightly with a feature flag
+## Definitions
 
+Pin consists of the `Pin` type and the `Unpin` marker. Pin's purpose in life is
+to govern the rules that need to apply for types which implement `!Unpin`.
 
-> Unsafe code does not mean it's litterally "unsafe", it only relieves the 
+Pin is only relevant for pointers. A reference to an object is a pointer.
+
+Yep, that's double negation for you, as in "does-not-implement-unpin". For this
+chapter and only this chapter we'll rename these markers to:
+
+> `!Unpin` = `MustStay` and `Unpin` = `CanMove`
+
+It just makes it so much easier to understand them.
+
+## Rules to remember
+
+1. If `T: CanMove` (which is the default), then `Pin<'a, T>` is entirely equivalent to `&'a mut T`. in other words: `CanMove` means it's OK for this type to be moved even when pinned, so `Pin` will have no effect on such a type.
+
+2. Getting a `&mut T` to a pinned pointer requires unsafe if `T: MustStay`. In other words: requiring a pinned pointer to a type which is `MustStay` prevents the _user_ of that API from moving that value unless it choses to write `unsafe` code.
+
+3. Pinning does nothing special with that memory like putting it into some "read only" memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden. 
+
+4. Most standard library types implement `CanMove`. The same goes for most 
+"normal" types you encounter in Rust. `Futures` and `Generators` are two 
+exceptions.
+
+5. The main use case for `Pin` is to allow self referential types, the whole
+justification for stabilizing them was to allow that. There are still corner
+cases in the API which are being explored.
+
+6. The implementation behind objects that are `MustStay` is most likely unsafe.
+Moving such a type can cause the universe to crash. As of the time of writing
+this book, creating an reading fields of a self referential struct still requires `unsafe`.
+
+7.  You're not really meant to be implementing `MustStay`, but you can on nightly with a feature flag, or by adding `std::marker::PhantomPinned` to your type.
+
+8.  When Pinning, you can either pin a value to memory either on the stack or 
+on the heap.
+
+1. Pinning a `MustStay` pointer to the stack requires `unsafe`
+
+2.  Pinning a `MustStay` pointer to the heap does not require `unsafe`. There is a shortcut for doing this using `Box::pin`.
+
+> Unsafe code does not mean it's literally "unsafe", it only relieves the 
 > guarantees you normally get from the compiler. An `unsafe` implementation can 
 > be perfectly safe to do, but you have no safety net.
 
@@ -73,12 +106,42 @@ impl Test {
 }
 ```
 
-As you can see this results in unwanted behavior. The pointer to `b` stays the
-same and points to the old value. It's easy to get this to segfault, and fail
-in other spectacular ways as well.
+Let's walk through this example since we'll be using it the rest of this chapter.
 
-Pin essentially prevents the **user** of your unsafe code 
-(even if that means yourself) move the value after it's pinned.
+We have a self-referential struct `Test`. `Test` needs an `init` method to be
+created which is strange but we'll need that to keep this example as short as
+possible.
+
+`Test` provides two methods to get a reference to the value of the fields
+`a` and `b`. Since `b` is a reference to `a` we store it as a pointer since
+the borrowing rules of Rust doesn't allow us to define this lifetime.
+
+In our main method we first instantiate two instances of `Test` and print out
+the value of the fields on `test1`. We get:
+
+```rust, ignore
+a: test1, b: test1
+```
+
+
+Next we swap the data stored at the memory location which `test1` is pointing to
+with the data stored at the memory location `test2` is pointing to and vice a verca.
+
+We should expect that printing the fields of `test2` should display the same as
+`test1` (since the object we printed before the swap has moved there now).
+
+```rust, ignore
+a: test1, b: test2
+```
+The pointer to `b` still points to the old location. That location is now
+occupied with the string "test2". This can be a bit hard to visualize so I made
+a figure that i hope can help.
+
+**Fig 1: Before and after swap**
+![swap_problem](../assets/swap_problem.jpg)
+
+As you can see this results in unwanted behavior. It's easy to get this to 
+segfault, show UB and fail in other spectacular ways as well.
 
 If we change the example to using `Pin` instead:
 
@@ -144,13 +207,12 @@ impl Test {
 ```
 
 Now, what we've done here is pinning a stack address. That will always be
-`unsafe` if our type implements `!Unpin`, in other words. That our type is not
-`Unpin` which is the norm.
+`unsafe` if our type implements `!Unpin` (aka `MustStay`). 
 
 We use some tricks here, including requiring an `init`. If we want to fix that
-and let users avoid `unsafe` we need to place our data on the heap.
+and let users avoid `unsafe` we need to pin our data on the heap instead.
 
-Stack pinning will always depend on the current stack frame we're in, so we
+> Stack pinning will always depend on the current stack frame we're in, so we
 can't create a self referential object in one stack frame and return it since
 any pointers we take to "self" is invalidated.
 
@@ -203,19 +265,11 @@ impl Test {
 }
 ```
 
-Seeing this we're ready to sum up with a few more points to remember about
-pinning:
-
-1. Pinning only makes sense to do for types that are `!Unpin`
-2. Pinning a `!Unpin` pointer to the stack will requires `unsafe`
-3. Pinning a boxed value will not require `unsafe`, even if the type is `!Unpin`
-4. If T: Unpin (which is the default), then Pin<'a, T> is entirely equivalent to &'a mut T.
-5. Getting a `&mut T` to a pinned pointer requires unsafe if `T: !Unpin`
-6. Pinning is really only useful when implementing self-referential types.  
-For all intents and purposes you can think of `!Unpin` = self-referential-type
-
 The fact that boxing (heap allocating) a value that implements `!Unpin` is safe
-makes sense. Once the data is allocated on the heap it will have a stable address. 
+makes sense. Once the data is allocated on the heap it will have a stable address.
+
+There is no need for us as users of the API to take special care and ensure
+that the self-referential pointer stays valid.
 
 There are ways to safely give some guarantees on stack pinning as well, but right
 now you need to use a crate like [pin_utils]:[pin_utils] to do that.
