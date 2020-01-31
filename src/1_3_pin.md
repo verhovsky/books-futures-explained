@@ -9,7 +9,7 @@
 >
 > `Pin` was suggested in [RFC#2349][rfc2349]
 
-Ping consists of the `Pin` type and the `Unpin` marker. Let's start off with some general rules:
+Pin consists of the `Pin` type and the `Unpin` marker. Let's start off with some general rules:
 
 1. Pin does nothing special, it only prevents the user of an API to violate some assumtions you make when writing your (most likely) unsafe code.
 2. Most standard library types implement `Unpin`

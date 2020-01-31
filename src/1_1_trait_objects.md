@@ -1,5 +1,11 @@
 # Trait objects and fat pointers
 
+> **Relevant for:**
+>
+> - Understanding how the Waker object is constructed
+> - Getting a basic feel for "type erased" objects and what they are
+> - Learning the basics of dynamic dispatch
+
 ## Trait objects and dynamic dispatch
 
 The single most confusing topic we encounter when implementing our own `Futures` 
