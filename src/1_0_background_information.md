@@ -22,5 +22,11 @@ Now learning these concepts by studying futures is making it much harder than
 it needs to be, so go on and read these chapters. I'll be right here when
 you're back. 
 
-However, if you feel that you have the basics covered, then go right on. Let's
-get moving!
+However, if you feel that you have the basics covered, then go right on. The concepts we need to
+learn are:
+
+1. Trait Objects and fat pointers
+2. Generators/stackless coroutines
+3. Pinning, what it is and why we need it
+
+Let's get moving!

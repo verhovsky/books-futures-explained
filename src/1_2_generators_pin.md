@@ -1,9 +1,10 @@
-# Generators and Pin
+# Generators
 
 So the second difficult part that there seems to be a lot of questions about
-is Generators and the `Pin` type.
-
-## Generators
+is Generators and the `Pin` type. Since they're related we'll start off by
+undertanding generators first. By doing that we'll soon get to see why
+we need to be able to "pin" some data to a fixed location in memory and
+get an introduction to `Pin` as well.
 
 
 >**Relevant for:**
@@ -29,8 +30,8 @@ I've written about green threads before. Go check out
 [Green Threads Explained in 200 lines of Rust][greenthreads] if you're interested.
 
 Green threads uses the same mechanisms as an OS does by creating a thread for
-each task, setting up a stack and forcing the CPU to save it's state and jump
-from one task(thread) to another. We yield control to the scheduler which then
+each task, setting up a stack, save the CPU's state and jump
+from one task(thread) to another by doing a "context switch". We yield control to the scheduler which then
 continues running a different task.
 
 Rust had green threads once, but they were removed before it hit 1.0. The state

@@ -5,9 +5,12 @@ This book aims to explain `Futures` in Rust using an example driven approach.
 The goal is to get a better understanding of `Futures` by implementing a toy
 `Reactor`, a very simple `Executor` and our own `Futures`. 
 
-We'll start off solving a small problem without `Futures`, `Wakers` or async/await 
-and then gradually adapt our example so it implements all these concepts, and
-can be solved using the executor provided by both `tokio` and `async_str`.
+We'll start off a bit untraditionally. Instead of deferring some of the details about what's
+special about futures in Rust we try to tackle that head on first. We'll be as brief as possible,
+but as thorough as needed. I findt that implementing and understanding `Futures` is a lot easier
+then. Actually, most questions will be answered up front. 
+
+We'll end up with futures that can run an any executor like `tokio` and `async_str`.
 
 In the end I've made some reader excercises you can do if you want to fix some
 of the most glaring ommissions and shortcuts we took and create a slightly better
@@ -17,7 +20,7 @@ example yourself.
 
 That's a valid question. There are many good resources and examples already. First
 of all, this book will point you to some background information that I have found
-very valuable to get an understanding of concurrent programming in general.
+very valuable, especially `Generators` and stackless coroutines.
 
 I find that many discussions arise, not because `Futures` is a hard concept to
 grasp, but that concurrent programming is a hard concept in general.
