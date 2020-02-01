@@ -32,10 +32,10 @@ It just makes it so much easier to understand them.
 
 2. Getting a `&mut T` to a pinned pointer requires unsafe if `T: MustStay`. In other words: requiring a pinned pointer to a type which is `MustStay` prevents the _user_ of that API from moving that value unless it choses to write `unsafe` code.
 
-3. Pinning does nothing special with that memory like putting it into some "read only" memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden. 
+3. Pinning does nothing special with that memory like putting it into some "read only" memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.
 
 4. Most standard library types implement `CanMove`. The same goes for most 
-"normal" types you encounter in Rust. `Futures` and `Generators` are two 
+"normal" types you encounter in Rust. `Futures` and `Generators` are two
 exceptions.
 
 5. The main use case for `Pin` is to allow self referential types, the whole
@@ -46,14 +46,14 @@ cases in the API which are being explored.
 Moving such a type can cause the universe to crash. As of the time of writing
 this book, creating an reading fields of a self referential struct still requires `unsafe`.
 
-7.  You're not really meant to be implementing `MustStay`, but you can on nightly with a feature flag, or by adding `std::marker::PhantomPinned` to your type.
+7. You're not really meant to be implementing `MustStay`, but you can on nightly with a feature flag, or by adding `std::marker::PhantomPinned` to your type.
 
-8.  When Pinning, you can either pin a value to memory either on the stack or 
+8. When Pinning, you can either pin a value to memory either on the stack or 
 on the heap.
 
-1. Pinning a `MustStay` pointer to the stack requires `unsafe`
+9. Pinning a `MustStay` pointer to the stack requires `unsafe`
 
-2.  Pinning a `MustStay` pointer to the heap does not require `unsafe`. There is a shortcut for doing this using `Box::pin`.
+10. Pinning a `MustStay` pointer to the heap does not require `unsafe`. There is a shortcut for doing this using `Box::pin`.
 
 > Unsafe code does not mean it's literally "unsafe", it only relieves the 
 > guarantees you normally get from the compiler. An `unsafe` implementation can 
@@ -125,7 +125,7 @@ a: test1, b: test1
 
 
 Next we swap the data stored at the memory location which `test1` is pointing to
-with the data stored at the memory location `test2` is pointing to and vice a verca.
+with the data stored at the memory location `test2` is pointing to and vice a versa.
 
 We should expect that printing the fields of `test2` should display the same as
 `test1` (since the object we printed before the swap has moved there now).
@@ -207,7 +207,7 @@ pub fn main() {
 ```
 
 Now, what we've done here is pinning a stack address. That will always be
-`unsafe` if our type implements `!Unpin` (aka `MustStay`). 
+`unsafe` if our type implements `!Unpin` (aka `MustStay`).
 
 We use some tricks here, including requiring an `init`. If we want to fix that
 and let users avoid `unsafe` we need to pin our data on the heap instead.

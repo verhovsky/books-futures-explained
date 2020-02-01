@@ -19,15 +19,16 @@ pretty simple. I promise.
 Let's get some of the common roadblocks out of the way first.
 
 Async in Rust is different from most other languages in the sense that Rust
-has an extremely lightweight runtime.
+has a very lightweight runtime.
 
-In languages like C#, JavaScript, Java and GO, the runtime is already there. So
-if you come from one of those languages this will seem a bit strange to you.
+In languages like C#, JavaScript, Java and GO, already includes a runtime 
+for handling concurrency. So if you come from one of those languages this will 
+seem a bit strange to you.
 
 ### What Rust's standard library takes care of
 
 1. The definition of an interruptible task
-2. An extremely efficient technique to start, suspend, resume and store tasks
+2. An efficient technique to start, suspend, resume and store tasks
 which are executed concurrently. 
 3. A defined way to wake up a suspended task
 
@@ -80,7 +81,7 @@ A good sign is that if you're required to use combinators like `and_then` then
 you're using `Futures 1.0`.
 
 While not directly compatible, there is a tool that let's you relatively easily
-convert a `Future 1.0` to a `Future 3.0` and vice a verca. You can find all you
+convert a `Future 1.0` to a `Future 3.0` and vice a versa. You can find all you
 need in the [`futures-rs`][futures_rs] crate and all [information you need here][compat_info].
 
 ## First things first

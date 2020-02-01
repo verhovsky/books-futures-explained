@@ -13,7 +13,7 @@ It will still take some time for the ecosystem to migrate over to `Futures 3.0`
 but since the advantages are so huge, it will not be a split between libraries
 using `Futures 1.0` and libraries using `Futures 3.0` for long.
 
-# Reader excercises
+# Reader exercises
 
 So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:
 
@@ -50,6 +50,21 @@ Right now we create a new instance of a Waker for every event we create. Is this
 What about CPU intensive tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the thread pool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?
 
 In both `async_std` and `tokio` this method is called `spawn_blocking`, a good place to start is to read the documentation and the code thy use to implement that.
+
+## Building a better exectuor
+
+Right now, we can only run one and one future. Most runtimes has a `spawn` 
+function which let's you start off a future and `await` it later so you
+can run multiple futures concurrently.
+
+As I'm writing this [@stjepan](https://github.com/stjepang) is writing a blog
+series about implementing your own executors, and he just released a post
+on how to accomplish just this you can visit [here](https://stjepang.github.io/2020/01/31/build-your-own-executor.html).
+He knows what he's talking about so I recommend following that.
+
+In the [bonus_spawn]() branch of the example repository you can also find an
+extremely simplified (and worse) way of accomplishing the same in only a 
+few lines of code.
 
 ## Further reading
 

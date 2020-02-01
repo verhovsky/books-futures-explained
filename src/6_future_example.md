@@ -9,7 +9,7 @@ can always [clone the repository][example_repo] and play around with the code yo
 are two branches. The `basic_example` is this code, and the `basic_example_commented`
 is this example with extensive comments.
 
-> If you want to follow along as we go through, initalize a new cargo project
+> If you want to follow along as we go through, initialize a new cargo project
 > by creating a new folder and run `cargo init` inside it. Everything we write
 > here will be in `main.rs`
 
@@ -72,6 +72,7 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
     val
 }
 ```
+
 Inn all the examples here I've chose to comment the code extensively. I find it
 easier to follow that way than dividing if up into many paragraphs.
 
@@ -97,7 +98,7 @@ allow `Futures` to have self references.
 
 In Rust we call an interruptible task a `Future`. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
 these `Futures` so that once a "leaf future" is ready we'll perform a set of
-operations. 
+operations.
 
 These operations can spawn new leaf futures themselves.
 
@@ -289,11 +290,11 @@ struct Reactor {
 }
 
 // We just have two kind of events. A timeout event, a "timeout" event called
-// `Simple` and a `Close` event to close down our reactor.
+// `Timeout` and a `Close` event to close down our reactor.
 #[derive(Debug)]
 enum Event {
     Close,
-    Simple(Waker, u64, usize),
+    Timeout(Waker, u64, usize),
 }
 
 impl Reactor {
@@ -315,7 +316,7 @@ impl Reactor {
                 match event {
                     // If we get a close event we break out of the loop we're in
                     Event::Close => break,
-                    Event::Simple(waker, duration, id) => {
+                    Event::Timeout(waker, duration, id) => {
 
                         // When we get an event we simply spawn a new thread...
                         let event_handle = thread::spawn(move || {
@@ -354,7 +355,7 @@ impl Reactor {
         // registering an event is as simple as sending an `Event` through
         // the channel.
         self.dispatcher
-            .send(Event::Simple(waker, duration, data))
+            .send(Event::Timeout(waker, duration, data))
             .unwrap();
     }
 
@@ -603,11 +604,11 @@ fn main() {
 # }
 # 
 # // We just have two kind of events. A timeout event, a "timeout" event called
-# // `Simple` and a `Close` event to close down our reactor.
+# // `Timeout` and a `Close` event to close down our reactor.
 # #[derive(Debug)]
 # enum Event {
 #     Close,
-#     Simple(Waker, u64, usize),
+#     Timeout(Waker, u64, usize),
 # }
 # 
 # impl Reactor {
@@ -629,7 +630,7 @@ fn main() {
 #                 match event {
 #                     // If we get a close event we break out of the loop we're in
 #                     Event::Close => break,
-#                     Event::Simple(waker, duration, id) => {
+#                     Event::Timeout(waker, duration, id) => {
 # 
 #                         // When we get an event we simply spawn a new thread...
 #                         let event_handle = thread::spawn(move || {
@@ -668,7 +669,7 @@ fn main() {
 #         // registering an event is as simple as sending an `Event` through
 #         // the channel.
 #         self.dispatcher
-#             .send(Event::Simple(waker, duration, data))
+#             .send(Event::Timeout(waker, duration, data))
 #             .unwrap();
 #     }
 # 

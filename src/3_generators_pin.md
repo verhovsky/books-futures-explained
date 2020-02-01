@@ -4,7 +4,7 @@
 >
 >- Understanding how the async/await syntax works since it's how `await` is implemented
 >- Why we need `Pin`
->- Why Rusts async model is extremely efficient
+>- Why Rusts async model is very efficient
 >
 >The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
 >well written and I can recommend reading through it (it talks as much about
@@ -16,8 +16,8 @@ exploring generators first. By doing that we'll soon get to see why
 we need to be able to "pin" some data to a fixed location in memory and
 get an introduction to `Pin` as well.
 
-Basically, there were three main options that were discussed when Rust was 
-desiging how the language would handle concurrency:
+Basically, there were three main options that were discussed when Rust was
+designing how the language would handle concurrency:
 
 1. Stackful coroutines, better known as green threads.
 2. Using combinators.
@@ -53,6 +53,7 @@ let future = Connection::connect(conn_str).and_then(|conn| {
 let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future).unwrap();
 
 ```
+
 While an effective solution there are mainly three downsides I'll focus on:
 
 1. The error messages produced could be extremely long and arcane
@@ -74,7 +75,7 @@ the needed state increases with each added step.
 
 This is the model used in Rust today. It a few notable advantages:
 
-1. It's easy to convert normal Rust code to a stackless corotuine using using
+1. It's easy to convert normal Rust code to a stackless coroutine using using
 async/await as keywords (it can even be done using a macro).
 2. No need for context switching and saving/restoring CPU state
 3. No need to handle dynamic stack allocation
@@ -209,7 +210,7 @@ limitation just slip and call it a day yet.
 Instead of discussing it in theory, let's look at some code. 
 
 > We'll use the optimized version of the state machines which is used in Rust today. For a more
-> in deapth explanation see [Tyler Mandry's execellent article: How Rust optimizes async/await][optimizing-await]
+> in deapth explanation see [Tyler Mandry's excellent article: How Rust optimizes async/await][optimizing-await]
 
 ```rust,noplaypen,ignore
 let a = 4;
@@ -503,9 +504,7 @@ the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.
 
 Now, the code which is created and the need for `Pin` to allow for borrowing
-across `yield` points should be pretty clear. 
-
-
+across `yield` points should be pretty clear.
 
 [rfc2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
 [greenthreads]: https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/

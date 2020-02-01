@@ -47,20 +47,20 @@ bytes.
 The 16 byte sized pointers are called "fat pointers" since they carry more extra
 information.
 
-**Example `&[i32]` :** 
+**Example `&[i32]` :**
 
-* The first 8 bytes is the actual pointer to the first element in the array (or part of an array the slice refers to)
-* The second 8 bytes is the length of the slice.
+- The first 8 bytes is the actual pointer to the first element in the array (or part of an array the slice refers to)
+- The second 8 bytes is the length of the slice.
 
 **Example `&dyn SomeTrait`:**
 
 This is the type of fat pointer we'll concern ourselves about going forward. 
 `&dyn SomeTrait` is a reference to a trait, or what Rust calls _trait objects_.
  
- The layout for a pointer to a _trait object_ looks like this: 
+The layout for a pointer to a _trait object_ looks like this: 
 
-* The first 8 bytes points to the `data` for the trait object
-* The second 8 bytes points to the `vtable` for the trait object
+- The first 8 bytes points to the `data` for the trait object
+- The second 8 bytes points to the `vtable` for the trait object
 
 The reason for this is to allow us to refer to an object we know nothing about
 except that it implements the methods defined by our trait. To allow accomplish this we use _dynamic dispatch_.
@@ -71,11 +71,12 @@ object from these parts:
 >This is an example of _editable_ code. You can change everything in the example
 and try to run it. If you want to go back, press the undo symbol. Keep an eye
 out for these as we go forward. Many examples will be editable.
+
 ```rust, editable
 // A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
-    fn add(&self) -> i32; 
-    fn sub(&self) -> i32; 
+    fn add(&self) -> i32;
+    fn sub(&self) -> i32;
     fn mul(&self) -> i32;
 }
 
