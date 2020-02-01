@@ -416,8 +416,8 @@ fn main() {
     // - first parameter is the `reactor`
     // - the second is a timeout in seconds
     // - the third is an `id` to identify the task
-    let future1 = Task::new(reactor.clone(), 2, 1);
-    let future2 = Task::new(reactor.clone(), 1, 2);
+    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future2 = Task::new(reactor.clone(), 2, 2);
 
     // an `async` block works the same way as an `async fn` in that it compiles
     // our code into a state machine, `yielding` at every `await` point.
