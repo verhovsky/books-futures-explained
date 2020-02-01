@@ -138,7 +138,7 @@ occupied with the string "test2". This can be a bit hard to visualize so I made
 a figure that i hope can help.
 
 **Fig 1: Before and after swap**
-![swap_problem](../assets/swap_problem.jpg)
+![swap_problem](./assets/swap_problem.jpg)
 
 As you can see this results in unwanted behavior. It's easy to get this to 
 segfault, show UB and fail in other spectacular ways as well.
