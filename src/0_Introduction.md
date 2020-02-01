@@ -23,7 +23,7 @@ of all, this book will focus on `Futures` and `async/await` specifically and
 not in the context of any specific runtime.
 
 Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to Mdbook the examples can even be edited and explored further. It's
+Thanks to [Mdbook][mdbook] the examples can even be edited and explored further. It's
 all code that you can download, play with and learn from.
 
 We'll and end up with an understandable example including a `Future`
@@ -40,4 +40,4 @@ much is built upon. Reading and exploring some of this code is nothing less than
 impressive. Even the RFCs that much of the design is built upon is written in a
 way that mortal people can understand, and that requires a lot of work. So thanks!
 
-
+[mdbook]: https://github.com/rust-lang/mdBook
