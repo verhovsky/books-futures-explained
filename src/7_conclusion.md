@@ -76,3 +76,4 @@ articles I've already linked to in the book, here are some of my suggestions:
 [Aron Turon: Designing futures for Rust](https://aturon.github.io/blog/2016/09/07/futures-design/)
 [Steve Klabnik's presentation: Rust's journey to Async/Await](https://www.infoq.com/presentations/rust-2019/)
 [The Tokio Blog](https://tokio.rs/blog/2019-10-scheduler/)
+[Stjepan's blog with a series where he implements an Executor](https://stjepang.github.io/)
