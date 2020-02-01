@@ -1,1 +1,0 @@
-# Reactor/Executor Pattern

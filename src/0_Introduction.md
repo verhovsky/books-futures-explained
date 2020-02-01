@@ -40,9 +40,8 @@ explore further and try your own ideas.
 
 I'll like to take the chance of thanking the people behind `mio`, `tokio`, 
 `async_std`, `Futures`, `libc`, `crossbeam` and many other libraries which so
-much is built upon. Reading and exploring some of this code is nothing less than
-impressive. Even the RFCs that much of the design is built upon is written in a
-way that mortal people can understand, and that requires a lot of work. So thanks!
+much is built upon.  Even the RFCs that much of the design is built upon is 
+very well written and very helpful. So thanks!
 
 [mdbook]: https://github.com/rust-lang/mdBook
 [book_repo]: https://github.com/cfsamson/books-futures-explained
