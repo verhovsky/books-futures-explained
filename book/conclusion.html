@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Trait objects and fat pointers - Futures Explained in 200 Lines of Rust</title>
+        <title>Conclusion and exercises - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html" class="active"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html" class="active">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,148 +149,80 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#trait-objects-and-fat-pointers" id="trait-objects-and-fat-pointers">Trait objects and fat pointers</a></h1>
-<blockquote>
-<p><strong>Relevant for:</strong></p>
+                        <h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
+<p>Congratulations. I hope you stayed with me all the way and enjoyed the ride.</p>
+<p>I'll leave you with some predictions and a set of exercises I'm suggesting for
+those interested.</p>
+<p>Futures will be more ergonomic to use with time. For example, instead of having to 
+create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
+as a normal <code>Trait</code>. It's probably going to be pretty similar to <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
+<p>It will still take some time for the ecosystem to migrate over to <code>Futures 3.0</code>
+but since the advantages are so huge, it will not be a split between libraries
+using <code>Futures 1.0</code> and libraries using <code>Futures 3.0</code> for long.</p>
+<h1><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h1>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:</p>
+<h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method of telling the OS to suspend our thread and wake it up again on our command. Some hints:</p>
 <ul>
-<li>Understanding how the Waker object is constructed</li>
-<li>Getting a basic feel for &quot;type erased&quot; objects and what they are</li>
-<li>Learning the basics of dynamic dispatch</li>
+<li>Check out <code>CondVars</code>, here are two sources Wikipedia and the docs for <code>CondVar</code></li>
+<li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
 </ul>
-</blockquote>
-<h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
-<p>One of the most confusing topic we encounter when implementing our own <code>Futures</code> 
-is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
-which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait 
-object we construct our selves.</p>
-<blockquote>
-<p>If you want to know more about dynamic dispatch in Rust I can recommend  an article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
-</blockquote>
-<p>Let's explain this a bit more in detail.</p>
-<h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
-<p>Let's take a look at the size of some different pointer types in Rust. If we
-run the following code. <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
-<pre><pre class="playpen"><code class="language-rust"># use std::mem::size_of;
-trait SomeTrait { }
-
-fn main() {
-    println!(&quot;======== The size of different pointers in Rust: ========&quot;);
-    println!(&quot;&amp;dyn Trait:-----{}&quot;, size_of::&lt;&amp;dyn SomeTrait&gt;());
-    println!(&quot;&amp;[&amp;dyn Trait]:--{}&quot;, size_of::&lt;&amp;[&amp;dyn SomeTrait]&gt;());
-    println!(&quot;Box&lt;Trait&gt;:-----{}&quot;, size_of::&lt;Box&lt;SomeTrait&gt;&gt;());
-    println!(&quot;&amp;i32:-----------{}&quot;, size_of::&lt;&amp;i32&gt;());
-    println!(&quot;&amp;[i32]:---------{}&quot;, size_of::&lt;&amp;[i32]&gt;());
-    println!(&quot;Box&lt;i32&gt;:-------{}&quot;, size_of::&lt;Box&lt;i32&gt;&gt;());
-    println!(&quot;&amp;Box&lt;i32&gt;:------{}&quot;, size_of::&lt;&amp;Box&lt;i32&gt;&gt;());
-    println!(&quot;[&amp;dyn Trait;4]:-{}&quot;, size_of::&lt;[&amp;dyn SomeTrait; 4]&gt;());
-    println!(&quot;[i32;4]:--------{}&quot;, size_of::&lt;[i32; 4]&gt;());
-}
-</code></pre></pre>
-<p>As you see from the output after running this, the sizes of the references varies.
-Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
-bytes.</p>
-<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
-information.</p>
-<p><strong>Example <code>&amp;[i32]</code> :</strong></p>
+<h2><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h2>
+<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only interested in synchronizing some parts of the information it contains. Try to refactor that out and only synchronize access to what's really needed.</p>
 <ul>
-<li>The first 8 bytes is the actual pointer to the first element in the array (or part of an array the slice refers to)</li>
-<li>The second 8 bytes is the length of the slice.</li>
+<li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
+<li>Do you want to make a global <code>Reactor</code> so it can be accessed from anywhere?</li>
 </ul>
-<p><strong>Example <code>&amp;dyn SomeTrait</code>:</strong></p>
-<p>This is the type of fat pointer we'll concern ourselves about going forward. 
-<code>&amp;dyn SomeTrait</code> is a reference to a trait, or what Rust calls <em>trait objects</em>.</p>
-<p>The layout for a pointer to a <em>trait object</em> looks like this: </p>
+<p>Next , using a <code>Mutex</code> as a synchronization mechanism might be overkill since many methods only reads data. </p>
 <ul>
-<li>The first 8 bytes points to the <code>data</code> for the trait object</li>
-<li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
+<li>Could an <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock</code></a> be more efficient some places?</li>
+<li>Could you use any of the synchronization mechanisms in <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam</a>?</li>
+<li>Do you want to dig into <a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/atomics-in-rust">atomics in Rust and implement a synchronization mechanism</a> of your own?</li>
 </ul>
-<p>The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To allow accomplish this we use <em>dynamic dispatch</em>.</p>
-<p>Let's explain this in code instead of words by implementing our own trait
-object from these parts:</p>
-<blockquote>
-<p>This is an example of <em>editable</em> code. You can change everything in the example
-and try to run it. If you want to go back, press the undo symbol. Keep an eye
-out for these as we go forward. Many examples will be editable.</p>
-</blockquote>
-<pre><pre class="playpen"><code class="language-rust editable">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
-trait Test {
-    fn add(&amp;self) -&gt; i32;
-    fn sub(&amp;self) -&gt; i32;
-    fn mul(&amp;self) -&gt; i32;
-}
-
-// This will represent our home brewn fat pointer to a trait object
-#[repr(C)]
-struct FatPointer&lt;'a&gt; {
-    /// A reference is a pointer to an instantiated `Data` instance
-    data: &amp;'a mut Data,
-    /// Since we need to pass in literal values like length and alignment it's
-    /// easiest for us to convert pointers to usize-integers instead of the other way around.
-    vtable: *const usize,
-}
-
-// This is the data in our trait object. It's just two numbers we want to operate on.
-struct Data {
-    a: i32,
-    b: i32,
-}
-
-// ====== function definitions ======
-fn add(s: &amp;Data) -&gt; i32 {
-    s.a + s.b
-}
-fn sub(s: &amp;Data) -&gt; i32 {
-    s.a - s.b
-}
-fn mul(s: &amp;Data) -&gt; i32 {
-    s.a * s.b
-}
-
-fn main() {
-    let mut data = Data {a: 3, b: 2};
-    // vtable is like special purpose array of pointer-length types with a fixed
-    // format where the three first values has a special meaning like the
-    // length of the array is encoded in the array itself as the second value.
-    let vtable = vec![
-        0,            // pointer to `Drop` (which we're not implementing here)
-        6,            // lenght of vtable
-        8,            // alignment
-
-        // we need to make sure we add these in the same order as defined in the Trait.
-        add as usize, // function pointer - try changing the order of `add`
-        sub as usize, // function pointer - and `sub` to see what happens
-        mul as usize, // function pointer
-    ];
-
-    let fat_pointer = FatPointer { data: &amp;mut data, vtable: vtable.as_ptr()};
-    let test = unsafe { std::mem::transmute::&lt;FatPointer, &amp;dyn Test&gt;(fat_pointer) };
-
-    // And voalá, it's now a trait object we can call methods on
-    println!(&quot;Add: 3 + 2 = {}&quot;, test.add());
-    println!(&quot;Sub: 3 - 2 = {}&quot;, test.sub());
-    println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
-}
-
-</code></pre></pre>
-<p>The reason we go through this will be clear later on when we implement our own
-<code>Waker</code> we'll actually set up a <code>vtable</code> like we do here to and knowing what
-it is will make this much less mysterious.</p>
+<h2><a class="header" href="#avoid-creating-a-new-waker-for-every-event" id="avoid-creating-a-new-waker-for-every-event">Avoid creating a new Waker for every event</a></h2>
+<p>Right now we create a new instance of a Waker for every event we create. Is this really needed? </p>
+<ul>
+<li>Could we create one instance and then cache it (see <a href="https://stjepang.github.io/2020/01/25/build-your-own-block-on.html">this article from <code>u/sjepang</code></a>)?
+<ul>
+<li>Should we cache it in <code>thread_local!</code> storage?</li>
+<li>Or should be cache it using a global constant?</li>
+</ul>
+</li>
+</ul>
+<h2><a class="header" href="#could-we-implement-more-methods-on-our-executor" id="could-we-implement-more-methods-on-our-executor">Could we implement more methods on our executor?</a></h2>
+<p>What about CPU intensive tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the thread pool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?</p>
+<p>In both <code>async_std</code> and <code>tokio</code> this method is called <code>spawn_blocking</code>, a good place to start is to read the documentation and the code thy use to implement that.</p>
+<h2><a class="header" href="#building-a-better-exectuor" id="building-a-better-exectuor">Building a better exectuor</a></h2>
+<p>Right now, we can only run one and one future. Most runtimes has a <code>spawn</code> 
+function which let's you start off a future and <code>await</code> it later so you
+can run multiple futures concurrently.</p>
+<p>As I'm writing this <a href="https://github.com/stjepang">@stjepan</a> is writing a blog
+series about implementing your own executors, and he just released a post
+on how to accomplish just this you can visit <a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">here</a>.
+He knows what he's talking about so I recommend following that.</p>
+<p>In the <a href="https://github.com/cfsamson/examples-futures/tree/bonus_spawn">bonus_spawn</a> 
+branch of the example repository you can also find an extremely simplified 
+(and worse) way of accomplishing the same in only a few lines of code.</p>
+<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<p>There are many great resources for further study. In addition to the RFCs and
+articles I've already linked to in the book, here are some of my suggestions:</p>
+<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a>
+<a href="https://book.async.rs/">The async_std book</a>
+<a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a>
+<a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a>
+<a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a>
+<a href="https://stjepang.github.io/">Stjepan's blog with a series where he implements an Executor</a></p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="1_background_information.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="8_finished_example.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
-                        
-                            <a rel="next" href="3_generators_pin.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <i class="fa fa-angle-right"></i>
-                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -300,15 +232,11 @@ it is will make this much less mysterious.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="1_background_information.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a href="8_finished_example.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
-                
-                    <a href="3_generators_pin.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <i class="fa fa-angle-right"></i>
-                    </a>
                 
             </nav>
 
