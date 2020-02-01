@@ -62,9 +62,9 @@ series about implementing your own executors, and he just released a post
 on how to accomplish just this you can visit [here](https://stjepang.github.io/2020/01/31/build-your-own-executor.html).
 He knows what he's talking about so I recommend following that.
 
-In the [bonus_spawn]() branch of the example repository you can also find an
-extremely simplified (and worse) way of accomplishing the same in only a 
-few lines of code.
+In the [bonus_spawn](https://github.com/cfsamson/examples-futures/tree/bonus_spawn) 
+branch of the example repository you can also find an extremely simplified 
+(and worse) way of accomplishing the same in only a few lines of code.
 
 ## Further reading
 
