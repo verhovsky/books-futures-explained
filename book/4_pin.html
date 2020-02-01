@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -181,11 +181,11 @@ chapter and only this chapter we'll rename these markers to:</p>
 <p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: MustStay</code>. In other words: requiring a pinned pointer to a type which is <code>MustStay</code> prevents the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code> code.</p>
 </li>
 <li>
-<p>Pinning does nothing special with that memory like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden. </p>
+<p>Pinning does nothing special with that memory like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
 </li>
 <li>
 <p>Most standard library types implement <code>CanMove</code>. The same goes for most 
-&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two 
+&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
 exceptions.</p>
 </li>
 <li>
@@ -273,7 +273,7 @@ the value of the fields on <code>test1</code>. We get:</p>
 <pre><code class="language-rust ignore">a: test1, b: test1
 </code></pre>
 <p>Next we swap the data stored at the memory location which <code>test1</code> is pointing to
-with the data stored at the memory location <code>test2</code> is pointing to and vice a verca.</p>
+with the data stored at the memory location <code>test2</code> is pointing to and vice a versa.</p>
 <p>We should expect that printing the fields of <code>test2</code> should display the same as
 <code>test1</code> (since the object we printed before the swap has moved there now).</p>
 <pre><code class="language-rust ignore">a: test1, b: test2
@@ -346,7 +346,7 @@ pub fn main() {
 
 </code></pre></pre>
 <p>Now, what we've done here is pinning a stack address. That will always be
-<code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>). </p>
+<code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>).</p>
 <p>We use some tricks here, including requiring an <code>init</code>. If we want to fix that
 and let users avoid <code>unsafe</code> we need to pin our data on the heap instead.</p>
 <blockquote>
@@ -456,6 +456,21 @@ we're soon finished.</p>
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

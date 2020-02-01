@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html" class="active">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -161,8 +161,13 @@ as needed. This way, most question will be answered and explored up front. </p>
 <p>In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
 example yourself.</p>
+<blockquote>
+<p>This book is developed in the open, and contributions are welcome. You'll find
+<a href="https://github.com/cfsamson/books-futures-explained">the repository for the book itself here</a>. The final example which
+you can clone, fork or copy <a href="https://github.com/cfsamson/examples-futures">can be found here</a></p>
+</blockquote>
 <h2><a class="header" href="#what-does-this-book-give-you-that-isnt-covered-elsewhere" id="what-does-this-book-give-you-that-isnt-covered-elsewhere">What does this book give you that isn't covered elsewhere?</a></h2>
-<p>That's a valid question. There are many good resources and examples already. First
+<p>There are many good resources and examples already. First
 of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
 not in the context of any specific runtime.</p>
 <p>Secondly, I've always found small runnable examples very exiting to learn from. 
@@ -175,9 +180,8 @@ explore further and try your own ideas.</p>
 <h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
 <p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
 <code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
-much is built upon. Reading and exploring some of this code is nothing less than
-impressive. Even the RFCs that much of the design is built upon is written in a
-way that mortal people can understand, and that requires a lot of work. So thanks!</p>
+much is built upon.  Even the RFCs that much of the design is built upon is 
+very well written and very helpful. So thanks!</p>
 
                     </main>
 
@@ -208,6 +212,21 @@ way that mortal people can understand, and that requires a lot of work. So thank
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

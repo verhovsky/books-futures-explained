@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html" class="active"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html" class="active"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -167,13 +167,14 @@ pretty simple. I promise.</p>
 <h2><a class="header" href="#async-in-rust" id="async-in-rust">Async in Rust</a></h2>
 <p>Let's get some of the common roadblocks out of the way first.</p>
 <p>Async in Rust is different from most other languages in the sense that Rust
-has an extremely lightweight runtime.</p>
-<p>In languages like C#, JavaScript, Java and GO, the runtime is already there. So
-if you come from one of those languages this will seem a bit strange to you.</p>
+has a very lightweight runtime.</p>
+<p>In languages like C#, JavaScript, Java and GO, already includes a runtime 
+for handling concurrency. So if you come from one of those languages this will 
+seem a bit strange to you.</p>
 <h3><a class="header" href="#what-rusts-standard-library-takes-care-of" id="what-rusts-standard-library-takes-care-of">What Rust's standard library takes care of</a></h3>
 <ol>
 <li>The definition of an interruptible task</li>
-<li>An extremely efficient technique to start, suspend, resume and store tasks
+<li>An efficient technique to start, suspend, resume and store tasks
 which are executed concurrently. </li>
 <li>A defined way to wake up a suspended task</li>
 </ol>
@@ -212,7 +213,7 @@ to know in advance.</p>
 <p>A good sign is that if you're required to use combinators like <code>and_then</code> then
 you're using <code>Futures 1.0</code>.</p>
 <p>While not directly compatible, there is a tool that let's you relatively easily
-convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a verca. You can find all you
+convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a versa. You can find all you
 need in the <a href="https://github.com/rust-lang/futures-rs"><code>futures-rs</code></a> crate and all <a href="https://rust-lang.github.io/futures-rs/blog/2019/04/18/compatibility-layer.html">information you need here</a>.</p>
 <h2><a class="header" href="#first-things-first" id="first-things-first">First things first</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
@@ -236,7 +237,7 @@ you're back. </p>
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="0_introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
@@ -254,7 +255,7 @@ you're back. </p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="0_introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
@@ -268,6 +269,21 @@ you're back. </p>
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

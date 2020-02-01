@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,8 +163,13 @@ as needed. This way, most question will be answered and explored up front. </p>
 <p>In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
 example yourself.</p>
+<blockquote>
+<p>This book is developed in the open, and contributions are welcome. You'll find
+<a href="https://github.com/cfsamson/books-futures-explained">the repository for the book itself here</a>. The final example which
+you can clone, fork or copy <a href="https://github.com/cfsamson/examples-futures">can be found here</a></p>
+</blockquote>
 <h2><a class="header" href="#what-does-this-book-give-you-that-isnt-covered-elsewhere" id="what-does-this-book-give-you-that-isnt-covered-elsewhere">What does this book give you that isn't covered elsewhere?</a></h2>
-<p>That's a valid question. There are many good resources and examples already. First
+<p>There are many good resources and examples already. First
 of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
 not in the context of any specific runtime.</p>
 <p>Secondly, I've always found small runnable examples very exiting to learn from. 
@@ -177,9 +182,8 @@ explore further and try your own ideas.</p>
 <h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
 <p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
 <code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
-much is built upon. Reading and exploring some of this code is nothing less than
-impressive. Even the RFCs that much of the design is built upon is written in a
-way that mortal people can understand, and that requires a lot of work. So thanks!</p>
+much is built upon.  Even the RFCs that much of the design is built upon is 
+very well written and very helpful. So thanks!</p>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
@@ -198,13 +202,14 @@ pretty simple. I promise.</p>
 <h2><a class="header" href="#async-in-rust" id="async-in-rust">Async in Rust</a></h2>
 <p>Let's get some of the common roadblocks out of the way first.</p>
 <p>Async in Rust is different from most other languages in the sense that Rust
-has an extremely lightweight runtime.</p>
-<p>In languages like C#, JavaScript, Java and GO, the runtime is already there. So
-if you come from one of those languages this will seem a bit strange to you.</p>
+has a very lightweight runtime.</p>
+<p>In languages like C#, JavaScript, Java and GO, already includes a runtime 
+for handling concurrency. So if you come from one of those languages this will 
+seem a bit strange to you.</p>
 <h3><a class="header" href="#what-rusts-standard-library-takes-care-of" id="what-rusts-standard-library-takes-care-of">What Rust's standard library takes care of</a></h3>
 <ol>
 <li>The definition of an interruptible task</li>
-<li>An extremely efficient technique to start, suspend, resume and store tasks
+<li>An efficient technique to start, suspend, resume and store tasks
 which are executed concurrently. </li>
 <li>A defined way to wake up a suspended task</li>
 </ol>
@@ -243,7 +248,7 @@ to know in advance.</p>
 <p>A good sign is that if you're required to use combinators like <code>and_then</code> then
 you're using <code>Futures 1.0</code>.</p>
 <p>While not directly compatible, there is a tool that let's you relatively easily
-convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a verca. You can find all you
+convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a versa. You can find all you
 need in the <a href="https://github.com/rust-lang/futures-rs"><code>futures-rs</code></a> crate and all <a href="https://rust-lang.github.io/futures-rs/blog/2019/04/18/compatibility-layer.html">information you need here</a>.</p>
 <h2><a class="header" href="#first-things-first" id="first-things-first">First things first</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
@@ -303,7 +308,7 @@ Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.</p>
 <p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
 information.</p>
-<p><strong>Example <code>&amp;[i32]</code> :</strong> </p>
+<p><strong>Example <code>&amp;[i32]</code> :</strong></p>
 <ul>
 <li>The first 8 bytes is the actual pointer to the first element in the array (or part of an array the slice refers to)</li>
 <li>The second 8 bytes is the length of the slice.</li>
@@ -327,8 +332,8 @@ out for these as we go forward. Many examples will be editable.</p>
 </blockquote>
 <pre><pre class="playpen"><code class="language-rust editable">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
-    fn add(&amp;self) -&gt; i32; 
-    fn sub(&amp;self) -&gt; i32; 
+    fn add(&amp;self) -&gt; i32;
+    fn sub(&amp;self) -&gt; i32;
     fn mul(&amp;self) -&gt; i32;
 }
 
@@ -394,7 +399,7 @@ it is will make this much less mysterious.</p>
 <ul>
 <li>Understanding how the async/await syntax works since it's how <code>await</code> is implemented</li>
 <li>Why we need <code>Pin</code></li>
-<li>Why Rusts async model is extremely efficient</li>
+<li>Why Rusts async model is very efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -405,8 +410,8 @@ is Generators and the <code>Pin</code> type. Since they're related we'll start o
 exploring generators first. By doing that we'll soon get to see why
 we need to be able to &quot;pin&quot; some data to a fixed location in memory and
 get an introduction to <code>Pin</code> as well.</p>
-<p>Basically, there were three main options that were discussed when Rust was 
-desiging how the language would handle concurrency:</p>
+<p>Basically, there were three main options that were discussed when Rust was
+designing how the language would handle concurrency:</p>
 <ol>
 <li>Stackful coroutines, better known as green threads.</li>
 <li>Using combinators.</li>
@@ -452,7 +457,7 @@ the needed state increases with each added step.</p>
 <h3><a class="header" href="#stackless-coroutinesgenerators" id="stackless-coroutinesgenerators">Stackless coroutines/generators</a></h3>
 <p>This is the model used in Rust today. It a few notable advantages:</p>
 <ol>
-<li>It's easy to convert normal Rust code to a stackless corotuine using using
+<li>It's easy to convert normal Rust code to a stackless coroutine using using
 async/await as keywords (it can even be done using a macro).</li>
 <li>No need for context switching and saving/restoring CPU state</li>
 <li>No need to handle dynamic stack allocation</li>
@@ -507,7 +512,6 @@ compiled to something looking similar to this:</p>
 // If you've ever wondered why the parameters are called Y and R the naming from
 // the original rfc most likely holds the answer
 enum GeneratorState&lt;Y, R&gt; {
-    // originally called `CoResult`
     Yielded(Y),  // originally called `Yield(Y)`
     Complete(R), // originally called `Return(R)`
 }
@@ -574,7 +578,7 @@ limitation just slip and call it a day yet.</p>
 <p>Instead of discussing it in theory, let's look at some code. </p>
 <blockquote>
 <p>We'll use the optimized version of the state machines which is used in Rust today. For a more
-in deapth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's execellent article: How Rust optimizes async/await</a></p>
+in deapth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
 </blockquote>
 <pre><code class="language-rust noplaypen ignore">let a = 4;
 let b = move || {
@@ -711,7 +715,7 @@ impl Generator for GeneratorA {
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match self {
                  GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; ()  
+                 _ =&gt; unreachable!(),  
                 };
 
                 GeneratorState::Yielded(res)
@@ -831,7 +835,7 @@ impl Generator for GeneratorA {
                 *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match this {
                  GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; ()  
+                 _ =&gt; unreachable!(),  
                 };
 
                 GeneratorState::Yielded(res)
@@ -856,7 +860,7 @@ the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.</li>
 </ol>
 <p>Now, the code which is created and the need for <code>Pin</code> to allow for borrowing
-across <code>yield</code> points should be pretty clear. </p>
+across <code>yield</code> points should be pretty clear.</p>
 <h1><a class="header" href="#pin" id="pin">Pin</a></h1>
 <blockquote>
 <p><strong>Relevant for</strong></p>
@@ -889,11 +893,11 @@ chapter and only this chapter we'll rename these markers to:</p>
 <p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: MustStay</code>. In other words: requiring a pinned pointer to a type which is <code>MustStay</code> prevents the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code> code.</p>
 </li>
 <li>
-<p>Pinning does nothing special with that memory like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden. </p>
+<p>Pinning does nothing special with that memory like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
 </li>
 <li>
 <p>Most standard library types implement <code>CanMove</code>. The same goes for most 
-&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two 
+&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
 exceptions.</p>
 </li>
 <li>
@@ -981,7 +985,7 @@ the value of the fields on <code>test1</code>. We get:</p>
 <pre><code class="language-rust ignore">a: test1, b: test1
 </code></pre>
 <p>Next we swap the data stored at the memory location which <code>test1</code> is pointing to
-with the data stored at the memory location <code>test2</code> is pointing to and vice a verca.</p>
+with the data stored at the memory location <code>test2</code> is pointing to and vice a versa.</p>
 <p>We should expect that printing the fields of <code>test2</code> should display the same as
 <code>test1</code> (since the object we printed before the swap has moved there now).</p>
 <pre><code class="language-rust ignore">a: test1, b: test2
@@ -1054,7 +1058,7 @@ pub fn main() {
 
 </code></pre></pre>
 <p>Now, what we've done here is pinning a stack address. That will always be
-<code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>). </p>
+<code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>).</p>
 <p>We use some tricks here, including requiring an <code>init</code>. If we want to fix that
 and let users avoid <code>unsafe</code> we need to pin our data on the heap instead.</p>
 <blockquote>
@@ -1135,7 +1139,7 @@ can always <a href="https://github.com/cfsamson/examples-futures">clone the repo
 are two branches. The <code>basic_example</code> is this code, and the <code>basic_example_commented</code>
 is this example with extensive comments.</p>
 <blockquote>
-<p>If you want to follow along as we go through, initalize a new cargo project
+<p>If you want to follow along as we go through, initialize a new cargo project
 by creating a new folder and run <code>cargo init</code> inside it. Everything we write
 here will be in <code>main.rs</code></p>
 </blockquote>
@@ -1208,7 +1212,7 @@ allow <code>Futures</code> to have self references.</p>
 <h2><a class="header" href="#the-future-implementation" id="the-future-implementation">The <code>Future</code> implementation</a></h2>
 <p>In Rust we call an interruptible task a <code>Future</code>. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
 these <code>Futures</code> so that once a &quot;leaf future&quot; is ready we'll perform a set of
-operations. </p>
+operations.</p>
 <p>These operations can spawn new leaf futures themselves.</p>
 <p><strong>Our Future implementation looks like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// This is the definition of our `Waker`. We use a regular thread-handle here.
@@ -1379,11 +1383,11 @@ struct Reactor {
 }
 
 // We just have two kind of events. A timeout event, a &quot;timeout&quot; event called
-// `Simple` and a `Close` event to close down our reactor.
+// `Timeout` and a `Close` event to close down our reactor.
 #[derive(Debug)]
 enum Event {
     Close,
-    Simple(Waker, u64, usize),
+    Timeout(Waker, u64, usize),
 }
 
 impl Reactor {
@@ -1405,7 +1409,7 @@ impl Reactor {
                 match event {
                     // If we get a close event we break out of the loop we're in
                     Event::Close =&gt; break,
-                    Event::Simple(waker, duration, id) =&gt; {
+                    Event::Timeout(waker, duration, id) =&gt; {
 
                         // When we get an event we simply spawn a new thread...
                         let event_handle = thread::spawn(move || {
@@ -1444,7 +1448,7 @@ impl Reactor {
         // registering an event is as simple as sending an `Event` through
         // the channel.
         self.dispatcher
-            .send(Event::Simple(waker, duration, data))
+            .send(Event::Timeout(waker, duration, data))
             .unwrap();
     }
 
@@ -1688,11 +1692,11 @@ fn main() {
 # }
 # 
 # // We just have two kind of events. A timeout event, a &quot;timeout&quot; event called
-# // `Simple` and a `Close` event to close down our reactor.
+# // `Timeout` and a `Close` event to close down our reactor.
 # #[derive(Debug)]
 # enum Event {
 #     Close,
-#     Simple(Waker, u64, usize),
+#     Timeout(Waker, u64, usize),
 # }
 # 
 # impl Reactor {
@@ -1714,7 +1718,7 @@ fn main() {
 #                 match event {
 #                     // If we get a close event we break out of the loop we're in
 #                     Event::Close =&gt; break,
-#                     Event::Simple(waker, duration, id) =&gt; {
+#                     Event::Timeout(waker, duration, id) =&gt; {
 # 
 #                         // When we get an event we simply spawn a new thread...
 #                         let event_handle = thread::spawn(move || {
@@ -1753,7 +1757,7 @@ fn main() {
 #         // registering an event is as simple as sending an `Event` through
 #         // the channel.
 #         self.dispatcher
-#             .send(Event::Simple(waker, duration, data))
+#             .send(Event::Timeout(waker, duration, data))
 #             .unwrap();
 #     }
 # 
@@ -1782,57 +1786,6 @@ fn main() {
 #     }
 # }
 </code></pre></pre>
-<h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
-<p>Congratulations. I hope you stayed with me all the way and enjoyed the ride.</p>
-<p>I'll leave you with some predictions and a set of exercises I'm suggesting for
-those interested.</p>
-<p>Futures will be more ergonomic to use with time. For example, instead of having to 
-create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
-as a normal <code>Trait</code>. It's probably going to be pretty similar to <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
-<p>It will still take some time for the ecosystem to migrate over to <code>Futures 3.0</code>
-but since the advantages are so huge, it will not be a split between libraries
-using <code>Futures 1.0</code> and libraries using <code>Futures 3.0</code> for long.</p>
-<h1><a class="header" href="#reader-excercises" id="reader-excercises">Reader excercises</a></h1>
-<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:</p>
-<h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
-<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method of telling the OS to suspend our thread and wake it up again on our command. Some hints:</p>
-<ul>
-<li>Check out <code>CondVars</code>, here are two sources Wikipedia and the docs for <code>CondVar</code></li>
-<li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
-</ul>
-<h2><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h2>
-<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only interested in synchronizing some parts of the information it contains. Try to refactor that out and only synchronize access to what's really needed.</p>
-<ul>
-<li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
-<li>Do you want to make a global <code>Reactor</code> so it can be accessed from anywhere?</li>
-</ul>
-<p>Next , using a <code>Mutex</code> as a synchronization mechanism might be overkill since many methods only reads data. </p>
-<ul>
-<li>Could an <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock</code></a> be more efficient some places?</li>
-<li>Could you use any of the synchronization mechanisms in <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam</a>?</li>
-<li>Do you want to dig into <a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/atomics-in-rust">atomics in Rust and implement a synchronization mechanism</a> of your own?</li>
-</ul>
-<h2><a class="header" href="#avoid-creating-a-new-waker-for-every-event" id="avoid-creating-a-new-waker-for-every-event">Avoid creating a new Waker for every event</a></h2>
-<p>Right now we create a new instance of a Waker for every event we create. Is this really needed? </p>
-<ul>
-<li>Could we create one instance and then cache it (see <a href="https://stjepang.github.io/2020/01/25/build-your-own-block-on.html">this article from <code>u/sjepang</code></a>)?
-<ul>
-<li>Should we cache it in <code>thread_local!</code> storage?</li>
-<li>Or should be cache it using a global constant?</li>
-</ul>
-</li>
-</ul>
-<h2><a class="header" href="#could-we-implement-more-methods-on-our-executor" id="could-we-implement-more-methods-on-our-executor">Could we implement more methods on our executor?</a></h2>
-<p>What about CPU intensive tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the thread pool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?</p>
-<p>In both <code>async_std</code> and <code>tokio</code> this method is called <code>spawn_blocking</code>, a good place to start is to read the documentation and the code thy use to implement that.</p>
-<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
-<p>There are many great resources for further study. In addition to the RFCs and
-articles I've already linked to in the book, here are some of my suggestions:</p>
-<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a>
-<a href="https://book.async.rs/">The async_std book</a>
-<a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a>
-<a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a>
-<a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a></p>
 <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!</p>
@@ -1965,7 +1918,7 @@ struct Reactor {
 #[derive(Debug)]
 enum Event {
     Close,
-    Simple(Waker, u64, usize),
+    Timeout(Waker, u64, usize),
 }
 
 impl Reactor {
@@ -1980,7 +1933,7 @@ impl Reactor {
                 let rl_clone = rl_clone.clone();
                 match event {
                     Event::Close =&gt; break,
-                    Event::Simple(waker, duration, id) =&gt; {
+                    Event::Timeout(waker, duration, id) =&gt; {
                         let event_handle = thread::spawn(move || {
                             thread::sleep(Duration::from_secs(duration));
                             rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
@@ -2006,7 +1959,7 @@ impl Reactor {
 
     fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
         self.dispatcher
-            .send(Event::Simple(waker, duration, data))
+            .send(Event::Timeout(waker, duration, data))
             .unwrap();
     }
 
@@ -2050,6 +2003,21 @@ impl Drop for Reactor {
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

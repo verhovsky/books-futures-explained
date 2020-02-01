@@ -140,7 +140,6 @@ fn main() {
 // If you've ever wondered why the parameters are called Y and R the naming from
 // the original rfc most likely holds the answer
 enum GeneratorState<Y, R> {
-    // originally called `CoResult`
     Yielded(Y),  // originally called `Yield(Y)`
     Complete(R), // originally called `Return(R)`
 }
@@ -355,7 +354,7 @@ impl Generator for GeneratorA {
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match self {
                  GeneratorA::Yield1{to_borrow, borrowed} => *borrowed = to_borrow,
-                 _ => ()  
+                 _ => unreachable!(),  
                 };
 
                 GeneratorState::Yielded(res)
@@ -478,7 +477,7 @@ impl Generator for GeneratorA {
                 *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match this {
                  GeneratorA::Yield1{to_borrow, borrowed} => *borrowed = to_borrow,
-                 _ => ()  
+                 _ => unreachable!(),  
                 };
 
                 GeneratorState::Yielded(res)

@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -155,7 +155,7 @@
 <ul>
 <li>Understanding how the async/await syntax works since it's how <code>await</code> is implemented</li>
 <li>Why we need <code>Pin</code></li>
-<li>Why Rusts async model is extremely efficient</li>
+<li>Why Rusts async model is very efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -166,8 +166,8 @@ is Generators and the <code>Pin</code> type. Since they're related we'll start o
 exploring generators first. By doing that we'll soon get to see why
 we need to be able to &quot;pin&quot; some data to a fixed location in memory and
 get an introduction to <code>Pin</code> as well.</p>
-<p>Basically, there were three main options that were discussed when Rust was 
-desiging how the language would handle concurrency:</p>
+<p>Basically, there were three main options that were discussed when Rust was
+designing how the language would handle concurrency:</p>
 <ol>
 <li>Stackful coroutines, better known as green threads.</li>
 <li>Using combinators.</li>
@@ -213,7 +213,7 @@ the needed state increases with each added step.</p>
 <h3><a class="header" href="#stackless-coroutinesgenerators" id="stackless-coroutinesgenerators">Stackless coroutines/generators</a></h3>
 <p>This is the model used in Rust today. It a few notable advantages:</p>
 <ol>
-<li>It's easy to convert normal Rust code to a stackless corotuine using using
+<li>It's easy to convert normal Rust code to a stackless coroutine using using
 async/await as keywords (it can even be done using a macro).</li>
 <li>No need for context switching and saving/restoring CPU state</li>
 <li>No need to handle dynamic stack allocation</li>
@@ -268,7 +268,6 @@ compiled to something looking similar to this:</p>
 // If you've ever wondered why the parameters are called Y and R the naming from
 // the original rfc most likely holds the answer
 enum GeneratorState&lt;Y, R&gt; {
-    // originally called `CoResult`
     Yielded(Y),  // originally called `Yield(Y)`
     Complete(R), // originally called `Return(R)`
 }
@@ -335,7 +334,7 @@ limitation just slip and call it a day yet.</p>
 <p>Instead of discussing it in theory, let's look at some code. </p>
 <blockquote>
 <p>We'll use the optimized version of the state machines which is used in Rust today. For a more
-in deapth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's execellent article: How Rust optimizes async/await</a></p>
+in deapth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
 </blockquote>
 <pre><code class="language-rust noplaypen ignore">let a = 4;
 let b = move || {
@@ -472,7 +471,7 @@ impl Generator for GeneratorA {
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match self {
                  GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; ()  
+                 _ =&gt; unreachable!(),  
                 };
 
                 GeneratorState::Yielded(res)
@@ -592,7 +591,7 @@ impl Generator for GeneratorA {
                 *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match this {
                  GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; ()  
+                 _ =&gt; unreachable!(),  
                 };
 
                 GeneratorState::Yielded(res)
@@ -617,7 +616,7 @@ the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.</li>
 </ol>
 <p>Now, the code which is created and the need for <code>Pin</code> to allow for borrowing
-across <code>yield</code> points should be pretty clear. </p>
+across <code>yield</code> points should be pretty clear.</p>
 
                     </main>
 
@@ -656,6 +655,21 @@ across <code>yield</code> points should be pretty clear. </p>
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

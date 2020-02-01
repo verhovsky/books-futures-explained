@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html" class="active"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html" class="active"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -158,7 +158,7 @@ can always <a href="https://github.com/cfsamson/examples-futures">clone the repo
 are two branches. The <code>basic_example</code> is this code, and the <code>basic_example_commented</code>
 is this example with extensive comments.</p>
 <blockquote>
-<p>If you want to follow along as we go through, initalize a new cargo project
+<p>If you want to follow along as we go through, initialize a new cargo project
 by creating a new folder and run <code>cargo init</code> inside it. Everything we write
 here will be in <code>main.rs</code></p>
 </blockquote>
@@ -231,7 +231,7 @@ allow <code>Futures</code> to have self references.</p>
 <h2><a class="header" href="#the-future-implementation" id="the-future-implementation">The <code>Future</code> implementation</a></h2>
 <p>In Rust we call an interruptible task a <code>Future</code>. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
 these <code>Futures</code> so that once a &quot;leaf future&quot; is ready we'll perform a set of
-operations. </p>
+operations.</p>
 <p>These operations can spawn new leaf futures themselves.</p>
 <p><strong>Our Future implementation looks like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// This is the definition of our `Waker`. We use a regular thread-handle here.
@@ -402,11 +402,11 @@ struct Reactor {
 }
 
 // We just have two kind of events. A timeout event, a &quot;timeout&quot; event called
-// `Simple` and a `Close` event to close down our reactor.
+// `Timeout` and a `Close` event to close down our reactor.
 #[derive(Debug)]
 enum Event {
     Close,
-    Simple(Waker, u64, usize),
+    Timeout(Waker, u64, usize),
 }
 
 impl Reactor {
@@ -428,7 +428,7 @@ impl Reactor {
                 match event {
                     // If we get a close event we break out of the loop we're in
                     Event::Close =&gt; break,
-                    Event::Simple(waker, duration, id) =&gt; {
+                    Event::Timeout(waker, duration, id) =&gt; {
 
                         // When we get an event we simply spawn a new thread...
                         let event_handle = thread::spawn(move || {
@@ -467,7 +467,7 @@ impl Reactor {
         // registering an event is as simple as sending an `Event` through
         // the channel.
         self.dispatcher
-            .send(Event::Simple(waker, duration, data))
+            .send(Event::Timeout(waker, duration, data))
             .unwrap();
     }
 
@@ -711,11 +711,11 @@ fn main() {
 # }
 # 
 # // We just have two kind of events. A timeout event, a &quot;timeout&quot; event called
-# // `Simple` and a `Close` event to close down our reactor.
+# // `Timeout` and a `Close` event to close down our reactor.
 # #[derive(Debug)]
 # enum Event {
 #     Close,
-#     Simple(Waker, u64, usize),
+#     Timeout(Waker, u64, usize),
 # }
 # 
 # impl Reactor {
@@ -737,7 +737,7 @@ fn main() {
 #                 match event {
 #                     // If we get a close event we break out of the loop we're in
 #                     Event::Close =&gt; break,
-#                     Event::Simple(waker, duration, id) =&gt; {
+#                     Event::Timeout(waker, duration, id) =&gt; {
 # 
 #                         // When we get an event we simply spawn a new thread...
 #                         let event_handle = thread::spawn(move || {
@@ -776,7 +776,7 @@ fn main() {
 #         // registering an event is as simple as sending an `Event` through
 #         // the channel.
 #         self.dispatcher
-#             .send(Event::Simple(waker, duration, data))
+#             .send(Event::Timeout(waker, duration, data))
 #             .unwrap();
 #     }
 # 
@@ -817,7 +817,7 @@ fn main() {
                         
 
                         
-                            <a rel="next" href="7_conclusion.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="8_finished_example.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -835,7 +835,7 @@ fn main() {
                 
 
                 
-                    <a href="7_conclusion.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a href="8_finished_example.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
@@ -843,6 +843,21 @@ fn main() {
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         
