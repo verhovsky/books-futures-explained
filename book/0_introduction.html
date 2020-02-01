@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Reactor/Executor Pattern - Futures Explained in 200 Lines of Rust</title>
+        <title>Introduction - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html" class="active"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="5_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">8.</strong> Conclusion and exercises</a></li><li><a href="8_concurrent_futures.html"><strong aria-hidden="true">9.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -145,94 +145,44 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#reactorexecutor-pattern" id="reactorexecutor-pattern">Reactor/Executor Pattern</a></h1>
-<blockquote>
-<p><strong>Relevant for:</strong></p>
-<ul>
-<li>Getting a high level overview of a common runtime model in Rust</li>
-<li>Introducing these terms so we're on the same page when referring to them</li>
-<li>Getting pointers on where to get more information about this pattern</li>
-</ul>
-</blockquote>
-<p>If you don't know what this is, you should take a few minutes and read about
-it. You will encounter the term <code>Reactor</code> and <code>Executor</code> a lot when working
-with async code in Rust.</p>
-<p>I have written a quick introduction explaining this pattern before which you
-can take a look at here:</p>
-<p><a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern"><img src="./assets/reactorexecutor.png" alt="homepage" /></a></p>
-<div  style="text-align:center">
-<a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/reactor-executor-pattern">Epoll, Kqueue and IOCP Explained - The Reactor-Executor Pattern</a>
-</div>
-<p>I'll re-iterate the most important parts here.</p>
-<p><strong>This pattern consists of at least 2 parts:</strong></p>
-<ol>
-<li><strong>A reactor</strong>
-<ul>
-<li>handles some kind of event queue</li>
-<li>has the responsibility of respoonding to events</li>
-</ul>
-</li>
-<li><strong>An executor</strong>
-<ul>
-<li>Often has a scheduler</li>
-<li>Holds a set of suspended tasks, and has the responsibility of resuming
-them when an event has occurred</li>
-</ul>
-</li>
-<li><strong>The concept of a task</strong>
-<ul>
-<li>A set of operations that can be stopped half way and resumed later on</li>
-</ul>
-</li>
-</ol>
-<p>This kind of pattern common outside of Rust as well, but it's especially popular in Rust due to how well it alignes with the API provided by Rusts standard library. This model separates concerns between handling and scheduling tasks, and queing and responding to I/O events.</p>
-<h2><a class="header" href="#the-reactor" id="the-reactor">The Reactor</a></h2>
-<p>Since concurrency mostly makes sense when interacting with the outside world (or
-at least some peripheral), we need something to actually abstract over this
-interaction in an asynchronous way. </p>
-<p>This is the <code>Reactors</code> job. Most often you'll
-see reactors in rust use a library called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non 
-blocking APIs and event notification for several platforms.</p>
-<p>The reactor will typically give you something like a <code>TcpStream</code> (or any other resource) which you'll use to create an I/O request. What you get in return
-is a <code>Future</code>. </p>
-<p>We can call this kind of <code>Future</code> a &quot;leaf Future`, since it's some operation 
-we'll actually wait on and that we can chain operations on which are performed
-once the leaf future is ready. </p>
-<h2><a class="header" href="#the-task" id="the-task">The Task</a></h2>
-<p>In Rust we call an interruptible task a <code>Future</code>. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
-these <code>Futures</code> so that once a &quot;leaf future&quot; is ready we'll perform a set of
-operations. </p>
-<p>These operations can spawn new leaf futures themselves.</p>
-<h2><a class="header" href="#the-executor" id="the-executor">The executor</a></h2>
-<p>The executors task is to take one or more futures and run them to completion.</p>
-<p>The first thing an <code>executor</code> does when it get's a <code>Future</code> is polling it.</p>
-<p><strong>When polled one of three things can happen:</strong></p>
-<ul>
-<li>The future returns <code>Ready</code> and we schedule whatever chained operations to run</li>
-<li>The future hasn't been polled before so we pass it a <code>Waker</code> and suspend it</li>
-<li>The futures has been polled before but is not ready and returns <code>Pending</code></li>
-</ul>
-<p>Rust provides a way for the Reactor and Executor to communicate through the <code>Waker</code>. The reactor stores this <code>Waker</code> and calls <code>Waker::wake()</code> on it once
-a <code>Future</code> has resolved and should be polled again.</p>
-<p>We'll get to know these concepts better in the following chapters.</p>
-<p>Providing these pieces let's Rust take care a lot of the ergonomic &quot;friction&quot;
-programmers meet when faced with async code, and still not dictate any
-preferred runtime to actually do the scheduling and I/O queues.</p>
-<p>With that out of the way, let's move on to actually implement all this in our
-example.</p>
+                        <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
+<p>This book aims to explain <code>Futures</code> in Rust using an example driven approach.</p>
+<p>The goal is to get a better understanding of <code>Futures</code> by implementing a toy
+<code>Reactor</code>, a very simple <code>Executor</code> and our own <code>Futures</code>. </p>
+<p>We'll start off a bit differently than most other explanations. Instead of 
+deferring some of the details about what's special about futures in Rust we 
+try to tackle that head on first. We'll be as brief as possible, but as thorough 
+as needed. This way, most question will be answered and explored up front. </p>
+<p>We'll end up with futures that can run an any executor like <code>tokio</code> and <code>async_str</code>.</p>
+<p>In the end I've made some reader exercises you can do if you want to fix some
+of the most glaring omissions and shortcuts we took and create a slightly better
+example yourself.</p>
+<h2><a class="header" href="#what-does-this-book-give-you-that-isnt-covered-elsewhere" id="what-does-this-book-give-you-that-isnt-covered-elsewhere">What does this book give you that isn't covered elsewhere?</a></h2>
+<p>That's a valid question. There are many good resources and examples already. First
+of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
+not in the context of any specific runtime.</p>
+<p>Secondly, I've always found small runnable examples very exiting to learn from. 
+Thanks to Mdbook the examples can even be edited and explored further. It's
+all code that you can download, play with and learn from.</p>
+<p>We'll and end up with an understandable example including a <code>Future</code>
+implementation, an <code>Executor</code> and a <code>Reactor</code> in less than 200 lines of code. 
+We don't rely on any dependencies or real I/O which means it's very easy to 
+explore further and try your own ideas.</p>
+<h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
+<p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
+<code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
+much is built upon. Reading and exploring some of this code is nothing less than
+impressive. Even the RFCs that much of the design is built upon is written in a
+way that mortal people can understand, and that requires a lot of work. So thanks!</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="1_3_pin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
-                                <i class="fa fa-angle-left"></i>
-                            </a>
-                        
 
                         
-                            <a rel="next" href="2_0_future_example.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="1_background_information.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -244,13 +194,9 @@ example.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="1_3_pin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
-                        <i class="fa fa-angle-left"></i>
-                    </a>
-                
 
                 
-                    <a href="2_0_future_example.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a href="1_background_information.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

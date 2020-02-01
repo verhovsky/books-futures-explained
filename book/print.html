@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="5_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">8.</strong> Conclusion and exercises</a></li><li><a href="8_concurrent_futures.html"><strong aria-hidden="true">9.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -534,7 +534,7 @@ impl Generator for GeneratorA {
         match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) =&gt; {
 
-          /*|---code before yield1---|*/
+          /*|---code before yield---|*/
           /*|*/ println!(&quot;Hello&quot;); /*|*/ 
           /*|*/ let a = a1 * 2;    /*|*/
           /*|------------------------|*/
@@ -544,7 +544,7 @@ impl Generator for GeneratorA {
             }
             GeneratorA::Yield1(_) =&gt; {
 
-          /*|----code after yield1----|*/
+          /*|----code after yield----|*/
           /*|*/ println!(&quot;world!&quot;); /*|*/ 
           /*|-------------------------|*/
 
@@ -555,6 +555,7 @@ impl Generator for GeneratorA {
         }
     }
 }
+
 </code></pre></pre>
 <blockquote>
 <p>The <code>yield</code> keyword was discussed first in <a href="https://github.com/rust-lang/rfcs/pull/1823">RFC#1823</a> and in <a href="https://github.com/rust-lang/rfcs/pull/1832">RFC#1832</a>.</p>
@@ -652,6 +653,7 @@ into itself.</p>
     if let GeneratorState::Yielded(n) = gen.resume() {
         println!(&quot;Got value {}&quot;, n);
     }
+    
     // If you uncomment this, very bad things can happen. This is why we need `Pin`
     // std::mem::swap(&amp;mut gen, &amp;mut gen2);
 
@@ -984,35 +986,12 @@ with the data stored at the memory location <code>test2</code> is pointing to an
 occupied with the string &quot;test2&quot;. This can be a bit hard to visualize so I made
 a figure that i hope can help.</p>
 <p><strong>Fig 1: Before and after swap</strong>
-<img src="../assets/swap_problem.jpg" alt="swap_problem" /></p>
+<img src="./assets/swap_problem.jpg" alt="swap_problem" /></p>
 <p>As you can see this results in unwanted behavior. It's easy to get this to 
 segfault, show UB and fail in other spectacular ways as well.</p>
 <p>If we change the example to using <code>Pin</code> instead:</p>
 <pre><pre class="playpen"><code class="language-rust editable">use std::pin::Pin;
 use std::marker::PhantomPinned;
-
-pub fn main() {
-    let mut test1 = Test::new(&quot;test1&quot;);
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
-    let mut test2 = Test::new(&quot;test2&quot;);
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
-
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test1_pin.as_ref()),
-        Test::b(test1_pin.as_ref())
-    );
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test2_pin.as_ref()),
-        Test::b(test2_pin.as_ref())
-    );
-}
 
 #[derive(Debug)]
 struct Test {
@@ -1046,6 +1025,29 @@ impl Test {
     }
 }
 
+pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
+
+    println!(
+        &quot;a: {}, b: {}&quot;,
+        Test::a(test1_pin.as_ref()),
+        Test::b(test1_pin.as_ref())
+    );
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    println!(
+        &quot;a: {}, b: {}&quot;,
+        Test::a(test2_pin.as_ref()),
+        Test::b(test2_pin.as_ref())
+    );
+}
+
 </code></pre></pre>
 <p>Now, what we've done here is pinning a stack address. That will always be
 <code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>). </p>
@@ -1059,17 +1061,6 @@ any pointers we take to &quot;self&quot; is invalidated.</p>
 <p>The next example solves some of our friction at the cost of a heap allocation.</p>
 <pre><pre class="playpen"><code class="language-rust editbable">use std::pin::Pin;
 use std::marker::PhantomPinned;
-
-pub fn main() {
-    let mut test1 = Test::new(&quot;test1&quot;);
-    let mut test2 = Test::new(&quot;test2&quot;);
-
-    println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(&amp;mut test1, &amp;mut test2);
-    println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
-}
 
 #[derive(Debug)]
 struct Test {
@@ -1100,6 +1091,17 @@ impl Test {
     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
         unsafe { &amp;*(self.b) }
     }
+}
+
+pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    let mut test2 = Test::new(&quot;test2&quot;);
+
+    println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(&amp;mut test1, &amp;mut test2);
+    println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
 }
 </code></pre></pre>
 <p>The fact that boxing (heap allocating) a value that implements <code>!Unpin</code> is safe
@@ -1704,6 +1706,43 @@ impl Drop for Reactor {
     }
 }
 </code></pre></pre>
+<h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
+<h1><a class="header" href="#reader-excercises" id="reader-excercises">Reader excercises</a></h1>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:</p>
+<h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method of telling the OS to suspend our thread and wake it up again on our command. Some hints:</p>
+<ul>
+<li>Check out <code>CondVars</code>, here are two sources Wikipedia and the docs for <code>CondVar</code></li>
+<li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
+</ul>
+<h2><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h2>
+<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only interested in synchronizing some parts of the information it contains. Try to refactor that out and only synchronize access to what's really needed.</p>
+<ul>
+<li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
+<li>Do you want to make this information global so it can be accessed from anywhere?</li>
+</ul>
+<p>Next , using a <code>Mutex</code> as a synchronization mechanism might be overkill since many methods only reads data. </p>
+<ul>
+<li>Could an <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock</code></a> be more efficient some places?</li>
+<li>Could you use any of the synchronization mechanisms in <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam</a>?</li>
+<li>Do you want to dig into <a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/atomics-in-rust">atomics in Rust and implement a synchronization mechanism</a> of your own?</li>
+</ul>
+<h2><a class="header" href="#avoid-creating-a-new-waker-for-every-event" id="avoid-creating-a-new-waker-for-every-event">Avoid creating a new Waker for every event</a></h2>
+<p>Right now we create a new instance of a Waker for every event we create. Is this really needed? </p>
+<ul>
+<li>Could we create one instance and then cache it (see <a href="https://stjepang.github.io/2020/01/25/build-your-own-block-on.html">this article from <code>u/sjepang</code></a>)?
+<ul>
+<li>Should we cache it in <code>thread_local!</code> storage?</li>
+<li>Or should be cache it using a global constant?</li>
+</ul>
+</li>
+</ul>
+<h2><a class="header" href="#could-we-implement-more-methods-on-our-executor" id="could-we-implement-more-methods-on-our-executor">Could we implement more methods on our executor?</a></h2>
+<p>What about CPU intensive tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the thread pool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?</p>
+<p>In both <code>async_std</code> and <code>tokio</code> this method is called <code>spawn_blocking</code>, a good place to start is to read the documentation and the code thy use to implement that.</p>
+<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<p>There are many great resources for further study. Here are some of my suggestions:</p>
+<p>The Asyc book:</p>
 <h1><a class="header" href="#bonus-1-concurrent-futures" id="bonus-1-concurrent-futures">Bonus 1: concurrent futures</a></h1>
 
                     </main>

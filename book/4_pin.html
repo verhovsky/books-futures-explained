@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html" class="active"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="5_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">8.</strong> Conclusion and exercises</a></li><li><a href="8_concurrent_futures.html"><strong aria-hidden="true">9.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -278,35 +278,12 @@ with the data stored at the memory location <code>test2</code> is pointing to an
 occupied with the string &quot;test2&quot;. This can be a bit hard to visualize so I made
 a figure that i hope can help.</p>
 <p><strong>Fig 1: Before and after swap</strong>
-<img src="../assets/swap_problem.jpg" alt="swap_problem" /></p>
+<img src="./assets/swap_problem.jpg" alt="swap_problem" /></p>
 <p>As you can see this results in unwanted behavior. It's easy to get this to 
 segfault, show UB and fail in other spectacular ways as well.</p>
 <p>If we change the example to using <code>Pin</code> instead:</p>
 <pre><pre class="playpen"><code class="language-rust editable">use std::pin::Pin;
 use std::marker::PhantomPinned;
-
-pub fn main() {
-    let mut test1 = Test::new(&quot;test1&quot;);
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
-    let mut test2 = Test::new(&quot;test2&quot;);
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
-
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test1_pin.as_ref()),
-        Test::b(test1_pin.as_ref())
-    );
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test2_pin.as_ref()),
-        Test::b(test2_pin.as_ref())
-    );
-}
 
 #[derive(Debug)]
 struct Test {
@@ -340,6 +317,29 @@ impl Test {
     }
 }
 
+pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
+
+    println!(
+        &quot;a: {}, b: {}&quot;,
+        Test::a(test1_pin.as_ref()),
+        Test::b(test1_pin.as_ref())
+    );
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    println!(
+        &quot;a: {}, b: {}&quot;,
+        Test::a(test2_pin.as_ref()),
+        Test::b(test2_pin.as_ref())
+    );
+}
+
 </code></pre></pre>
 <p>Now, what we've done here is pinning a stack address. That will always be
 <code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>). </p>
@@ -353,17 +353,6 @@ any pointers we take to &quot;self&quot; is invalidated.</p>
 <p>The next example solves some of our friction at the cost of a heap allocation.</p>
 <pre><pre class="playpen"><code class="language-rust editbable">use std::pin::Pin;
 use std::marker::PhantomPinned;
-
-pub fn main() {
-    let mut test1 = Test::new(&quot;test1&quot;);
-    let mut test2 = Test::new(&quot;test2&quot;);
-
-    println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(&amp;mut test1, &amp;mut test2);
-    println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
-}
 
 #[derive(Debug)]
 struct Test {
@@ -395,6 +384,17 @@ impl Test {
         unsafe { &amp;*(self.b) }
     }
 }
+
+pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    let mut test2 = Test::new(&quot;test2&quot;);
+
+    println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(&amp;mut test1, &amp;mut test2);
+    println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
+}
 </code></pre></pre>
 <p>The fact that boxing (heap allocating) a value that implements <code>!Unpin</code> is safe
 makes sense. Once the data is allocated on the heap it will have a stable address.</p>
@@ -420,13 +420,13 @@ we're soon finished.</p>
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="1_2_generators_pin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="3_generators_pin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="1_4_reactor_executor.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="5_reactor_executor.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -438,13 +438,13 @@ we're soon finished.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="1_2_generators_pin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a href="3_generators_pin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a href="1_4_reactor_executor.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a href="5_reactor_executor.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

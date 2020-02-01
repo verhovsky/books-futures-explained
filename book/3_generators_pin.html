@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_0_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="1_1_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="1_2_generators_pin.html" class="active"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="1_3_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="1_4_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="2_0_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="2_1_concurrent_futures.html"><strong aria-hidden="true">8.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="5_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="7_conclusion.html"><strong aria-hidden="true">8.</strong> Conclusion and exercises</a></li><li><a href="8_concurrent_futures.html"><strong aria-hidden="true">9.</strong> Bonus 1: concurrent futures</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -295,7 +295,7 @@ impl Generator for GeneratorA {
         match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) =&gt; {
 
-          /*|---code before yield1---|*/
+          /*|---code before yield---|*/
           /*|*/ println!(&quot;Hello&quot;); /*|*/ 
           /*|*/ let a = a1 * 2;    /*|*/
           /*|------------------------|*/
@@ -305,7 +305,7 @@ impl Generator for GeneratorA {
             }
             GeneratorA::Yield1(_) =&gt; {
 
-          /*|----code after yield1----|*/
+          /*|----code after yield----|*/
           /*|*/ println!(&quot;world!&quot;); /*|*/ 
           /*|-------------------------|*/
 
@@ -316,6 +316,7 @@ impl Generator for GeneratorA {
         }
     }
 }
+
 </code></pre></pre>
 <blockquote>
 <p>The <code>yield</code> keyword was discussed first in <a href="https://github.com/rust-lang/rfcs/pull/1823">RFC#1823</a> and in <a href="https://github.com/rust-lang/rfcs/pull/1832">RFC#1832</a>.</p>
@@ -413,6 +414,7 @@ into itself.</p>
     if let GeneratorState::Yielded(n) = gen.resume() {
         println!(&quot;Got value {}&quot;, n);
     }
+    
     // If you uncomment this, very bad things can happen. This is why we need `Pin`
     // std::mem::swap(&amp;mut gen, &amp;mut gen2);
 
@@ -618,13 +620,13 @@ across <code>yield</code> points should be pretty clear. </p>
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="1_1_trait_objects.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="2_trait_objects.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="1_3_pin.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="4_pin.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -636,13 +638,13 @@ across <code>yield</code> points should be pretty clear. </p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="1_1_trait_objects.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a href="2_trait_objects.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a href="1_3_pin.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a href="4_pin.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
