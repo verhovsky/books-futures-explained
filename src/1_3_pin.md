@@ -149,29 +149,6 @@ If we change the example to using `Pin` instead:
 use std::pin::Pin;
 use std::marker::PhantomPinned;
 
-pub fn main() {
-    let mut test1 = Test::new("test1");
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) }; 
-    let mut test2 = Test::new("test2");
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&mut test2) };
-
-    println!(
-        "a: {}, b: {}",
-        Test::a(test1_pin.as_ref()),
-        Test::b(test1_pin.as_ref())
-    );
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!(
-        "a: {}, b: {}",
-        Test::a(test2_pin.as_ref()),
-        Test::b(test2_pin.as_ref())
-    );
-}
-
 #[derive(Debug)]
 struct Test {
     a: String,
@@ -204,6 +181,29 @@ impl Test {
     }
 }
 
+pub fn main() {
+    let mut test1 = Test::new("test1");
+    test1.init();
+    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) }; 
+    let mut test2 = Test::new("test2");
+    test2.init();
+    let mut test2_pin = unsafe { Pin::new_unchecked(&mut test2) };
+
+    println!(
+        "a: {}, b: {}",
+        Test::a(test1_pin.as_ref()),
+        Test::b(test1_pin.as_ref())
+    );
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    println!(
+        "a: {}, b: {}",
+        Test::a(test2_pin.as_ref()),
+        Test::b(test2_pin.as_ref())
+    );
+}
+
 ```
 
 Now, what we've done here is pinning a stack address. That will always be
@@ -221,17 +221,6 @@ The next example solves some of our friction at the cost of a heap allocation.
 ```rust, editbable
 use std::pin::Pin;
 use std::marker::PhantomPinned;
-
-pub fn main() {
-    let mut test1 = Test::new("test1");
-    let mut test2 = Test::new("test2");
-
-    println!("a: {}, b: {}",test1.as_ref().a(), test1.as_ref().b());
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(&mut test1, &mut test2);
-    println!("a: {}, b: {}",test2.as_ref().a(), test2.as_ref().b());
-}
 
 #[derive(Debug)]
 struct Test {
@@ -262,6 +251,17 @@ impl Test {
     fn b<'a>(self: Pin<&'a Self>) -> &'a String {
         unsafe { &*(self.b) }
     }
+}
+
+pub fn main() {
+    let mut test1 = Test::new("test1");
+    let mut test2 = Test::new("test2");
+
+    println!("a: {}, b: {}",test1.as_ref().a(), test1.as_ref().b());
+
+    // Try to uncomment this and see what happens
+    // std::mem::swap(&mut test1, &mut test2);
+    println!("a: {}, b: {}",test2.as_ref().a(), test2.as_ref().b());
 }
 ```
 

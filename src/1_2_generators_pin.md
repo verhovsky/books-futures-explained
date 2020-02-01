@@ -170,7 +170,7 @@ impl Generator for GeneratorA {
         match std::mem::replace(&mut *self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) => {
 
-          /*|---code before yield1---|*/
+          /*|---code before yield---|*/
           /*|*/ println!("Hello"); /*|*/ 
           /*|*/ let a = a1 * 2;    /*|*/
           /*|------------------------|*/
@@ -180,7 +180,7 @@ impl Generator for GeneratorA {
             }
             GeneratorA::Yield1(_) => {
 
-          /*|----code after yield1----|*/
+          /*|----code after yield----|*/
           /*|*/ println!("world!"); /*|*/ 
           /*|-------------------------|*/
 
@@ -191,6 +191,7 @@ impl Generator for GeneratorA {
         }
     }
 }
+
 ```
 
 >The `yield` keyword was discussed first in [RFC#1823][rfc1823] and in [RFC#1832][rfc1832].
@@ -299,6 +300,7 @@ pub fn main() {
     if let GeneratorState::Yielded(n) = gen.resume() {
         println!("Got value {}", n);
     }
+    
     // If you uncomment this, very bad things can happen. This is why we need `Pin`
     // std::mem::swap(&mut gen, &mut gen2);
 
