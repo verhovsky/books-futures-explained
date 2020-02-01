@@ -372,10 +372,10 @@ impl Generator for GeneratorA {
 }
 ```
 
-> Try to uncomment the line with `mem::swap` and see the result of running this code.
+> Try to uncomment the line with `mem::swap` and see the results.
 
-While the example above compiles just fine, we expose users of this code to
-both possible undefined behavior and other memory errors while using just safe
+While the example above compiles just fine, we expose consumers of this this API 
+to both possible undefined behavior and other memory errors while using just safe
 Rust. This is a big problem!
 
 But now, let's prevent the segfault from happening using `Pin`. We'll discuss
@@ -495,15 +495,16 @@ impl Generator for GeneratorA {
 }
 ```
 
-Now, as you see, the user of this code must either:
+Now, as you see, the consumer of this API must either:
 
 1. Box the value and thereby allocating it on the heap
 2. Use `unsafe` and pin the value to the stack. The user knows that if they move
 the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.
 
-Now, the code which is created and the need for `Pin` to allow for borrowing
-across `yield` points should be pretty clear.
+Hopefully, after this you'll have an idea of what happens when you use the 
+`yield` or `await` keyword (inside an async function) why we need `Pin` if we
+want to be able to borrow across `yield/await` points.
 
 [rfc2033]: https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md
 [greenthreads]: https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/

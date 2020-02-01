@@ -18,7 +18,11 @@ fn main() {
     let reactor = Reactor::new();
     let reactor = Arc::new(Mutex::new(reactor));
     
-    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future1 = Task::new(reactor.clone(), 1, 1); 
+     
+      
+
+      
     let future2 = Task::new(reactor.clone(), 2, 2);
 
     let fut1 = async {
