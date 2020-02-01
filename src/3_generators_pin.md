@@ -73,7 +73,7 @@ the needed state increases with each added step.
 
 ### Stackless coroutines/generators
 
-This is the model used in Rust today. It a few notable advantages:
+This is the model used in Rust today. It has a few notable advantages:
 
 1. It's easy to convert normal Rust code to a stackless coroutine using using
 async/await as keywords (it can even be done using a macro).
@@ -282,7 +282,7 @@ If you try to compile this you'll get an error (just try it yourself by pressing
 
 What is the lifetime of `&String`. It's not the same as the lifetime of `Self`. It's not `static`.
 Turns out that it's not possible for us in Rusts syntax to describe this lifetime, which means, that
-to make this work, we'll have to let the compiler know that _we_ control this correct.
+to make this work, we'll have to let the compiler know that _we_ control this correctly ourselves.
 
 That means turning to unsafe.
 
@@ -350,7 +350,7 @@ impl Generator for GeneratorA {
                 let borrowed = &to_borrow;
                 let res = borrowed.len();
 
-                // Tricks to actually get a self reference
+                // Trick to actually get a self reference
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match self {
                  GeneratorA::Yield1{to_borrow, borrowed} => *borrowed = to_borrow,

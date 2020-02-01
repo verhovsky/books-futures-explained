@@ -46,9 +46,9 @@ cases in the API which are being explored.
 Moving such a type can cause the universe to crash. As of the time of writing
 this book, creating an reading fields of a self referential struct still requires `unsafe`.
 
-7. You're not really meant to be implementing `MustStay`, but you can on nightly with a feature flag, or by adding `std::marker::PhantomPinned` to your type.
+1. You can add a `MustStay` bound on a type by nightly with a feature flag, or by adding `std::marker::PhantomPinned` to your type.
 
-8. When Pinning, you can either pin a value to memory either on the stack or 
+2. When Pinning, you can either pin a value to memory either on the stack or 
 on the heap.
 
 9. Pinning a `MustStay` pointer to the stack requires `unsafe`
