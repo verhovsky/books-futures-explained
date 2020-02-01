@@ -5,7 +5,7 @@ executor which allows you to edit, run an play around with the code right here
 in your browser.
 
 I'll walk you through the example, but if you want to check it out closer, you
-can always clone the repository and play around with the code yourself. There
+can always [clone the repository][example_repo] and play around with the code yourself. There
 are two branches. The `basic_example` is this code, and the `basic_example_commented`
 is this example with extensive comments.
 
@@ -81,7 +81,7 @@ a _trait object_ like the one we constructed  in the first chapter.
 > `Context` is just a wrapper around the `Waker`. At the time of writing this
 book it's nothing more. In the future it might be possible that the `Context`
 object will do more than just wrapping a `Future` so having this extra 
-abstraction gives some flexibility in the future.
+abstraction gives some flexibility.
 
 You'll notice how we use `Pin` here to pin the future when we poll it.
 
@@ -94,6 +94,14 @@ As we explained in that chapter, we use `Pin` and the guarantees that give us to
 allow `Futures` to have self references.
 
 ## The `Future` implementation
+
+In Rust we call an interruptible task a `Future`. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
+these `Futures` so that once a "leaf future" is ready we'll perform a set of
+operations. 
+
+These operations can spawn new leaf futures themselves.
+
+**Our Future implementation looks like this:**
 
 ```rust, noplaypen, ignore
 // This is the definition of our `Waker`. We use a regular thread-handle here.
@@ -201,7 +209,7 @@ even a bit easier.
 
 We use an `Arc` here to pass out a ref-counted borrow of our `MyWaker`. This
 is pretty normal, and makes this easy and safe to work with. Cloning a `Waker`
-is as easy as increasing the refcount.
+is just increasing the refcount in this case.
 
 Dropping a `Waker` is as easy as decreasing the refcount. Now, in special
 cases we could choose to not use an `Arc`. So this low-level method is there
@@ -215,7 +223,7 @@ Fortunately, in the future this will probably be possible in the standard
 library as well. For now, [this trait lives in the nursery][arc_wake], but mye
 guess is that this will be a part of the standard library after som maturing.
 
-We choose to pass in a reference to the whole `Reactor` here. This is not normal.
+We choose to pass in a reference to the whole `Reactor` here. This isn't normal.
 The reactor will often be a global resource which let's us register interests
 without passing around a reference.
 
@@ -225,22 +233,22 @@ It could deadlock easily since anyone could get a handle to the `executor thread
 and call park/unpark on it.
 
 
-If one of our `Futures` holds a handle to our thread and takes it with it to a different thread the followinc could happen:
+If one of our `Futures` holds a handle to our thread and takes it with it to a different thread the following could happen:
 
 1. A future could call `unpark` on the executor thread from a different thread
 2. Our `executor` thinks that data is ready and wakes up and polls the future
-3. The future is not ready yet but one nanosecond later the `Reactor` gets
-an event and calles `wake()` which also unparks our thread.
-4. This could all happen before we go to sleep again since these processes
+3. The future is not ready yet when polled, but at that exact same time the 
+`Reactor` gets an event and calls `wake()` which also unparks our thread.
+4. This could happen before we go to sleep again since these processes
 run in parallel.
 5. Our reactor has called `wake` but our thread is still sleeping since it was
-awake alredy at that point.
+awake already at that point.
 6. We're deadlocked and our program stops working
 
-There are many better soloutions, here are some:
+There are many better solutions, here are some:
+
   - Use `std::sync::CondVar`
   - Use [crossbeam::sync::Parker](https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html)
-
 
 ## The Reactor
 
@@ -255,15 +263,17 @@ This is the `Reactors` job. Most often you'll see reactors in rust use a library
 blocking APIs and event notification for several platforms.
 
 The reactor will typically give you something like a `TcpStream` (or any other resource) which you'll use to create an I/O request. What you get in return
-is a `Future`. Or if the `Reactor` is registered as a global resource (which
-is pretty normal), our `Task` in would instead be a special `TcpStream` which
-registers interest with the global `Reactor`.
+is a `Future`. 
+
+>If the `Reactor` is registered as a global resource (which
+>is pretty normal), our `Task` in would instead be a special `TcpStream` which
+>registers interest with the global `Reactor` and no reference is needed.
 
 We can call this kind of `Future` a "leaf Future`, since it's some operation 
 we'll actually wait on and that we can chain operations on which are performed
 once the leaf future is ready. 
 
-Our Reactor will look like this:
+**Our Reactor will look like this:**
 
 ```rust, noplaypen, ignore
 // This is a "fake" reactor. It does no real I/O, but that also makes our
@@ -377,7 +387,12 @@ impl Drop for Reactor {
 It's a lot of code though, but essentially we just spawn off a new thread
 and make it sleep for some time which we specify when we create a `Task`.
 
-Now, let's test our code and see if it works:
+Now, let's test our code and see if it works. This code is actually runnable
+if you press the "play" button. Since we're sleeping for a couple of seconds
+here, just give it some time to run.
+
+In the last chapter we have the [whole 200 lines in an editable window](./8_finished_example.md). You can
+also copy that or edit it right in this book.
 
 ```rust,edition2018
 # use std::{
@@ -685,6 +700,5 @@ fn main() {
 
 [mio]: https://github.com/tokio-rs/mio
 [arc_wake]: https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html
-
+[example_repo]: https://github.com/cfsamson/examples-futures
 [playground_example]:https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=ca43dba55c6e3838c5494de45875677f
-[mdbook_issue]: https://github.com/rust-lang/mdBook/issues/1134

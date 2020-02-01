@@ -9,7 +9,7 @@
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <meta name="description" content="">
+        <meta name="description" content="This book aims to explain Futures in Rust using an example driven approach.">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
@@ -119,6 +119,10 @@
                                 <i id="print-button" class="fa fa-print"></i>
                             </a>
                             
+                            <a href="https://github.com/cfsamson/books-futures-explained" title="Git repository" aria-label="Git repository">
+                                <i id="git-repository-button" class="fa fa-github"></i>
+                            </a>
+                            
                         </div>
                     </div>
                 </div>
@@ -164,7 +168,7 @@ example yourself.</p>
 of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
 not in the context of any specific runtime.</p>
 <p>Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to Mdbook the examples can even be edited and explored further. It's
+Thanks to <a href="https://github.com/rust-lang/mdBook">Mdbook</a> the examples can even be edited and explored further. It's
 all code that you can download, play with and learn from.</p>
 <p>We'll and end up with an understandable example including a <code>Future</code>
 implementation, an <code>Executor</code> and a <code>Reactor</code> in less than 200 lines of code. 
@@ -1127,7 +1131,7 @@ we're soon finished.</p>
 executor which allows you to edit, run an play around with the code right here
 in your browser.</p>
 <p>I'll walk you through the example, but if you want to check it out closer, you
-can always clone the repository and play around with the code yourself. There
+can always <a href="https://github.com/cfsamson/examples-futures">clone the repository</a> and play around with the code yourself. There
 are two branches. The <code>basic_example</code> is this code, and the <code>basic_example_commented</code>
 is this example with extensive comments.</p>
 <blockquote>
@@ -1155,7 +1159,7 @@ here will be in <code>main.rs</code></p>
 <p>Rust provides a way for the Reactor and Executor to communicate through the <code>Waker</code>. The reactor stores this <code>Waker</code> and calls <code>Waker::wake()</code> on it once
 a <code>Future</code> has resolved and should be polled again.</p>
 <p><strong>Our Executor will look like this:</strong></p>
-<pre><code class="language-rust noplaypen">// Our executor takes any object which implements the `Future` trait
+<pre><code class="language-rust noplaypen ignore">// Our executor takes any object which implements the `Future` trait
 fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
     // the first thing we do is to construct a `Waker` which we'll pass on to
     // the `reactor` so it can wake us up when an event is ready. 
@@ -1192,7 +1196,7 @@ a <em>trait object</em> like the one we constructed  in the first chapter.</p>
 <p><code>Context</code> is just a wrapper around the <code>Waker</code>. At the time of writing this
 book it's nothing more. In the future it might be possible that the <code>Context</code>
 object will do more than just wrapping a <code>Future</code> so having this extra 
-abstraction gives some flexibility in the future.</p>
+abstraction gives some flexibility.</p>
 </blockquote>
 <p>You'll notice how we use <code>Pin</code> here to pin the future when we poll it.</p>
 <p>Now that you've read so much about <code>Generators</code> and <code>Pin</code> already this should
@@ -1202,7 +1206,12 @@ exact same challenges as we do when borrowing across <code>yield</code> points.<
 <p>As we explained in that chapter, we use <code>Pin</code> and the guarantees that give us to
 allow <code>Futures</code> to have self references.</p>
 <h2><a class="header" href="#the-future-implementation" id="the-future-implementation">The <code>Future</code> implementation</a></h2>
-<pre><code class="language-rust noplaypen">// This is the definition of our `Waker`. We use a regular thread-handle here.
+<p>In Rust we call an interruptible task a <code>Future</code>. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
+these <code>Futures</code> so that once a &quot;leaf future&quot; is ready we'll perform a set of
+operations. </p>
+<p>These operations can spawn new leaf futures themselves.</p>
+<p><strong>Our Future implementation looks like this:</strong></p>
+<pre><code class="language-rust noplaypen ignore">// This is the definition of our `Waker`. We use a regular thread-handle here.
 // It works but it's not a good solution. It's easy to fix though, I'll explain
 // after this code snippet.
 #[derive(Clone)]
@@ -1305,7 +1314,7 @@ we need to construct the <code>Waker</code>, but since we've already created our
 even a bit easier.</p>
 <p>We use an <code>Arc</code> here to pass out a ref-counted borrow of our <code>MyWaker</code>. This
 is pretty normal, and makes this easy and safe to work with. Cloning a <code>Waker</code>
-is as easy as increasing the refcount.</p>
+is just increasing the refcount in this case.</p>
 <p>Dropping a <code>Waker</code> is as easy as decreasing the refcount. Now, in special
 cases we could choose to not use an <code>Arc</code>. So this low-level method is there
 to allow such cases. </p>
@@ -1315,25 +1324,25 @@ a normal trait.</p>
 <p>Fortunately, in the future this will probably be possible in the standard
 library as well. For now, <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">this trait lives in the nursery</a>, but mye
 guess is that this will be a part of the standard library after som maturing.</p>
-<p>We choose to pass in a reference to the whole <code>Reactor</code> here. This is not normal.
+<p>We choose to pass in a reference to the whole <code>Reactor</code> here. This isn't normal.
 The reactor will often be a global resource which let's us register interests
 without passing around a reference.</p>
 <h3><a class="header" href="#why-using-thread-parkunpark-is-a-bad-idea-for-a-library" id="why-using-thread-parkunpark-is-a-bad-idea-for-a-library">Why using thread park/unpark is a bad idea for a library</a></h3>
 <p>It could deadlock easily since anyone could get a handle to the <code>executor thread</code>
 and call park/unpark on it.</p>
-<p>If one of our <code>Futures</code> holds a handle to our thread and takes it with it to a different thread the followinc could happen:</p>
+<p>If one of our <code>Futures</code> holds a handle to our thread and takes it with it to a different thread the following could happen:</p>
 <ol>
 <li>A future could call <code>unpark</code> on the executor thread from a different thread</li>
 <li>Our <code>executor</code> thinks that data is ready and wakes up and polls the future</li>
-<li>The future is not ready yet but one nanosecond later the <code>Reactor</code> gets
-an event and calles <code>wake()</code> which also unparks our thread.</li>
-<li>This could all happen before we go to sleep again since these processes
+<li>The future is not ready yet when polled, but at that exact same time the 
+<code>Reactor</code> gets an event and calls <code>wake()</code> which also unparks our thread.</li>
+<li>This could happen before we go to sleep again since these processes
 run in parallel.</li>
 <li>Our reactor has called <code>wake</code> but our thread is still sleeping since it was
-awake alredy at that point.</li>
+awake already at that point.</li>
 <li>We're deadlocked and our program stops working</li>
 </ol>
-<p>There are many better soloutions, here are some:</p>
+<p>There are many better solutions, here are some:</p>
 <ul>
 <li>Use <code>std::sync::CondVar</code></li>
 <li>Use <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html">crossbeam::sync::Parker</a></li>
@@ -1347,14 +1356,17 @@ interaction in an asynchronous way. </p>
 <p>This is the <code>Reactors</code> job. Most often you'll see reactors in rust use a library called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non 
 blocking APIs and event notification for several platforms.</p>
 <p>The reactor will typically give you something like a <code>TcpStream</code> (or any other resource) which you'll use to create an I/O request. What you get in return
-is a <code>Future</code>. Or if the <code>Reactor</code> is registered as a global resource (which
+is a <code>Future</code>. </p>
+<blockquote>
+<p>If the <code>Reactor</code> is registered as a global resource (which
 is pretty normal), our <code>Task</code> in would instead be a special <code>TcpStream</code> which
-registers interest with the global <code>Reactor</code>.</p>
+registers interest with the global <code>Reactor</code> and no reference is needed.</p>
+</blockquote>
 <p>We can call this kind of <code>Future</code> a &quot;leaf Future`, since it's some operation 
 we'll actually wait on and that we can chain operations on which are performed
 once the leaf future is ready. </p>
-<p>Our Reactor will look like this:</p>
-<pre><code class="language-rust noplaypen">// This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
+<p><strong>Our Reactor will look like this:</strong></p>
+<pre><code class="language-rust noplaypen ignore">// This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
 // code possible to run in the book and in the playground
 struct Reactor {
     // we need some way of registering a Task with the reactor. Normally this
@@ -1463,7 +1475,11 @@ impl Drop for Reactor {
 </code></pre>
 <p>It's a lot of code though, but essentially we just spawn off a new thread
 and make it sleep for some time which we specify when we create a <code>Task</code>.</p>
-<p>Now, let's test our code and see if it works:</p>
+<p>Now, let's test our code and see if it works. This code is actually runnable
+if you press the &quot;play&quot; button. Since we're sleeping for a couple of seconds
+here, just give it some time to run.</p>
+<p>In the last chapter we have the <a href="./8_finished_example.html">whole 200 lines in an editable window</a>. You can
+also copy that or edit it right in this book.</p>
 <pre><pre class="playpen"><code class="language-rust edition2018"># use std::{
 #     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
 #     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
@@ -1516,10 +1532,10 @@ fn main() {
     reactor.lock().map(|mut r| r.close()).unwrap();
 }
 
-#//// ============================ EXECUTOR ====================================
+# // ============================ EXECUTOR ====================================
 #
-#// Our executor takes any object which implements the `Future` trait
-#fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+# // Our executor takes any object which implements the `Future` trait
+# fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
 #    // the first thing we do is to construct a `Waker` which we'll pass on to
 #    // the `reactor` so it can wake us up when an event is ready. 
 #    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
@@ -1545,119 +1561,119 @@ fn main() {
 #        };
 #    };
 #    val
-#}
-#
-#// ====================== FUTURE IMPLEMENTATION ==============================
-#
-#// This is the definition of our `Waker`. We use a regular thread-handle here.
-#// It works but it's not a good solution. If one of our `Futures` holds a handle
-#// to our thread and takes it with it to a different thread the followinc could
-#// happen:
-#// 1. Our future calls `unpark` from a different thread
-#// 2. Our `executor` thinks that data is ready and wakes up and polls the future
-#// 3. The future is not ready yet but one nanosecond later the `Reactor` gets
-#// an event and calles `wake()` which also unparks our thread.
-#// 4. This could all happen before we go to sleep again since these processes
-#// run in parallel.
-#// 5. Our reactor has called `wake` but our thread is still sleeping since it was
-#// awake alredy at that point.
-#// 6. We're deadlocked and our program stops working
-#// There are many better soloutions, here are some:
-#// - Use `std::sync::CondVar`
-#// - Use [crossbeam::sync::Parker](https://docs.rs/crossbeam/0.7.3/crossbeam/sync/#struct.Parker.html)
-##[derive(Clone)]
-#struct MyWaker {
-#    thread: thread::Thread,
-#}
-#
-#// This is the definition of our `Future`. It keeps all the information we
-#// need. This one holds a reference to our `reactor`, that's just to make
-#// this example as easy as possible. It doesn't need to hold a reference to
-#// the whole reactor, but it needs to be able to register itself with the
-#// reactor.
-##[derive(Clone)]
-#pub struct Task {
-#    id: usize,
-#    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
-#    data: u64,
-#    is_registered: bool,
-#}
-#
-#// These are function definitions we'll use for our waker. Remember the
-#// &quot;Trait Objects&quot; chapter from the book.
-#fn mywaker_wake(s: &amp;MyWaker) {
-#    let waker_ptr: *const MyWaker = s;
-#    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
-#    waker_arc.thread.unpark();
-#}
-#
-#// Since we use an `Arc` cloning is just increasing the refcount on the smart
-#// pointer.
-#fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
-#    let arc = unsafe { Arc::from_raw(s).clone() };
-#    std::mem::forget(arc.clone()); // increase ref count
-#    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
-#}
-#
-#// This is actually a &quot;helper funtcion&quot; to create a `Waker` vtable. In contrast
-#// to when we created a `Trait Object` from scratch we don't need to concern
-#// ourselves with the actual layout of the `vtable` and only provide a fixed
-#// set of functions
-#const VTABLE: RawWakerVTable = unsafe {
-#    RawWakerVTable::new(
-#        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
-#        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
-#        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
-#        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
-#    )
-#};
-#
-#// Instead of implementing this on the `MyWaker` oject in `impl Mywaker...` we
-#// just use this pattern instead since it saves us some lines of code.
-#fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
-#    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
-#    unsafe { Waker::from_raw(raw_waker) }
-#}
-#
-#impl Task {
-#    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
-#        Task {
-#            id,
-#            reactor,
-#            data,
-#            is_registered: false,
-#        }
-#    }
-#}
-#
-#// This is our `Future` implementation
-#impl Future for Task {
-#    // The output for this kind of `leaf future` is just an `usize`. For other
-#    // futures this could be something more interesting like a byte stream.
-#    type Output = usize;
-#    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
-#        let mut r = self.reactor.lock().unwrap();
-#        // we check with the `Reactor` if this future is in its &quot;readylist&quot;
-#        if r.is_ready(self.id) {
-#            // if it is, we return the data. In this case it's just the ID of
-#            // the task. 
-#            Poll::Ready(self.id)
-#        } else if self.is_registered {
-#            // If the future is registered alredy, we just return `Pending`
-#            Poll::Pending
-#        } else {
-#            // If we get here, it must be the first time this `Future` is polled
-#            // so we register a task with our `reactor`
-#            r.register(self.data, cx.waker().clone(), self.id);
-#            // oh, we have to drop the lock on our `Mutex` here because we can't
-#            // have a shared and exclusive borrow at the same time
-#            drop(r);
-#            self.is_registered = true;
-#            Poll::Pending
-#        }
-#    }
-#}
-#
+# }
+# 
+# // ====================== FUTURE IMPLEMENTATION ==============================
+# 
+# // This is the definition of our `Waker`. We use a regular thread-handle here.
+# // It works but it's not a good solution. If one of our `Futures` holds a handle
+# // to our thread and takes it with it to a different thread the followinc could
+# // happen:
+# // 1. Our future calls `unpark` from a different thread
+# // 2. Our `executor` thinks that data is ready and wakes up and polls the future
+# // 3. The future is not ready yet but one nanosecond later the `Reactor` gets
+# // an event and calles `wake()` which also unparks our thread.
+# // 4. This could all happen before we go to sleep again since these processes
+# // run in parallel.
+# // 5. Our reactor has called `wake` but our thread is still sleeping since it was
+# // awake alredy at that point.
+# // 6. We're deadlocked and our program stops working
+# // There are many better soloutions, here are some:
+# // - Use `std::sync::CondVar`
+# // - Use [crossbeam::sync::Parker](https://docs.rs/crossbeam/0.7.3/crossbeam/sync/# struct.Parker.html)
+# #[derive(Clone)]
+# struct MyWaker {
+#     thread: thread::Thread,
+# }
+# 
+# // This is the definition of our `Future`. It keeps all the information we
+# // need. This one holds a reference to our `reactor`, that's just to make
+# // this example as easy as possible. It doesn't need to hold a reference to
+# // the whole reactor, but it needs to be able to register itself with the
+# // reactor.
+# #[derive(Clone)]
+# pub struct Task {
+#     id: usize,
+#     reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+#     data: u64,
+#     is_registered: bool,
+# }
+# 
+# // These are function definitions we'll use for our waker. Remember the
+# // &quot;Trait Objects&quot; chapter from the book.
+# fn mywaker_wake(s: &amp;MyWaker) {
+#     let waker_ptr: *const MyWaker = s;
+#     let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+#     waker_arc.thread.unpark();
+# }
+# 
+# // Since we use an `Arc` cloning is just increasing the refcount on the smart
+# // pointer.
+# fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+#     let arc = unsafe { Arc::from_raw(s).clone() };
+#     std::mem::forget(arc.clone()); // increase ref count
+#     RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+# }
+# 
+# // This is actually a &quot;helper funtcion&quot; to create a `Waker` vtable. In contrast
+# // to when we created a `Trait Object` from scratch we don't need to concern
+# // ourselves with the actual layout of the `vtable` and only provide a fixed
+# // set of functions
+# const VTABLE: RawWakerVTable = unsafe {
+#     RawWakerVTable::new(
+#         |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
+#         |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
+#         |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
+#         |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+#     )
+# };
+# 
+# // Instead of implementing this on the `MyWaker` oject in `impl Mywaker...` we
+# // just use this pattern instead since it saves us some lines of code.
+# fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+#     let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+#     unsafe { Waker::from_raw(raw_waker) }
+# }
+# 
+# impl Task {
+#     fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
+#         Task {
+#             id,
+#             reactor,
+#             data,
+#             is_registered: false,
+#         }
+#     }
+# }
+# 
+# // This is our `Future` implementation
+# impl Future for Task {
+#     // The output for this kind of `leaf future` is just an `usize`. For other
+#     // futures this could be something more interesting like a byte stream.
+#     type Output = usize;
+#     fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+#         let mut r = self.reactor.lock().unwrap();
+#         // we check with the `Reactor` if this future is in its &quot;readylist&quot;
+#         if r.is_ready(self.id) {
+#             // if it is, we return the data. In this case it's just the ID of
+#             // the task. 
+#             Poll::Ready(self.id)
+#         } else if self.is_registered {
+#             // If the future is registered alredy, we just return `Pending`
+#             Poll::Pending
+#         } else {
+#             // If we get here, it must be the first time this `Future` is polled
+#             // so we register a task with our `reactor`
+#             r.register(self.data, cx.waker().clone(), self.id);
+#             // oh, we have to drop the lock on our `Mutex` here because we can't
+#             // have a shared and exclusive borrow at the same time
+#             drop(r);
+#             self.is_registered = true;
+#             Poll::Pending
+#         }
+#     }
+# }
+# 
 # // =============================== REACTOR ===================================
 # // This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
 # // code possible to run in the book and in the playground
@@ -1820,7 +1836,7 @@ articles I've already linked to in the book, here are some of my suggestions:</p
 <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!</p>
-<pre><pre class="playpen"><code class="language-rust edition2018 editable">use std::{
+<pre><pre class="playpen"><code class="language-rust editable edition2018">use std::{
     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
     thread::{self, JoinHandle}, time::{Duration, Instant}
@@ -2035,22 +2051,24 @@ impl Drop for Reactor {
         </div>
 
         
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload(true); // force reload from server (not from cache)
-                }
-            };
 
-            window.onbeforeunload = function() {
-                socket.close();
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-157536992-1', 'auto');
+                ga('send', 'pageview');
             }
         </script>
-        
-
         
 
         

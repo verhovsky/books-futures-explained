@@ -4,7 +4,7 @@
 Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!
 
-```rust,edition2018,editable
+```rust,editable,edition2018
 use std::{
     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},

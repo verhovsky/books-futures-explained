@@ -7,7 +7,7 @@
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <meta name="description" content="">
+        <meta name="description" content="This book aims to explain Futures in Rust using an example driven approach.">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
@@ -117,6 +117,10 @@
                                 <i id="print-button" class="fa fa-print"></i>
                             </a>
                             
+                            <a href="https://github.com/cfsamson/books-futures-explained" title="Git repository" aria-label="Git repository">
+                                <i id="git-repository-button" class="fa fa-github"></i>
+                            </a>
+                            
                         </div>
                     </div>
                 </div>
@@ -148,7 +152,7 @@
                         <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!</p>
-<pre><pre class="playpen"><code class="language-rust edition2018 editable">use std::{
+<pre><pre class="playpen"><code class="language-rust editable edition2018">use std::{
     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
     thread::{self, JoinHandle}, time::{Duration, Instant}
@@ -371,22 +375,24 @@ impl Drop for Reactor {
         </div>
 
         
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload(true); // force reload from server (not from cache)
-                }
-            };
 
-            window.onbeforeunload = function() {
-                socket.close();
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-157536992-1', 'auto');
+                ga('send', 'pageview');
             }
         </script>
-        
-
         
 
         

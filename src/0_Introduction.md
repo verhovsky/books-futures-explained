@@ -16,9 +16,13 @@ In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
 example yourself.
 
+> This book is developed in the open, and contributions are welcome. You'll find
+> [the repository for the book itself here][book_repo]. The final example which
+> you can clone, fork or copy [can be found here][example_repo]
+
 ## What does this book give you that isn't covered elsewhere?
 
-That's a valid question. There are many good resources and examples already. First
+There are many good resources and examples already. First
 of all, this book will focus on `Futures` and `async/await` specifically and
 not in the context of any specific runtime.
 
@@ -41,3 +45,5 @@ impressive. Even the RFCs that much of the design is built upon is written in a
 way that mortal people can understand, and that requires a lot of work. So thanks!
 
 [mdbook]: https://github.com/rust-lang/mdBook
+[book_repo]: https://github.com/cfsamson/books-futures-explained
+[example_repo]: https://github.com/cfsamson/examples-futures

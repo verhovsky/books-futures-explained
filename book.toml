@@ -4,6 +4,14 @@ language = "en"
 multilingual = false
 src = "src"
 title = "Futures Explained in 200 Lines of Rust"
+description = "This book aims to explain Futures in Rust using an example driven approach."
+
+
+[output.html]
+git-repository-url = "https://github.com/cfsamson/books-futures-explained"
+google-analytics = "UA-157536992-1"
 
 [output.html.playpen]
 editable = true
+copy-js = true
+line-numbers = true
