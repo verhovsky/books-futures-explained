@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="5_reactor_executor.html"><strong aria-hidden="true">6.</strong> Reactor/Executor Pattern</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">7.</strong> The main example</a></li><li><a href="7_conclusion.html" class="active"><strong aria-hidden="true">8.</strong> Conclusion and exercises</a></li><li><a href="8_concurrent_futures.html"><strong aria-hidden="true">9.</strong> Bonus 1: concurrent futures</a></li></ol>
+                <ol class="chapter"><li><a href="0_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">2.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">3.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> The main example</a></li><li><a href="7_conclusion.html" class="active"><strong aria-hidden="true">7.</strong> Conclusion and exercises</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">8.</strong> Finished example (editable)</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -146,6 +146,15 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
+<p>Congratulations. I hope you stayed with me all the way and enjoyed the ride.</p>
+<p>I'll leave you with some predictions and a set of exercises I'm suggesting for
+those interested.</p>
+<p>Futures will be more ergonomic to use with time. For example, instead of having to 
+create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
+as a normal <code>Trait</code>. It's probably going to be pretty similar to <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
+<p>It will still take some time for the ecosystem to migrate over to <code>Futures 3.0</code>
+but since the advantages are so huge, it will not be a split between libraries
+using <code>Futures 1.0</code> and libraries using <code>Futures 3.0</code> for long.</p>
 <h1><a class="header" href="#reader-excercises" id="reader-excercises">Reader excercises</a></h1>
 <p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:</p>
 <h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
@@ -158,7 +167,7 @@
 <p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only interested in synchronizing some parts of the information it contains. Try to refactor that out and only synchronize access to what's really needed.</p>
 <ul>
 <li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
-<li>Do you want to make this information global so it can be accessed from anywhere?</li>
+<li>Do you want to make a global <code>Reactor</code> so it can be accessed from anywhere?</li>
 </ul>
 <p>Next , using a <code>Mutex</code> as a synchronization mechanism might be overkill since many methods only reads data. </p>
 <ul>
@@ -180,8 +189,13 @@
 <p>What about CPU intensive tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the thread pool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?</p>
 <p>In both <code>async_std</code> and <code>tokio</code> this method is called <code>spawn_blocking</code>, a good place to start is to read the documentation and the code thy use to implement that.</p>
 <h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
-<p>There are many great resources for further study. Here are some of my suggestions:</p>
-<p>The Asyc book:</p>
+<p>There are many great resources for further study. In addition to the RFCs and
+articles I've already linked to in the book, here are some of my suggestions:</p>
+<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a>
+<a href="https://book.async.rs/">The async_std book</a>
+<a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a>
+<a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a>
+<a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a></p>
 
                     </main>
 
@@ -194,7 +208,7 @@
                         
 
                         
-                            <a rel="next" href="8_concurrent_futures.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="8_finished_example.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -212,7 +226,7 @@
                 
 
                 
-                    <a href="8_concurrent_futures.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a href="8_finished_example.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

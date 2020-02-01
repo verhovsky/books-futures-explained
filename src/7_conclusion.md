@@ -1,6 +1,17 @@
 # Conclusion and exercises
 
+Congratulations. I hope you stayed with me all the way and enjoyed the ride.
 
+I'll leave you with some predictions and a set of exercises I'm suggesting for
+those interested.
+
+Futures will be more ergonomic to use with time. For example, instead of having to 
+create a `RawWaker` and so on, the `Waker` will also be possible to implement
+as a normal `Trait`. It's probably going to be pretty similar to [ArcWake](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html).
+
+It will still take some time for the ecosystem to migrate over to `Futures 3.0`
+but since the advantages are so huge, it will not be a split between libraries
+using `Futures 1.0` and libraries using `Futures 3.0` for long.
 
 # Reader excercises
 
@@ -18,7 +29,7 @@ The big problem using `Thread::park` and `Thread::unpark` is that the user can a
 First of all, protecting the whole `Reactor` and passing it around is overkill. We're only interested in synchronizing some parts of the information it contains. Try to refactor that out and only synchronize access to what's really needed.
 
 * Do you want to pass around a reference to this information using an `Arc`?
-* Do you want to make this information global so it can be accessed from anywhere?
+* Do you want to make a global `Reactor` so it can be accessed from anywhere?
 
 Next , using a `Mutex` as a synchronization mechanism might be overkill since many methods only reads data. 
 
@@ -42,6 +53,11 @@ In both `async_std` and `tokio` this method is called `spawn_blocking`, a good p
 
 ## Further reading
 
-There are many great resources for further study. Here are some of my suggestions:
+There are many great resources for further study. In addition to the RFCs and
+articles I've already linked to in the book, here are some of my suggestions:
 
-The Asyc book:
+[The official Asyc book](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html)
+[The async_std book](https://book.async.rs/)
+[Aron Turon: Designing futures for Rust](https://aturon.github.io/blog/2016/09/07/futures-design/)
+[Steve Klabnik's presentation: Rust's journey to Async/Await](https://www.infoq.com/presentations/rust-2019/)
+[The Tokio Blog](https://tokio.rs/blog/2019-10-scheduler/)
