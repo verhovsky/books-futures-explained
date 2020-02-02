@@ -27,17 +27,16 @@ handle concurrency:
 I've written about green threads before. Go check out 
 [Green Threads Explained in 200 lines of Rust][greenthreads] if you're interested.
 
-Green threads uses the same mechanisms as an OS does by creating a thread for
+Green threads uses the same mechanism as an OS does by creating a thread for
 each task, setting up a stack, save the CPU's state and jump from one
-task(thread) to another by doing a "context switch". 
+task(thread) to another by doing a "context switch".
 
 We yield control to the scheduler (which is a central part of the runtime in
 such a system) which then continues running a different task.
 
 Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no need
-for `async`, `await`, `Futures` or `Pin`. All this would be implementation
-details for the library.
+for `async`, `await`, `Futures` or `Pin`. All this would be implementation details for the library.
 
 ### Combinators
 
@@ -63,9 +62,9 @@ While an effective solution there are mainly three downsides I'll focus on:
 
 Point #3, is actually a major drawback with `Futures 1.0`.
 
-Not allowing borrows across suspension points ends up being very 
-un-ergonomic and often requiring extra allocations or copying to accomplish 
-some tasks which is inefficient.
+Not allowing borrows across suspension points ends up being very
+un-ergonomic and to accomplish some tasks it requires extra allocations or
+copying which is inefficient.
 
 The reason for the higher than optimal memory usage is that this is basically
 a callback-based approach, where each closure stores all the data it needs
@@ -94,15 +93,15 @@ async fn myfn() {
 }
 ```
 
-Generators are implemented as state machines. The memory footprint of a chain 
-of computations is only defined by the largest footprint any single step 
-requires. That means that adding steps to a chain of computations might not 
-require any added memory at all.
+Generators in Rust are implemented as state machines. The memory footprint of a
+chain of computations is only defined by the largest footprint of any single
+step require. That means that adding steps to a chain of computations might not
+require any increased memory at all.
 
 ## How generators work
 
-In Nightly Rust today you can use the `yield` keyword. Basically using this 
-keyword in a closure, converts it to a generator. A closure looking like this 
+In Nightly Rust today you can use the `yield` keyword. Basically using this
+keyword in a closure, converts it to a generator. A closure looking like this
 (I'm going to use the terminology that's currently in Rust):
 
 ```rust,noplaypen,ignore
@@ -380,8 +379,8 @@ to both possible undefined behavior and other memory errors while using just saf
 Rust. This is a big problem!
 
 But now, let's prevent the segfault from happening using `Pin`. We'll discuss
-`Pin` more below, but you'll get an introduction here by just reading the
-comments.
+`Pin` more in the next chapter, but you'll get an introduction here by just
+reading the comments.
 
 ```rust,editable
 #![feature(optin_builtin_traits)]
@@ -394,11 +393,11 @@ pub fn main() {
     // std::mem::swap(&mut gen, &mut gen2);
 
     // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
-    // However, as I mentioned in the start of the next chapter about `Pin` a
-    // boxed type automatically implements `Unpin` so to stay in safe Rust we can use 
-    // that to avoid unsafe. You can also use crates like `pin_utils` to do this safely, 
-    // just remember that they use unsafe under the hood so it's like using an already-reviewed 
-    // unsafe implementation.
+    // However, as you'll see in the start of the next chapter value pinned to
+    // heap can be constructed while staying in safe Rust so we can use
+    // that to avoid unsafe. You can also use crates like `pin_utils` to do 
+    // this safely, just remember that they use unsafe under the hood so it's 
+    // like using an already-reviewed unsafe implementation.
 
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
