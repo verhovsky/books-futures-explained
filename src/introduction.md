@@ -8,7 +8,7 @@ The goal is to get a better understanding of `Futures` by implementing a toy
 We'll start off a bit differently than most other explanations. Instead of 
 deferring some of the details about what's special about futures in Rust we 
 try to tackle that head on first. We'll be as brief as possible, but as thorough 
-as needed. This way, most question will be answered and explored up front. 
+as needed. This way, most questions will be answered and explored up front. 
 
 We'll end up with futures that can run an any executor like `tokio` and `async_str`.
 
@@ -27,8 +27,11 @@ of all, this book will focus on `Futures` and `async/await` specifically and
 not in the context of any specific runtime.
 
 Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to [Mdbook][mdbook] the examples can even be edited and explored further. It's
-all code that you can download, play with and learn from.
+Thanks to [Mdbook][mdbook] the examples can even be edited and explored further
+by uncommenting certain lines or adding new ones yourself. I use that quite a
+but throughout so keep an eye out when reading through editable code segments.
+
+It's all code that you can download, play with and learn from.
 
 We'll and end up with an understandable example including a `Future`
 implementation, an `Executor` and a `Reactor` in less than 200 lines of code. 

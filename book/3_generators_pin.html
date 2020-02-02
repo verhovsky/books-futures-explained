@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Generators and Pin - Futures Explained in 200 Lines of Rust</title>
+        <title>Generators - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">3.</strong> Generators and Pin</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -211,7 +211,7 @@ a callback-based approach, where each closure stores all the data it needs
 for computation. This means that as we chain these, the memory required to store
 the needed state increases with each added step.</p>
 <h3><a class="header" href="#stackless-coroutinesgenerators" id="stackless-coroutinesgenerators">Stackless coroutines/generators</a></h3>
-<p>This is the model used in Rust today. It a few notable advantages:</p>
+<p>This is the model used in Rust today. It has a few notable advantages:</p>
 <ol>
 <li>It's easy to convert normal Rust code to a stackless coroutine using using
 async/await as keywords (it can even be done using a macro).</li>
@@ -404,7 +404,7 @@ impl Generator for GeneratorA {
 <p>If you try to compile this you'll get an error (just try it yourself by pressing play).</p>
 <p>What is the lifetime of <code>&amp;String</code>. It's not the same as the lifetime of <code>Self</code>. It's not <code>static</code>.
 Turns out that it's not possible for us in Rusts syntax to describe this lifetime, which means, that
-to make this work, we'll have to let the compiler know that <em>we</em> control this correct.</p>
+to make this work, we'll have to let the compiler know that <em>we</em> control this correctly ourselves.</p>
 <p>That means turning to unsafe.</p>
 <p>Let's try to write an implementation that will compiler using <code>unsafe</code>. As you'll
 see we end up in a <em>self referential struct</em>. A struct which holds references
@@ -467,7 +467,7 @@ impl Generator for GeneratorA {
                 let borrowed = &amp;to_borrow;
                 let res = borrowed.len();
 
-                // Tricks to actually get a self reference
+                // Trick to actually get a self reference
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 match self {
                  GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
@@ -489,10 +489,10 @@ impl Generator for GeneratorA {
 }
 </code></pre></pre>
 <blockquote>
-<p>Try to uncomment the line with <code>mem::swap</code> and see the result of running this code.</p>
+<p>Try to uncomment the line with <code>mem::swap</code> and see the results.</p>
 </blockquote>
-<p>While the example above compiles just fine, we expose users of this code to
-both possible undefined behavior and other memory errors while using just safe
+<p>While the example above compiles just fine, we expose consumers of this this API 
+to both possible undefined behavior and other memory errors while using just safe
 Rust. This is a big problem!</p>
 <p>But now, let's prevent the segfault from happening using <code>Pin</code>. We'll discuss
 <code>Pin</code> more below, but you'll get an introduction here by just reading the
@@ -608,15 +608,16 @@ impl Generator for GeneratorA {
     }
 }
 </code></pre></pre>
-<p>Now, as you see, the user of this code must either:</p>
+<p>Now, as you see, the consumer of this API must either:</p>
 <ol>
 <li>Box the value and thereby allocating it on the heap</li>
 <li>Use <code>unsafe</code> and pin the value to the stack. The user knows that if they move
 the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.</li>
 </ol>
-<p>Now, the code which is created and the need for <code>Pin</code> to allow for borrowing
-across <code>yield</code> points should be pretty clear.</p>
+<p>Hopefully, after this you'll have an idea of what happens when you use the 
+<code>yield</code> or <code>await</code> keyword (inside an async function) why we need <code>Pin</code> if we
+want to be able to borrow across <code>yield/await</code> points.</p>
 
                     </main>
 

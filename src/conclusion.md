@@ -72,8 +72,15 @@ There are many great resources for further study. In addition to the RFCs and
 articles I've already linked to in the book, here are some of my suggestions:
 
 [The official Asyc book](https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html)
+
 [The async_std book](https://book.async.rs/)
+
 [Aron Turon: Designing futures for Rust](https://aturon.github.io/blog/2016/09/07/futures-design/)
+
 [Steve Klabnik's presentation: Rust's journey to Async/Await](https://www.infoq.com/presentations/rust-2019/)
+
 [The Tokio Blog](https://tokio.rs/blog/2019-10-scheduler/)
+
 [Stjepan's blog with a series where he implements an Executor](https://stjepang.github.io/)
+
+[Jon Gjengset's video on The Why, What and How of Pinning in Rust](https://youtu.be/DkMwYxfSYNQ)

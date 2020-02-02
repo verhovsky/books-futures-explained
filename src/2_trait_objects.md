@@ -8,7 +8,7 @@
 
 ## Trait objects and dynamic dispatch
 
-One of the most confusing topic we encounter when implementing our own `Futures` 
+One of the most confusing things we encounter when implementing our own `Futures` 
 is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable` 
 which allows us to use dynamic dispatch to call methods on a _type erased_ trait 
 object we construct our selves.
@@ -44,7 +44,7 @@ As you see from the output after running this, the sizes of the references varie
 Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.
 
-The 16 byte sized pointers are called "fat pointers" since they carry more extra
+The 16 byte sized pointers are called "fat pointers" since they carry extra
 information.
 
 **Example `&[i32]` :**
@@ -54,16 +54,16 @@ information.
 
 **Example `&dyn SomeTrait`:**
 
-This is the type of fat pointer we'll concern ourselves about going forward. 
-`&dyn SomeTrait` is a reference to a trait, or what Rust calls _trait objects_.
- 
-The layout for a pointer to a _trait object_ looks like this: 
+This is the type of fat pointer we'll concern ourselves about going forward.
+`&dyn SomeTrait` is a reference to a trait, or what Rust calls a _trait object_.
+
+The layout for a pointer to a _trait object_ looks like this:
 
 - The first 8 bytes points to the `data` for the trait object
 - The second 8 bytes points to the `vtable` for the trait object
 
 The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To allow accomplish this we use _dynamic dispatch_.
+except that it implements the methods defined by our trait. To accomplish this we use _dynamic dispatch_.
 
 Let's explain this in code instead of words by implementing our own trait
 object from these parts:

@@ -3,21 +3,20 @@
 >**Relevant for:**
 >
 >- Understanding how the async/await syntax works since it's how `await` is implemented
->- Why we need `Pin`
->- Why Rusts async model is very efficient
+>- Knowing why we need `Pin`
+>- Understanding why Rusts async model is very efficient
 >
 >The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
 >well written and I can recommend reading through it (it talks as much about
 >async/await as it does about generators).
 
-The second difficult part that there seems to be a lot of questions about
-is Generators and the `Pin` type. Since they're related we'll start off by
-exploring generators first. By doing that we'll soon get to see why
-we need to be able to "pin" some data to a fixed location in memory and
-get an introduction to `Pin` as well.
+The second difficult part is understanding Generators and the `Pin` type. Since
+they're related we'll start off by exploring generators first. By doing that
+we'll soon get to see why we need to be able to "pin" some data to a fixed
+location in memory and get an introduction to `Pin` as well.
 
-Basically, there were three main options that were discussed when Rust was
-designing how the language would handle concurrency:
+Basically, there were three main options discussed when designing how Rust would
+handle concurrency:
 
 1. Stackful coroutines, better known as green threads.
 2. Using combinators.
@@ -29,9 +28,11 @@ I've written about green threads before. Go check out
 [Green Threads Explained in 200 lines of Rust][greenthreads] if you're interested.
 
 Green threads uses the same mechanisms as an OS does by creating a thread for
-each task, setting up a stack, save the CPU's state and jump
-from one task(thread) to another by doing a "context switch". We yield control to the scheduler which then
-continues running a different task.
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a "context switch". 
+
+We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.
 
 Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no need
