@@ -159,7 +159,7 @@
 </ul>
 </blockquote>
 <h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
-<p>One of the most confusing topic we encounter when implementing our own <code>Futures</code> 
+<p>One of the most confusing things we encounter when implementing our own <code>Futures</code> 
 is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
 which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait 
 object we construct our selves.</p>
@@ -189,7 +189,7 @@ fn main() {
 <p>As you see from the output after running this, the sizes of the references varies.
 Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.</p>
-<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
+<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry extra
 information.</p>
 <p><strong>Example <code>&amp;[i32]</code> :</strong></p>
 <ul>
@@ -197,15 +197,15 @@ information.</p>
 <li>The second 8 bytes is the length of the slice.</li>
 </ul>
 <p><strong>Example <code>&amp;dyn SomeTrait</code>:</strong></p>
-<p>This is the type of fat pointer we'll concern ourselves about going forward. 
-<code>&amp;dyn SomeTrait</code> is a reference to a trait, or what Rust calls <em>trait objects</em>.</p>
-<p>The layout for a pointer to a <em>trait object</em> looks like this: </p>
+<p>This is the type of fat pointer we'll concern ourselves about going forward.
+<code>&amp;dyn SomeTrait</code> is a reference to a trait, or what Rust calls a <em>trait object</em>.</p>
+<p>The layout for a pointer to a <em>trait object</em> looks like this:</p>
 <ul>
 <li>The first 8 bytes points to the <code>data</code> for the trait object</li>
 <li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
 </ul>
 <p>The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To allow accomplish this we use <em>dynamic dispatch</em>.</p>
+except that it implements the methods defined by our trait. To accomplish this we use <em>dynamic dispatch</em>.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
 <blockquote>

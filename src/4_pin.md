@@ -2,15 +2,19 @@
 
 > **Relevant for**
 >
-> 1. To understand `Generators` and `Futures`
+> 1. Understanding `Generators` and `Futures`
 > 2. Knowing how to use `Pin` is required when implementing your own `Future`
-> 3. To understand self-referential types in Rust
-> 4. This is the way borrowing across `await` points is accomplished
+> 3. Understanding how to make self-referential types safe to use in Rust
+> 4. Learning how borrowing across `await` points is accomplished
 >
 > `Pin` was suggested in [RFC#2349][rfc2349]
 
 We already got a brief introduction of `Pin` in the previous chapters, so we'll
-start off here with some definitions and a set of rules to remember.
+start off without any further introduction.
+
+Let's jump strait to some definitions and then create a set of rules to remember. Let's call them the 10 commandments of Pinning. Unfortunately, my stonemasonry
+skills are rather poor, so we'll have to settle by writing them in markdown
+(for now).
 
 ## Definitions
 
@@ -19,12 +23,27 @@ to govern the rules that need to apply for types which implement `!Unpin`.
 
 Pin is only relevant for pointers. A reference to an object is a pointer.
 
-Yep, that's double negation for you, as in "does-not-implement-unpin". For this
-chapter and only this chapter we'll rename these markers to:
+Yep, you're right, that's double negation right there. `!Unpin` means
+"not-un-pin".
+
+This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
+`!Unpin` it's a good sign that it's time to lay down the work and start over
+tomorrow with a fresh mind.
+
+> This is of course a joke. There are very valid reasons for the names
+> that were chosen. If you want you can read a bit of the discussion from the
+> [internals thread][internals_unpin]. The best takeaway from there in my eyes
+> is this quote from `tmandry`:
+>
+> _Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful._
+
+An object with the `Unpin` marker can move.
+
+For the next paragraph we'll rename these markers to:
 
 > `!Unpin` = `MustStay` and `Unpin` = `CanMove`
 
-It just makes it so much easier to understand them.
+It just makes it much easier to talk about them.
 
 ## Rules to remember
 
@@ -294,3 +313,4 @@ we're soon finished.
 
 [rfc2349]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
 [pin_utils]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
+[internals_unpin]: https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12

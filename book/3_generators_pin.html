@@ -154,20 +154,19 @@
 <p><strong>Relevant for:</strong></p>
 <ul>
 <li>Understanding how the async/await syntax works since it's how <code>await</code> is implemented</li>
-<li>Why we need <code>Pin</code></li>
-<li>Why Rusts async model is very efficient</li>
+<li>Knowing why we need <code>Pin</code></li>
+<li>Understanding why Rusts async model is very efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
-<p>The second difficult part that there seems to be a lot of questions about
-is Generators and the <code>Pin</code> type. Since they're related we'll start off by
-exploring generators first. By doing that we'll soon get to see why
-we need to be able to &quot;pin&quot; some data to a fixed location in memory and
-get an introduction to <code>Pin</code> as well.</p>
-<p>Basically, there were three main options that were discussed when Rust was
-designing how the language would handle concurrency:</p>
+<p>The second difficult part is understanding Generators and the <code>Pin</code> type. Since
+they're related we'll start off by exploring generators first. By doing that
+we'll soon get to see why we need to be able to &quot;pin&quot; some data to a fixed
+location in memory and get an introduction to <code>Pin</code> as well.</p>
+<p>Basically, there were three main options discussed when designing how Rust would
+handle concurrency:</p>
 <ol>
 <li>Stackful coroutines, better known as green threads.</li>
 <li>Using combinators.</li>
@@ -176,14 +175,14 @@ designing how the language would handle concurrency:</p>
 <h3><a class="header" href="#stackful-coroutinesgreen-threads" id="stackful-coroutinesgreen-threads">Stackful coroutines/green threads</a></h3>
 <p>I've written about green threads before. Go check out 
 <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust</a> if you're interested.</p>
-<p>Green threads uses the same mechanisms as an OS does by creating a thread for
-each task, setting up a stack, save the CPU's state and jump
-from one task(thread) to another by doing a &quot;context switch&quot;. We yield control to the scheduler which then
-continues running a different task.</p>
+<p>Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a &quot;context switch&quot;.</p>
+<p>We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.</p>
 <p>Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no need
-for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation
-details for the library.</p>
+for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation details for the library.</p>
 <h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
 <p><code>Futures 1.0</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
 you already know combinators. In Rust they look like this:</p>
@@ -203,9 +202,9 @@ let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(futur
 <li>Did not allow to borrow across combinator steps.</li>
 </ol>
 <p>Point #3, is actually a major drawback with <code>Futures 1.0</code>.</p>
-<p>Not allowing borrows across suspension points ends up being very 
-un-ergonomic and often requiring extra allocations or copying to accomplish 
-some tasks which is inefficient.</p>
+<p>Not allowing borrows across suspension points ends up being very
+un-ergonomic and to accomplish some tasks it requires extra allocations or
+copying which is inefficient.</p>
 <p>The reason for the higher than optimal memory usage is that this is basically
 a callback-based approach, where each closure stores all the data it needs
 for computation. This means that as we chain these, the memory required to store
@@ -228,13 +227,13 @@ async/await as keywords (it can even be done using a macro).</li>
     println!(&quot;{}&quot;, borrowed);
 }
 </code></pre>
-<p>Generators are implemented as state machines. The memory footprint of a chain 
-of computations is only defined by the largest footprint any single step 
-requires. That means that adding steps to a chain of computations might not 
-require any added memory at all.</p>
+<p>Generators in Rust are implemented as state machines. The memory footprint of a
+chain of computations is only defined by the largest footprint of any single
+step require. That means that adding steps to a chain of computations might not
+require any increased memory at all.</p>
 <h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
-<p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this 
-keyword in a closure, converts it to a generator. A closure looking like this 
+<p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this
+keyword in a closure, converts it to a generator. A closure looking like this
 (I'm going to use the terminology that's currently in Rust):</p>
 <pre><code class="language-rust noplaypen ignore">let a = 4;
 let b = move || {
@@ -494,9 +493,9 @@ impl Generator for GeneratorA {
 <p>While the example above compiles just fine, we expose consumers of this this API 
 to both possible undefined behavior and other memory errors while using just safe
 Rust. This is a big problem!</p>
-<p>But now, let's prevent the segfault from happening using <code>Pin</code>. We'll discuss
-<code>Pin</code> more below, but you'll get an introduction here by just reading the
-comments.</p>
+<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
+<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
+reading the comments.</p>
 <pre><pre class="playpen"><code class="language-rust editable">#![feature(optin_builtin_traits)]
 use std::pin::Pin;
 
@@ -507,11 +506,11 @@ pub fn main() {
     // std::mem::swap(&amp;mut gen, &amp;mut gen2);
 
     // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
-    // However, as I mentioned in the start of the next chapter about `Pin` a
-    // boxed type automatically implements `Unpin` so to stay in safe Rust we can use 
-    // that to avoid unsafe. You can also use crates like `pin_utils` to do this safely, 
-    // just remember that they use unsafe under the hood so it's like using an already-reviewed 
-    // unsafe implementation.
+    // However, as you'll see in the start of the next chapter value pinned to
+    // heap can be constructed while staying in safe Rust so we can use
+    // that to avoid unsafe. You can also use crates like `pin_utils` to do 
+    // this safely, just remember that they use unsafe under the hood so it's 
+    // like using an already-reviewed unsafe implementation.
 
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
@@ -616,8 +615,8 @@ the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.</li>
 </ol>
 <p>Hopefully, after this you'll have an idea of what happens when you use the 
-<code>yield</code> or <code>await</code> keyword (inside an async function) why we need <code>Pin</code> if we
-want to be able to borrow across <code>yield/await</code> points.</p>
+<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if 
+we want to be able to safely borrow across <code>yield/await</code> points.</p>
 
                     </main>
 

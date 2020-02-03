@@ -153,21 +153,36 @@
 <blockquote>
 <p><strong>Relevant for</strong></p>
 <ol>
-<li>To understand <code>Generators</code> and <code>Futures</code></li>
+<li>Understanding <code>Generators</code> and <code>Futures</code></li>
 <li>Knowing how to use <code>Pin</code> is required when implementing your own <code>Future</code></li>
-<li>To understand self-referential types in Rust</li>
-<li>This is the way borrowing across <code>await</code> points is accomplished</li>
+<li>Understanding how to make self-referential types safe to use in Rust</li>
+<li>Learning how borrowing across <code>await</code> points is accomplished</li>
 </ol>
 <p><code>Pin</code> was suggested in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">RFC#2349</a></p>
 </blockquote>
 <p>We already got a brief introduction of <code>Pin</code> in the previous chapters, so we'll
-start off here with some definitions and a set of rules to remember.</p>
+start off without any further introduction.</p>
+<p>Let's jump strait to some definitions and then create a set of rules to remember. Let's call them the 10 commandments of Pinning. Unfortunately, my stonemasonry
+skills are rather poor, so we'll have to settle by writing them in markdown
+(for now).</p>
 <h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
 <p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
 <p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
-<p>Yep, that's double negation for you, as in &quot;does-not-implement-unpin&quot;. For this
-chapter and only this chapter we'll rename these markers to:</p>
+<p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
+&quot;not-un-pin&quot;.</p>
+<p>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
+<code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
+tomorrow with a fresh mind.</p>
+<blockquote>
+<p>This is of course a joke. There are very valid reasons for the names
+that were chosen. If you want you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. The best takeaway from there in my eyes
+is this quote from <code>tmandry</code>:</p>
+<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
+</blockquote>
+<p>An object with the <code>Unpin</code> marker can move.</p>
+<p>For this chapter and only this chapter we'll rename these markers to:</p>
 <blockquote>
 <p><code>!Unpin</code> = <code>MustStay</code> and <code>Unpin</code> = <code>CanMove</code></p>
 </blockquote>

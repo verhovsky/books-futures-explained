@@ -156,7 +156,7 @@
 <p>We'll start off a bit differently than most other explanations. Instead of 
 deferring some of the details about what's special about futures in Rust we 
 try to tackle that head on first. We'll be as brief as possible, but as thorough 
-as needed. This way, most question will be answered and explored up front. </p>
+as needed. This way, most questions will be answered and explored up front. </p>
 <p>We'll end up with futures that can run an any executor like <code>tokio</code> and <code>async_str</code>.</p>
 <p>In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
@@ -171,8 +171,10 @@ you can clone, fork or copy <a href="https://github.com/cfsamson/examples-future
 of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
 not in the context of any specific runtime.</p>
 <p>Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to <a href="https://github.com/rust-lang/mdBook">Mdbook</a> the examples can even be edited and explored further. It's
-all code that you can download, play with and learn from.</p>
+Thanks to <a href="https://github.com/rust-lang/mdBook">Mdbook</a> the examples can even be edited and explored further
+by uncommenting certain lines or adding new ones yourself. I use that quite a
+but throughout so keep an eye out when reading through editable code segments.</p>
+<p>It's all code that you can download, play with and learn from.</p>
 <p>We'll and end up with an understandable example including a <code>Future</code>
 implementation, an <code>Executor</code> and a <code>Reactor</code> in less than 200 lines of code. 
 We don't rely on any dependencies or real I/O which means it's very easy to 

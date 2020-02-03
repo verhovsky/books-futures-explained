@@ -158,7 +158,7 @@
 <p>We'll start off a bit differently than most other explanations. Instead of 
 deferring some of the details about what's special about futures in Rust we 
 try to tackle that head on first. We'll be as brief as possible, but as thorough 
-as needed. This way, most question will be answered and explored up front. </p>
+as needed. This way, most questions will be answered and explored up front. </p>
 <p>We'll end up with futures that can run an any executor like <code>tokio</code> and <code>async_str</code>.</p>
 <p>In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
@@ -173,8 +173,10 @@ you can clone, fork or copy <a href="https://github.com/cfsamson/examples-future
 of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
 not in the context of any specific runtime.</p>
 <p>Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to <a href="https://github.com/rust-lang/mdBook">Mdbook</a> the examples can even be edited and explored further. It's
-all code that you can download, play with and learn from.</p>
+Thanks to <a href="https://github.com/rust-lang/mdBook">Mdbook</a> the examples can even be edited and explored further
+by uncommenting certain lines or adding new ones yourself. I use that quite a
+but throughout so keep an eye out when reading through editable code segments.</p>
+<p>It's all code that you can download, play with and learn from.</p>
 <p>We'll and end up with an understandable example including a <code>Future</code>
 implementation, an <code>Executor</code> and a <code>Reactor</code> in less than 200 lines of code. 
 We don't rely on any dependencies or real I/O which means it's very easy to 
@@ -189,9 +191,8 @@ very well written and very helpful. So thanks!</p>
 <p><strong>Relevant for:</strong></p>
 <ul>
 <li>High level introduction to concurrency in Rust</li>
-<li>Knowing what Rust provides and not when working with async</li>
+<li>Knowing what Rust provides and not when working with async code</li>
 <li>Understanding why we need runtimes </li>
-<li>Knowing that Rust has <code>Futures 1.0</code> and <code>Futures 3.0</code>, and how to deal with them</li>
 <li>Getting pointers to further reading on concurrency in general</li>
 </ul>
 </blockquote>
@@ -203,14 +204,15 @@ pretty simple. I promise.</p>
 <p>Let's get some of the common roadblocks out of the way first.</p>
 <p>Async in Rust is different from most other languages in the sense that Rust
 has a very lightweight runtime.</p>
-<p>In languages like C#, JavaScript, Java and GO, already includes a runtime 
+<p>Languages like C#, JavaScript, Java and GO, already includes a runtime 
 for handling concurrency. So if you come from one of those languages this will 
 seem a bit strange to you.</p>
+<p>In Rust you will have to make an active choice about which runtime to use.</p>
 <h3><a class="header" href="#what-rusts-standard-library-takes-care-of" id="what-rusts-standard-library-takes-care-of">What Rust's standard library takes care of</a></h3>
 <ol>
 <li>The definition of an interruptible task</li>
-<li>An efficient technique to start, suspend, resume and store tasks
-which are executed concurrently. </li>
+<li>An efficient technique to start, suspend, resume and store tasks which are
+executed concurrently.</li>
 <li>A defined way to wake up a suspended task</li>
 </ol>
 <p>That's really what Rusts standard library does. As you see there is no definition
@@ -225,15 +227,15 @@ of non-blocking I/O, how these tasks are created or how they're run.</p>
 an event queue and so on.</p>
 <p>Executors, accepts one or more asynchronous tasks called <code>Futures</code> and takes
 care of actually running the code we write, suspend the tasks when they're
-waiting for I/O and resumes them.</p>
+waiting for I/O and resume them.</p>
 <p>In theory, we could choose one <code>Reactor</code> and one <code>Executor</code> that have nothing
-to do with each other besides one creates leaf <code>Futures</code> and one runs them, but
-in reality today you'll most often get both in a <code>Runtime</code>.</p>
+to do with each other besides that one creates leaf <code>Futures</code> and the other one
+runs them, but in reality today you'll most often get both in a <code>Runtime</code>.</p>
 <p>There are mainly two such runtimes today <a href="https://github.com/async-rs/async-std">async_std</a> and <a href="https://github.com/tokio-rs/tokio">tokio</a>.</p>
 <p>Quite a bit of complexity attributed to <code>Futures</code> are actually complexity rooted
-in runtimes. Creating an efficient runtime is hard. Learning how to use one
-correctly can be hard as well, but both are excellent and it's just like 
-learning any new library.</p>
+in runtimes. Creating an efficient runtime is hard. </p>
+<p>Learning how to use one correctly can require quite a bit of effort as well, but you'll see that there are several similarities between these kind of runtimes so
+learning one makes learning the next much easier.</p>
 <p>The difference between Rust and other languages is that you have to make an
 active choice when it comes to picking a runtime. Most often you'll just use
 the one provided for you.</p>
@@ -247,9 +249,10 @@ still. This will get resolved in time, but unfortunately it's not always easy
 to know in advance.</p>
 <p>A good sign is that if you're required to use combinators like <code>and_then</code> then
 you're using <code>Futures 1.0</code>.</p>
-<p>While not directly compatible, there is a tool that let's you relatively easily
-convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a versa. You can find all you
-need in the <a href="https://github.com/rust-lang/futures-rs"><code>futures-rs</code></a> crate and all <a href="https://rust-lang.github.io/futures-rs/blog/2019/04/18/compatibility-layer.html">information you need here</a>.</p>
+<p>While they're not directly compatible, there is a tool that let's you relatively
+easily convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a versa. You can find
+all you need in the <a href="https://github.com/rust-lang/futures-rs"><code>futures-rs</code></a> crate and all 
+<a href="https://rust-lang.github.io/futures-rs/blog/2019/04/18/compatibility-layer.html">information you need here</a>.</p>
 <h2><a class="header" href="#first-things-first" id="first-things-first">First things first</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 
@@ -261,11 +264,10 @@ try to give a high level overview that will make it easier to learn Rusts
 <li><a href="https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html">Async Basics - Strategies for handling I/O</a></li>
 <li><a href="https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html">Async Basics - Epoll, Kqueue and IOCP</a></li>
 </ul>
-<p>Now learning these concepts by studying futures is making it much harder than
-it needs to be, so go on and read these chapters. I'll be right here when
-you're back. </p>
-<p>However, if you feel that you have the basics covered, then go right on. </p>
-<p>Let's get moving!</p>
+<p>Learning these concepts by studying futures is making it much harder than
+it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
+<p>I'll be right here when you're back.</p>
+<p>However, if you feel that you have the basics covered, then let's get moving!</p>
 <h1><a class="header" href="#trait-objects-and-fat-pointers" id="trait-objects-and-fat-pointers">Trait objects and fat pointers</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
@@ -276,7 +278,7 @@ you're back. </p>
 </ul>
 </blockquote>
 <h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
-<p>One of the most confusing topic we encounter when implementing our own <code>Futures</code> 
+<p>One of the most confusing things we encounter when implementing our own <code>Futures</code> 
 is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
 which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait 
 object we construct our selves.</p>
@@ -306,7 +308,7 @@ fn main() {
 <p>As you see from the output after running this, the sizes of the references varies.
 Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.</p>
-<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry more extra
+<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry extra
 information.</p>
 <p><strong>Example <code>&amp;[i32]</code> :</strong></p>
 <ul>
@@ -314,15 +316,15 @@ information.</p>
 <li>The second 8 bytes is the length of the slice.</li>
 </ul>
 <p><strong>Example <code>&amp;dyn SomeTrait</code>:</strong></p>
-<p>This is the type of fat pointer we'll concern ourselves about going forward. 
-<code>&amp;dyn SomeTrait</code> is a reference to a trait, or what Rust calls <em>trait objects</em>.</p>
-<p>The layout for a pointer to a <em>trait object</em> looks like this: </p>
+<p>This is the type of fat pointer we'll concern ourselves about going forward.
+<code>&amp;dyn SomeTrait</code> is a reference to a trait, or what Rust calls a <em>trait object</em>.</p>
+<p>The layout for a pointer to a <em>trait object</em> looks like this:</p>
 <ul>
 <li>The first 8 bytes points to the <code>data</code> for the trait object</li>
 <li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
 </ul>
 <p>The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To allow accomplish this we use <em>dynamic dispatch</em>.</p>
+except that it implements the methods defined by our trait. To accomplish this we use <em>dynamic dispatch</em>.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
 <blockquote>
@@ -398,20 +400,19 @@ it is will make this much less mysterious.</p>
 <p><strong>Relevant for:</strong></p>
 <ul>
 <li>Understanding how the async/await syntax works since it's how <code>await</code> is implemented</li>
-<li>Why we need <code>Pin</code></li>
-<li>Why Rusts async model is very efficient</li>
+<li>Knowing why we need <code>Pin</code></li>
+<li>Understanding why Rusts async model is very efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
-<p>The second difficult part that there seems to be a lot of questions about
-is Generators and the <code>Pin</code> type. Since they're related we'll start off by
-exploring generators first. By doing that we'll soon get to see why
-we need to be able to &quot;pin&quot; some data to a fixed location in memory and
-get an introduction to <code>Pin</code> as well.</p>
-<p>Basically, there were three main options that were discussed when Rust was
-designing how the language would handle concurrency:</p>
+<p>The second difficult part is understanding Generators and the <code>Pin</code> type. Since
+they're related we'll start off by exploring generators first. By doing that
+we'll soon get to see why we need to be able to &quot;pin&quot; some data to a fixed
+location in memory and get an introduction to <code>Pin</code> as well.</p>
+<p>Basically, there were three main options discussed when designing how Rust would
+handle concurrency:</p>
 <ol>
 <li>Stackful coroutines, better known as green threads.</li>
 <li>Using combinators.</li>
@@ -420,14 +421,14 @@ designing how the language would handle concurrency:</p>
 <h3><a class="header" href="#stackful-coroutinesgreen-threads" id="stackful-coroutinesgreen-threads">Stackful coroutines/green threads</a></h3>
 <p>I've written about green threads before. Go check out 
 <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust</a> if you're interested.</p>
-<p>Green threads uses the same mechanisms as an OS does by creating a thread for
-each task, setting up a stack, save the CPU's state and jump
-from one task(thread) to another by doing a &quot;context switch&quot;. We yield control to the scheduler which then
-continues running a different task.</p>
+<p>Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a &quot;context switch&quot;.</p>
+<p>We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.</p>
 <p>Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no need
-for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation
-details for the library.</p>
+for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation details for the library.</p>
 <h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
 <p><code>Futures 1.0</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
 you already know combinators. In Rust they look like this:</p>
@@ -447,9 +448,9 @@ let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(futur
 <li>Did not allow to borrow across combinator steps.</li>
 </ol>
 <p>Point #3, is actually a major drawback with <code>Futures 1.0</code>.</p>
-<p>Not allowing borrows across suspension points ends up being very 
-un-ergonomic and often requiring extra allocations or copying to accomplish 
-some tasks which is inefficient.</p>
+<p>Not allowing borrows across suspension points ends up being very
+un-ergonomic and to accomplish some tasks it requires extra allocations or
+copying which is inefficient.</p>
 <p>The reason for the higher than optimal memory usage is that this is basically
 a callback-based approach, where each closure stores all the data it needs
 for computation. This means that as we chain these, the memory required to store
@@ -472,13 +473,13 @@ async/await as keywords (it can even be done using a macro).</li>
     println!(&quot;{}&quot;, borrowed);
 }
 </code></pre>
-<p>Generators are implemented as state machines. The memory footprint of a chain 
-of computations is only defined by the largest footprint any single step 
-requires. That means that adding steps to a chain of computations might not 
-require any added memory at all.</p>
+<p>Generators in Rust are implemented as state machines. The memory footprint of a
+chain of computations is only defined by the largest footprint of any single
+step require. That means that adding steps to a chain of computations might not
+require any increased memory at all.</p>
 <h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
-<p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this 
-keyword in a closure, converts it to a generator. A closure looking like this 
+<p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this
+keyword in a closure, converts it to a generator. A closure looking like this
 (I'm going to use the terminology that's currently in Rust):</p>
 <pre><code class="language-rust noplaypen ignore">let a = 4;
 let b = move || {
@@ -738,9 +739,9 @@ impl Generator for GeneratorA {
 <p>While the example above compiles just fine, we expose consumers of this this API 
 to both possible undefined behavior and other memory errors while using just safe
 Rust. This is a big problem!</p>
-<p>But now, let's prevent the segfault from happening using <code>Pin</code>. We'll discuss
-<code>Pin</code> more below, but you'll get an introduction here by just reading the
-comments.</p>
+<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
+<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
+reading the comments.</p>
 <pre><pre class="playpen"><code class="language-rust editable">#![feature(optin_builtin_traits)]
 use std::pin::Pin;
 
@@ -751,11 +752,11 @@ pub fn main() {
     // std::mem::swap(&amp;mut gen, &amp;mut gen2);
 
     // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
-    // However, as I mentioned in the start of the next chapter about `Pin` a
-    // boxed type automatically implements `Unpin` so to stay in safe Rust we can use 
-    // that to avoid unsafe. You can also use crates like `pin_utils` to do this safely, 
-    // just remember that they use unsafe under the hood so it's like using an already-reviewed 
-    // unsafe implementation.
+    // However, as you'll see in the start of the next chapter value pinned to
+    // heap can be constructed while staying in safe Rust so we can use
+    // that to avoid unsafe. You can also use crates like `pin_utils` to do 
+    // this safely, just remember that they use unsafe under the hood so it's 
+    // like using an already-reviewed unsafe implementation.
 
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
@@ -860,27 +861,42 @@ the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.</li>
 </ol>
 <p>Hopefully, after this you'll have an idea of what happens when you use the 
-<code>yield</code> or <code>await</code> keyword (inside an async function) why we need <code>Pin</code> if we
-want to be able to borrow across <code>yield/await</code> points.</p>
+<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if 
+we want to be able to safely borrow across <code>yield/await</code> points.</p>
 <h1><a class="header" href="#pin" id="pin">Pin</a></h1>
 <blockquote>
 <p><strong>Relevant for</strong></p>
 <ol>
-<li>To understand <code>Generators</code> and <code>Futures</code></li>
+<li>Understanding <code>Generators</code> and <code>Futures</code></li>
 <li>Knowing how to use <code>Pin</code> is required when implementing your own <code>Future</code></li>
-<li>To understand self-referential types in Rust</li>
-<li>This is the way borrowing across <code>await</code> points is accomplished</li>
+<li>Understanding how to make self-referential types safe to use in Rust</li>
+<li>Learning how borrowing across <code>await</code> points is accomplished</li>
 </ol>
 <p><code>Pin</code> was suggested in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">RFC#2349</a></p>
 </blockquote>
 <p>We already got a brief introduction of <code>Pin</code> in the previous chapters, so we'll
-start off here with some definitions and a set of rules to remember.</p>
+start off without any further introduction.</p>
+<p>Let's jump strait to some definitions and then create a set of rules to remember. Let's call them the 10 commandments of Pinning. Unfortunately, my stonemasonry
+skills are rather poor, so we'll have to settle by writing them in markdown
+(for now).</p>
 <h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
 <p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
 <p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
-<p>Yep, that's double negation for you, as in &quot;does-not-implement-unpin&quot;. For this
-chapter and only this chapter we'll rename these markers to:</p>
+<p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
+&quot;not-un-pin&quot;.</p>
+<p>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
+<code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
+tomorrow with a fresh mind.</p>
+<blockquote>
+<p>This is of course a joke. There are very valid reasons for the names
+that were chosen. If you want you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. The best takeaway from there in my eyes
+is this quote from <code>tmandry</code>:</p>
+<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
+</blockquote>
+<p>An object with the <code>Unpin</code> marker can move.</p>
+<p>For this chapter and only this chapter we'll rename these markers to:</p>
 <blockquote>
 <p><code>!Unpin</code> = <code>MustStay</code> and <code>Unpin</code> = <code>CanMove</code></p>
 </blockquote>
@@ -2043,12 +2059,13 @@ branch of the example repository you can also find an extremely simplified
 <h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
 <p>There are many great resources for further study. In addition to the RFCs and
 articles I've already linked to in the book, here are some of my suggestions:</p>
-<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a>
-<a href="https://book.async.rs/">The async_std book</a>
-<a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a>
-<a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a>
-<a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a>
-<a href="https://stjepang.github.io/">Stjepan's blog with a series where he implements an Executor</a></p>
+<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a></p>
+<p><a href="https://book.async.rs/">The async_std book</a></p>
+<p><a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a></p>
+<p><a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a></p>
+<p><a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a></p>
+<p><a href="https://stjepang.github.io/">Stjepan's blog with a series where he implements an Executor</a></p>
+<p><a href="https://youtu.be/DkMwYxfSYNQ">Jon Gjengset's video on The Why, What and How of Pinning in Rust</a></p>
 
                     </main>
 
