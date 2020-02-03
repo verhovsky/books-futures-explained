@@ -294,8 +294,8 @@ now you need to use a crate like [pin_utils]:[pin_utils] to do that.
 
 ### Projection/structural pinning
 
-In short, projection is using a field on your type. `mystruct.field1` is a
-projection. Structural pinning is using `Pin` on struct fields. This has several
+In short, projection is a programming language term. `mystruct.field1` is a
+projection. Structural pinning is using `Pin` on fields. This has several
 caveats and is not something you'll normally see so I refer to the documentation
 for that.
 
