@@ -30,14 +30,13 @@ This naming scheme is Rust deliberately testing if you're too tired to safely im
 `!Unpin` it's a good sign that it's time to lay down the work and start over
 tomorrow with a fresh mind.
 
-> This is of course a joke. There are very valid reasons for the names
+> That was of course a joke. There are very valid reasons for the names
 > that were chosen. If you want you can read a bit of the discussion from the
 > [internals thread][internals_unpin]. The best takeaway from there in my eyes
 > is this quote from `tmandry`:
 >
 > _Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful._
 
-An object with the `Unpin` marker can move.
 
 For the next paragraph we'll rename these markers to:
 
@@ -51,9 +50,9 @@ It just makes it much easier to talk about them.
 
 2. Getting a `&mut T` to a pinned pointer requires unsafe if `T: MustStay`. In other words: requiring a pinned pointer to a type which is `MustStay` prevents the _user_ of that API from moving that value unless it choses to write `unsafe` code.
 
-3. Pinning does nothing special with that memory like putting it into some "read only" memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.
+3. Pinning does nothing special with memory allocation like putting it into some "read only" memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.
 
-4. Most standard library types implement `CanMove`. The same goes for most 
+4. Most standard library types implement `CanMove`. The same goes for most
 "normal" types you encounter in Rust. `Futures` and `Generators` are two
 exceptions.
 
@@ -63,12 +62,12 @@ cases in the API which are being explored.
 
 6. The implementation behind objects that are `MustStay` is most likely unsafe.
 Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating an reading fields of a self referential struct still requires `unsafe`.
+this book, creating and reading fields of a self referential struct still requires `unsafe`.
 
-1. You can add a `MustStay` bound on a type by nightly with a feature flag, or by adding `std::marker::PhantomPinned` to your type.
+7. You can add a `MustStay` bound on a type on nightly with a feature flag, or
+by adding `std::marker::PhantomPinned` to your type on stable.
 
-2. When Pinning, you can either pin a value to memory either on the stack or 
-on the heap.
+8. You can either pin a value to memory on the stack or on the heap.
 
 9. Pinning a `MustStay` pointer to the stack requires `unsafe`
 
