@@ -735,14 +735,14 @@ and wait for them one after one.
 
 Our example as it stands now returns this:
 
-```
+```ignore
 Future got 1 at time: 1.00.
 Future got 2 at time: 3.00.
 ```
 
 If these `Futures` were executed asynchronously we would expect to see:
 
-```
+```ignore
 Future got 1 at time: 1.00.
 Future got 2 at time: 2.00.
 ```
@@ -772,7 +772,7 @@ fn spawn<F: Future>(future: F) -> Pin<Box<F>> {
 
 Now if we change our code in `main` to look like this instead.
 
-```rust
+```rust, ignore, noplaypen
 fn main() {
     let start = Instant::now();
     let reactor = Reactor::new();
@@ -813,7 +813,7 @@ fn main() {
 
 If you add this code to our example and run it, you'll see:
 
-```
+```ignore
 Future got 1 at time: 1.00.
 Future got 2 at time: 2.00.
 ```
