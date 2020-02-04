@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html" class="active">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html" class="active">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -150,21 +150,30 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
-<p>Congratulations. I hope you stayed with me all the way and enjoyed the ride.</p>
+<p>Congratulations. Good job! If you got this far you must have stayed with me
+all the way. I hope you enjoyed the ride!</p>
 <p>I'll leave you with some predictions and a set of exercises I'm suggesting for
 those interested.</p>
-<p>Futures will be more ergonomic to use with time. For example, instead of having to 
-create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
-as a normal <code>Trait</code>. It's probably going to be pretty similar to <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
+<p>Futures will be more ergonomic to use with time. For example, instead of having
+to create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
+as a normal <code>Trait</code>. It's probably going to be pretty similar to
+<a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
+<p>There will probably be several more improvements like this, but since relatively
+few people will actually need implement leaf Futures compared to those that use
+them, focus will first and foremost be on how ergonomic it's to work with
+futures inside async/await functions and blocks.</p>
 <p>It will still take some time for the ecosystem to migrate over to <code>Futures 3.0</code>
 but since the advantages are so huge, it will not be a split between libraries
 using <code>Futures 1.0</code> and libraries using <code>Futures 3.0</code> for long.</p>
 <h1><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h1>
-<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:</p>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good
+way to learn. Here are some good exercises if you want to explore more:</p>
 <h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
-<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method of telling the OS to suspend our thread and wake it up again on our command. Some hints:</p>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method to
+suspend our thread and wake it up again on our command. Some hints:</p>
 <ul>
-<li>Check out <code>CondVars</code>, here are two sources Wikipedia and the docs for <code>CondVar</code></li>
+<li>Check out <code>CondVars</code>, here are two sources <a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Wikipedia</a> and the
+docs for <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html"><code>CondVar</code></a></li>
 <li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
 </ul>
 <h2><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h2>

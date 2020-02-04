@@ -1,13 +1,20 @@
 # Conclusion and exercises
 
-Congratulations. I hope you stayed with me all the way and enjoyed the ride.
+Congratulations. Good job! If you got this far you must have stayed with me
+all the way. I hope you enjoyed the ride!
 
 I'll leave you with some predictions and a set of exercises I'm suggesting for
 those interested.
 
-Futures will be more ergonomic to use with time. For example, instead of having to 
-create a `RawWaker` and so on, the `Waker` will also be possible to implement
-as a normal `Trait`. It's probably going to be pretty similar to [ArcWake](https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html).
+Futures will be more ergonomic to use with time. For example, instead of having
+to create a `RawWaker` and so on, the `Waker` will also be possible to implement
+as a normal `Trait`. It's probably going to be pretty similar to
+[ArcWake][arcwake].
+
+There will probably be several more improvements like this, but since relatively
+few people will actually need implement leaf Futures compared to those that use
+them, focus will first and foremost be on how ergonomic it's to work with
+futures inside async/await functions and blocks.
 
 It will still take some time for the ecosystem to migrate over to `Futures 3.0`
 but since the advantages are so huge, it will not be a split between libraries
@@ -15,13 +22,16 @@ using `Futures 1.0` and libraries using `Futures 3.0` for long.
 
 # Reader exercises
 
-So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:
+So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good
+way to learn. Here are some good exercises if you want to explore more:
 
 ## Avoid `thread::park`
 
-The big problem using `Thread::park` and `Thread::unpark` is that the user can access these same methods from their own code. Try to use another method of telling the OS to suspend our thread and wake it up again on our command. Some hints:
+The big problem using `Thread::park` and `Thread::unpark` is that the user can access these same methods from their own code. Try to use another method to
+suspend our thread and wake it up again on our command. Some hints:
 
-* Check out `CondVars`, here are two sources Wikipedia and the docs for `CondVar`
+* Check out `CondVars`, here are two sources [Wikipedia][condvar_wiki] and the
+docs for [`CondVar`][condvar_std]
 * Take a look at crates that help you with this exact problem like [Crossbeam ](https://github.com/crossbeam-rs/crossbeam)\(specifically the [`Parker`](https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html)\)
 
 ## Avoid wrapping the whole `Reactor` in a mutex and pass it around
@@ -84,3 +94,7 @@ articles I've already linked to in the book, here are some of my suggestions:
 [Stjepan's blog with a series where he implements an Executor](https://stjepang.github.io/)
 
 [Jon Gjengset's video on The Why, What and How of Pinning in Rust](https://youtu.be/DkMwYxfSYNQ)
+
+[condvar_std]: https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html
+[condvar_wiki]: https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables
+[arcwake]: https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html

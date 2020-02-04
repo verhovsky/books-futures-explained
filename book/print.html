@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -889,18 +889,17 @@ to govern the rules that need to apply for types which implement <code>!Unpin</c
 <code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
 tomorrow with a fresh mind.</p>
 <blockquote>
-<p>This is of course a joke. There are very valid reasons for the names
+<p>That was of course a joke. There are very valid reasons for the names
 that were chosen. If you want you can read a bit of the discussion from the
 <a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. The best takeaway from there in my eyes
 is this quote from <code>tmandry</code>:</p>
 <p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
 </blockquote>
-<p>An object with the <code>Unpin</code> marker can move.</p>
-<p>For this chapter and only this chapter we'll rename these markers to:</p>
+<p>For the next paragraph we'll rename these markers to:</p>
 <blockquote>
 <p><code>!Unpin</code> = <code>MustStay</code> and <code>Unpin</code> = <code>CanMove</code></p>
 </blockquote>
-<p>It just makes it so much easier to understand them.</p>
+<p>It just makes it much easier to talk about them.</p>
 <h2><a class="header" href="#rules-to-remember" id="rules-to-remember">Rules to remember</a></h2>
 <ol>
 <li>
@@ -910,10 +909,10 @@ is this quote from <code>tmandry</code>:</p>
 <p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: MustStay</code>. In other words: requiring a pinned pointer to a type which is <code>MustStay</code> prevents the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code> code.</p>
 </li>
 <li>
-<p>Pinning does nothing special with that memory like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
+<p>Pinning does nothing special with memory allocation like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
 </li>
 <li>
-<p>Most standard library types implement <code>CanMove</code>. The same goes for most 
+<p>Most standard library types implement <code>CanMove</code>. The same goes for most
 &quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
 exceptions.</p>
 </li>
@@ -925,14 +924,14 @@ cases in the API which are being explored.</p>
 <li>
 <p>The implementation behind objects that are <code>MustStay</code> is most likely unsafe.
 Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating an reading fields of a self referential struct still requires <code>unsafe</code>.</p>
+this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
 </li>
 <li>
-<p>You can add a <code>MustStay</code> bound on a type by nightly with a feature flag, or by adding <code>std::marker::PhantomPinned</code> to your type.</p>
+<p>You can add a <code>MustStay</code> bound on a type on nightly with a feature flag, or
+by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
 </li>
 <li>
-<p>When Pinning, you can either pin a value to memory either on the stack or 
-on the heap.</p>
+<p>You can either pin a value to memory on the stack or on the heap.</p>
 </li>
 <li>
 <p>Pinning a <code>MustStay</code> pointer to the stack requires <code>unsafe</code></p>
@@ -1136,8 +1135,8 @@ that the self-referential pointer stays valid.</p>
 <p>There are ways to safely give some guarantees on stack pinning as well, but right
 now you need to use a crate like <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">pin_utils</a>:<a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">pin_utils</a> to do that.</p>
 <h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
-<p>In short, projection is using a field on your type. <code>mystruct.field1</code> is a
-projection. Structural pinning is using <code>Pin</code> on struct fields. This has several
+<p>In short, projection is a programming language term. <code>mystruct.field1</code> is a
+projection. Structural pinning is using <code>Pin</code> on fields. This has several
 caveats and is not something you'll normally see so I refer to the documentation
 for that.</p>
 <h3><a class="header" href="#pin-and-drop" id="pin-and-drop">Pin and Drop</a></h3>
@@ -1152,9 +1151,11 @@ we're soon finished.</p>
 executor which allows you to edit, run an play around with the code right here
 in your browser.</p>
 <p>I'll walk you through the example, but if you want to check it out closer, you
-can always <a href="https://github.com/cfsamson/examples-futures">clone the repository</a> and play around with the code yourself. There
-are two branches. The <code>basic_example</code> is this code, and the <code>basic_example_commented</code>
-is this example with extensive comments.</p>
+can always <a href="https://github.com/cfsamson/examples-futures">clone the repository</a> and play around with the code yourself.</p>
+<p>There are several branches explained in the readme, but two are
+relevant for this chapter. The <code>main</code> branch is the example we go through here,
+and the <code>basic_example_commented</code> branch is this example with extensive
+comments.</p>
 <blockquote>
 <p>If you want to follow along as we go through, initialize a new cargo project
 by creating a new folder and run <code>cargo init</code> inside it. Everything we write
@@ -1169,7 +1170,7 @@ here will be in <code>main.rs</code></p>
 };
 </code></pre>
 <h2><a class="header" href="#the-executor" id="the-executor">The Executor</a></h2>
-<p>The executors task is to take one or more futures and run them to completion.</p>
+<p>The executors responsibility is to take one or more futures and run them to completion.</p>
 <p>The first thing an <code>executor</code> does when it gets a <code>Future</code> is polling it.</p>
 <p><strong>When polled one of three things can happen:</strong></p>
 <ul>
@@ -1212,7 +1213,7 @@ fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
 <p>Inn all the examples here I've chose to comment the code extensively. I find it
 easier to follow that way than dividing if up into many paragraphs.</p>
 <p>We'll see more about the <code>Waker</code> in the next paragraph, but just look at it like
-a <em>trait object</em> like the one we constructed  in the first chapter.</p>
+a <em>trait object</em> similar to the one we constructed  in the first chapter.</p>
 <blockquote>
 <p><code>Context</code> is just a wrapper around the <code>Waker</code>. At the time of writing this
 book it's nothing more. In the future it might be possible that the <code>Context</code>
@@ -1224,13 +1225,14 @@ abstraction gives some flexibility.</p>
 be rather easy to understand. <code>Future</code> is a state machine, every <code>await</code> point
 is a <code>yield</code> point. We could borrow data across <code>await</code> points and we meet the
 exact same challenges as we do when borrowing across <code>yield</code> points.</p>
-<p>As we explained in that chapter, we use <code>Pin</code> and the guarantees that give us to
-allow <code>Futures</code> to have self references.</p>
+<p>As we explained in the <a href="./3_generators_pin.html">chapter about generators</a>, we use
+<code>Pin</code> and the guarantees that give us to allow <code>Futures</code> to have self
+references.</p>
 <h2><a class="header" href="#the-future-implementation" id="the-future-implementation">The <code>Future</code> implementation</a></h2>
 <p>In Rust we call an interruptible task a <code>Future</code>. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
 these <code>Futures</code> so that once a &quot;leaf future&quot; is ready we'll perform a set of
 operations.</p>
-<p>These operations can spawn new leaf futures themselves.</p>
+<p>These chained operations can spawn new leaf futures themselves.</p>
 <p><strong>Our Future implementation looks like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// This is the definition of our `Waker`. We use a regular thread-handle here.
 // It works but it's not a good solution. It's easy to fix though, I'll explain
@@ -1254,7 +1256,7 @@ pub struct Task {
 }
 
 // These are function definitions we'll use for our waker. Remember the
-// &quot;Trait Objects&quot; chapter from the book.
+// &quot;Trait Objects&quot; chapter earlier.
 fn mywaker_wake(s: &amp;MyWaker) {
     let waker_ptr: *const MyWaker = s;
     let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
@@ -1302,8 +1304,8 @@ impl Task {
 
 // This is our `Future` implementation
 impl Future for Task {
-    // The output for this kind of `leaf future` is just an `usize`. For other
-    // futures this could be something more interesting like a bytearray.
+    // The output for our kind of `leaf future` is just an `usize`. For other
+    // futures this could be something more interesting like a byte array.
     type Output = usize;
     fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
         let mut r = self.reactor.lock().unwrap();
@@ -1311,7 +1313,7 @@ impl Future for Task {
         // i.e. if it's `Ready`
         if r.is_ready(self.id) {
             // if it is, we return the data. In this case it's just the ID of
-            // the task. 
+            // the task since this is just a very simple example.
             Poll::Ready(self.id)
         } else if self.is_registered {
             // If the future is registered alredy, we just return `Pending`
@@ -1343,7 +1345,7 @@ to allow such cases. </p>
 trouble of creating our own <code>vtable</code> and a <code>RawWaker</code>. We could just implement
 a normal trait.</p>
 <p>Fortunately, in the future this will probably be possible in the standard
-library as well. For now, <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">this trait lives in the nursery</a>, but mye
+library as well. For now, <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">this trait lives in the nursery</a>, but my
 guess is that this will be a part of the standard library after som maturing.</p>
 <p>We choose to pass in a reference to the whole <code>Reactor</code> here. This isn't normal.
 The reactor will often be a global resource which let's us register interests
@@ -1351,7 +1353,8 @@ without passing around a reference.</p>
 <h3><a class="header" href="#why-using-thread-parkunpark-is-a-bad-idea-for-a-library" id="why-using-thread-parkunpark-is-a-bad-idea-for-a-library">Why using thread park/unpark is a bad idea for a library</a></h3>
 <p>It could deadlock easily since anyone could get a handle to the <code>executor thread</code>
 and call park/unpark on it.</p>
-<p>If one of our <code>Futures</code> holds a handle to our thread and takes it with it to a different thread the following could happen:</p>
+<p>If one of our <code>Futures</code> holds a handle to our thread, or any unrelated code
+calls <code>unpark</code> on our thread, the following could happen:</p>
 <ol>
 <li>A future could call <code>unpark</code> on the executor thread from a different thread</li>
 <li>Our <code>executor</code> thinks that data is ready and wakes up and polls the future</li>
@@ -1363,9 +1366,14 @@ run in parallel.</li>
 awake already at that point.</li>
 <li>We're deadlocked and our program stops working</li>
 </ol>
+<blockquote>
+<p>There is also the case that our thread could have what's called a
+<code>spurious wakeup</code> (<a href="https://cfsamson.github.io/book-exploring-async-basics/9_3_http_module.html#bonus-section">which can happen unexpectedly</a>), which
+could cause the same deadlock if we're unlucky.</p>
+</blockquote>
 <p>There are many better solutions, here are some:</p>
 <ul>
-<li>Use <code>std::sync::CondVar</code></li>
+<li>Use <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html">std::sync::CondVar</a></li>
 <li>Use <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html">crossbeam::sync::Parker</a></li>
 </ul>
 <h2><a class="header" href="#the-reactor" id="the-reactor">The Reactor</a></h2>
@@ -1374,7 +1382,7 @@ to have an example to run.</p>
 <p>Since concurrency mostly makes sense when interacting with the outside world (or
 at least some peripheral), we need something to actually abstract over this
 interaction in an asynchronous way. </p>
-<p>This is the <code>Reactors</code> job. Most often you'll see reactors in rust use a library called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non 
+<p>This is the <code>Reactors</code> job. Most often you'll see reactors in Rust use a library called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non 
 blocking APIs and event notification for several platforms.</p>
 <p>The reactor will typically give you something like a <code>TcpStream</code> (or any other resource) which you'll use to create an I/O request. What you get in return
 is a <code>Future</code>. </p>
@@ -1383,7 +1391,7 @@ is a <code>Future</code>. </p>
 is pretty normal), our <code>Task</code> in would instead be a special <code>TcpStream</code> which
 registers interest with the global <code>Reactor</code> and no reference is needed.</p>
 </blockquote>
-<p>We can call this kind of <code>Future</code> a &quot;leaf Future`, since it's some operation 
+<p>We can call this kind of <code>Future</code> a &quot;leaf Future&quot;, since it's some operation 
 we'll actually wait on and that we can chain operations on which are performed
 once the leaf future is ready. </p>
 <p><strong>Our Reactor will look like this:</strong></p>
@@ -1399,8 +1407,8 @@ struct Reactor {
     readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
 }
 
-// We just have two kind of events. A timeout event, a &quot;timeout&quot; event called
-// `Timeout` and a `Close` event to close down our reactor.
+// We just have two kind of events. An event called `Timeout`
+// and a `Close` event to close down our reactor.
 #[derive(Debug)]
 enum Event {
     Close,
@@ -1420,7 +1428,6 @@ impl Reactor {
         let mut handles = vec![];
         // This will be the &quot;Reactor thread&quot;
         let handle = thread::spawn(move || {
-            // This simulates some I/O resource
             for event in rx {
                 let rl_clone = rl_clone.clone();
                 match event {
@@ -1428,9 +1435,10 @@ impl Reactor {
                     Event::Close =&gt; break,
                     Event::Timeout(waker, duration, id) =&gt; {
 
-                        // When we get an event we simply spawn a new thread...
+                        // When we get an event we simply spawn a new thread
+                        // which will simulate some I/O resource...
                         let event_handle = thread::spawn(move || {
-                            //... which will just sleep for the number of seconds
+                            //... by sleeping for the number of seconds
                             // we provided when creating the `Task`.
                             thread::sleep(Duration::from_secs(duration));
                             // When it's done sleeping we put the ID of this task
@@ -1448,7 +1456,7 @@ impl Reactor {
 
             // When we exit the Reactor we first join all the handles on
             // the child threads we've spawned so we catch any panics and
-            // release all resources.
+            // release any resources.
             for handle in handles {
                 handle.join().unwrap();
             }
@@ -1803,6 +1811,103 @@ fn main() {
 #     }
 # }
 </code></pre></pre>
+<p>This is the first time we actually see the <code>async/await</code> syntax so let's
+finish this book by explaining them briefly.</p>
+<p>Hopefully, the <code>await</code> syntax looks pretty familiar. It has a lot in common
+with <code>yield</code> and indeed, it works in much the same way.</p>
+<p>The <code>async</code> keyword can be used on functions as in <code>async fn(...)</code> or on a
+block as in <code>async { ... }</code>. Both will turn your function, or block, into a
+<code>Future</code>.</p>
+<p>These <code>Futures</code> are rather simple. Imagine our generator from a few chapters
+back. Every <code>await</code> point is like a <code>yield</code> point.</p>
+<p>Instead of <code>yielding</code> a value we pass in, it yields the <code>Future</code> we're awaiting.
+In turn this <code>Future</code> is polled. </p>
+<p>Now, as is the case in our code, our <code>mainfut</code> contains two non-leaf futures
+which it awaits, and all that happens is that these state machines are polled
+as well until some &quot;leaf future&quot; in the end is finally polled and either
+returns <code>Ready</code> or <code>Pending</code>.</p>
+<p>The way our example is right now, it's not much better than regular synchronous
+code. For us to actually await multiple futures at the same time we somehow need
+to <code>spawn</code> them so they're polled once, but does not cause our thread to sleep
+and wait for them one after one.</p>
+<p>Our example as it stands now returns this:</p>
+<pre><code>Future got 1 at time: 1.00.
+Future got 2 at time: 3.00.
+</code></pre>
+<p>If these <code>Futures</code> were executed asynchronously we would expect to see:</p>
+<pre><code>Future got 1 at time: 1.00.
+Future got 2 at time: 2.00.
+</code></pre>
+<p>To accomplish this we can create the simplest possible <code>spawn</code> function I could
+come up with:</p>
+<pre><code class="language-rust ignore noplaypen">fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
+    // We start off the same way as we did before
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() });
+    let waker = waker_into_waker(Arc::into_raw(mywaker));
+    let mut cx = Context::from_waker(&amp;waker);
+    
+    // But we need to Box this Future. We can't pin it to this stack frame
+    // since we'll return before the `Future` is resolved so it must be pinned
+    // to the heap.
+    let mut boxed = Box::pin(future);
+    // Now we poll and just discard the result. This way, we register a `Waker`
+    // with our `Reactor` and kick of whatever operation we're expecting.
+    let _ = Future::poll(boxed.as_mut(), &amp;mut cx);
+    
+    // We still need this `Future` since we'll await it later so we return it...
+    boxed
+}
+</code></pre>
+<p>Now if we change our code in <code>main</code> to look like this instead.</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let start = Instant::now();
+    let reactor = Reactor::new();
+    let reactor = Arc::new(Mutex::new(reactor));
+    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future2 = Task::new(reactor.clone(), 2, 2);
+
+    let fut1 = async {
+        let val = future1.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let fut2 = async {
+        let val = future2.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    // You'll notice everything stays the same until this point
+    let mainfut = async {
+        // Here we &quot;kick off&quot; our first `Future`
+        let handle1 = spawn(fut1);
+        // And the second one
+        let handle2 = spawn(fut2);
+
+        // Now, they're already started, and when they get polled in our
+        // executor now they will just return `Pending`, or if we somehow used
+        // so much time that they're already resolved, they will return `Ready`.
+        handle1.await;
+        handle2.await;
+    };
+
+    block_on(mainfut);
+    reactor.lock().map(|mut r| r.close()).unwrap();
+}
+</code></pre></pre>
+<p>If you add this code to our example and run it, you'll see:</p>
+<pre><code>Future got 1 at time: 1.00.
+Future got 2 at time: 2.00.
+</code></pre>
+<p>Exactly as we expected.</p>
+<p>Now this <code>spawn</code> method is not very sophisticated but it explains the concept.
+I've <a href="./conclusion.html#building-a-better-exectuor">challenged you to create a better version</a> and pointed you at a better resource
+in the next chapter under <a href="./conclusion.html#reader-exercises">reader exercises</a>.</p>
+<p>That's actually it for now. There are probably much more to learn, but I think it
+will be easier once the fundamental concepts are there and that further
+exploration will get a lot easier. </p>
+<p>Don't forget the exercises in the last chapter 😊. Have fun until the next time! </p>
 <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and
 run it yourself. Have fun!</p>
@@ -2003,21 +2108,30 @@ impl Drop for Reactor {
 }
 </code></pre></pre>
 <h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
-<p>Congratulations. I hope you stayed with me all the way and enjoyed the ride.</p>
+<p>Congratulations. Good job! If you got this far you must have stayed with me
+all the way. I hope you enjoyed the ride!</p>
 <p>I'll leave you with some predictions and a set of exercises I'm suggesting for
 those interested.</p>
-<p>Futures will be more ergonomic to use with time. For example, instead of having to 
-create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
-as a normal <code>Trait</code>. It's probably going to be pretty similar to <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
+<p>Futures will be more ergonomic to use with time. For example, instead of having
+to create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
+as a normal <code>Trait</code>. It's probably going to be pretty similar to
+<a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
+<p>There will probably be several more improvements like this, but since relatively
+few people will actually need implement leaf Futures compared to those that use
+them, focus will first and foremost be on how ergonomic it's to work with
+futures inside async/await functions and blocks.</p>
 <p>It will still take some time for the ecosystem to migrate over to <code>Futures 3.0</code>
 but since the advantages are so huge, it will not be a split between libraries
 using <code>Futures 1.0</code> and libraries using <code>Futures 3.0</code> for long.</p>
 <h1><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h1>
-<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good way to learn. Here are som relatively simple and good exercises:</p>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good
+way to learn. Here are some good exercises if you want to explore more:</p>
 <h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
-<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method of telling the OS to suspend our thread and wake it up again on our command. Some hints:</p>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method to
+suspend our thread and wake it up again on our command. Some hints:</p>
 <ul>
-<li>Check out <code>CondVars</code>, here are two sources Wikipedia and the docs for <code>CondVar</code></li>
+<li>Check out <code>CondVars</code>, here are two sources <a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Wikipedia</a> and the
+docs for <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html"><code>CondVar</code></a></li>
 <li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
 </ul>
 <h2><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h2>

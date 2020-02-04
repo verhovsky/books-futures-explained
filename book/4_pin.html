@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> The main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -175,18 +175,17 @@ to govern the rules that need to apply for types which implement <code>!Unpin</c
 <code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
 tomorrow with a fresh mind.</p>
 <blockquote>
-<p>This is of course a joke. There are very valid reasons for the names
+<p>That was of course a joke. There are very valid reasons for the names
 that were chosen. If you want you can read a bit of the discussion from the
 <a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. The best takeaway from there in my eyes
 is this quote from <code>tmandry</code>:</p>
 <p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
 </blockquote>
-<p>An object with the <code>Unpin</code> marker can move.</p>
-<p>For this chapter and only this chapter we'll rename these markers to:</p>
+<p>For the next paragraph we'll rename these markers to:</p>
 <blockquote>
 <p><code>!Unpin</code> = <code>MustStay</code> and <code>Unpin</code> = <code>CanMove</code></p>
 </blockquote>
-<p>It just makes it so much easier to understand them.</p>
+<p>It just makes it much easier to talk about them.</p>
 <h2><a class="header" href="#rules-to-remember" id="rules-to-remember">Rules to remember</a></h2>
 <ol>
 <li>
@@ -196,10 +195,10 @@ is this quote from <code>tmandry</code>:</p>
 <p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: MustStay</code>. In other words: requiring a pinned pointer to a type which is <code>MustStay</code> prevents the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code> code.</p>
 </li>
 <li>
-<p>Pinning does nothing special with that memory like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
+<p>Pinning does nothing special with memory allocation like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
 </li>
 <li>
-<p>Most standard library types implement <code>CanMove</code>. The same goes for most 
+<p>Most standard library types implement <code>CanMove</code>. The same goes for most
 &quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
 exceptions.</p>
 </li>
@@ -211,14 +210,14 @@ cases in the API which are being explored.</p>
 <li>
 <p>The implementation behind objects that are <code>MustStay</code> is most likely unsafe.
 Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating an reading fields of a self referential struct still requires <code>unsafe</code>.</p>
+this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
 </li>
 <li>
-<p>You can add a <code>MustStay</code> bound on a type by nightly with a feature flag, or by adding <code>std::marker::PhantomPinned</code> to your type.</p>
+<p>You can add a <code>MustStay</code> bound on a type on nightly with a feature flag, or
+by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
 </li>
 <li>
-<p>When Pinning, you can either pin a value to memory either on the stack or 
-on the heap.</p>
+<p>You can either pin a value to memory on the stack or on the heap.</p>
 </li>
 <li>
 <p>Pinning a <code>MustStay</code> pointer to the stack requires <code>unsafe</code></p>
@@ -422,8 +421,8 @@ that the self-referential pointer stays valid.</p>
 <p>There are ways to safely give some guarantees on stack pinning as well, but right
 now you need to use a crate like <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">pin_utils</a>:<a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">pin_utils</a> to do that.</p>
 <h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
-<p>In short, projection is using a field on your type. <code>mystruct.field1</code> is a
-projection. Structural pinning is using <code>Pin</code> on struct fields. This has several
+<p>In short, projection is a programming language term. <code>mystruct.field1</code> is a
+projection. Structural pinning is using <code>Pin</code> on fields. This has several
 caveats and is not something you'll normally see so I refer to the documentation
 for that.</p>
 <h3><a class="header" href="#pin-and-drop" id="pin-and-drop">Pin and Drop</a></h3>

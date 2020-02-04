@@ -5,9 +5,12 @@ executor which allows you to edit, run an play around with the code right here
 in your browser.
 
 I'll walk you through the example, but if you want to check it out closer, you
-can always [clone the repository][example_repo] and play around with the code yourself. There
-are two branches. The `basic_example` is this code, and the `basic_example_commented`
-is this example with extensive comments.
+can always [clone the repository][example_repo] and play around with the code yourself.
+
+There are several branches explained in the readme, but two are
+relevant for this chapter. The `main` branch is the example we go through here,
+and the `basic_example_commented` branch is this example with extensive
+comments.
 
 > If you want to follow along as we go through, initialize a new cargo project
 > by creating a new folder and run `cargo init` inside it. Everything we write
@@ -27,7 +30,7 @@ use std::{
 
 ## The Executor
 
-The executors task is to take one or more futures and run them to completion.
+The executors responsibility is to take one or more futures and run them to completion.
 
 The first thing an `executor` does when it gets a `Future` is polling it.
 
@@ -77,7 +80,7 @@ Inn all the examples here I've chose to comment the code extensively. I find it
 easier to follow that way than dividing if up into many paragraphs.
 
 We'll see more about the `Waker` in the next paragraph, but just look at it like
-a _trait object_ like the one we constructed  in the first chapter.
+a _trait object_ similar to the one we constructed  in the first chapter.
 
 > `Context` is just a wrapper around the `Waker`. At the time of writing this
 book it's nothing more. In the future it might be possible that the `Context`
@@ -91,8 +94,9 @@ be rather easy to understand. `Future` is a state machine, every `await` point
 is a `yield` point. We could borrow data across `await` points and we meet the
 exact same challenges as we do when borrowing across `yield` points.
 
-As we explained in that chapter, we use `Pin` and the guarantees that give us to
-allow `Futures` to have self references.
+As we explained in the [chapter about generators](./3_generators_pin.md), we use
+`Pin` and the guarantees that give us to allow `Futures` to have self
+references.
 
 ## The `Future` implementation
 
@@ -100,7 +104,7 @@ In Rust we call an interruptible task a `Future`. Futures has a well defined int
 these `Futures` so that once a "leaf future" is ready we'll perform a set of
 operations.
 
-These operations can spawn new leaf futures themselves.
+These chained operations can spawn new leaf futures themselves.
 
 **Our Future implementation looks like this:**
 
@@ -127,7 +131,7 @@ pub struct Task {
 }
 
 // These are function definitions we'll use for our waker. Remember the
-// "Trait Objects" chapter from the book.
+// "Trait Objects" chapter earlier.
 fn mywaker_wake(s: &MyWaker) {
     let waker_ptr: *const MyWaker = s;
     let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
@@ -175,8 +179,8 @@ impl Task {
 
 // This is our `Future` implementation
 impl Future for Task {
-    // The output for this kind of `leaf future` is just an `usize`. For other
-    // futures this could be something more interesting like a bytearray.
+    // The output for our kind of `leaf future` is just an `usize`. For other
+    // futures this could be something more interesting like a byte array.
     type Output = usize;
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut r = self.reactor.lock().unwrap();
@@ -184,7 +188,7 @@ impl Future for Task {
         // i.e. if it's `Ready`
         if r.is_ready(self.id) {
             // if it is, we return the data. In this case it's just the ID of
-            // the task. 
+            // the task since this is just a very simple example.
             Poll::Ready(self.id)
         } else if self.is_registered {
             // If the future is registered alredy, we just return `Pending`
@@ -221,7 +225,7 @@ trouble of creating our own `vtable` and a `RawWaker`. We could just implement
 a normal trait.
 
 Fortunately, in the future this will probably be possible in the standard
-library as well. For now, [this trait lives in the nursery][arc_wake], but mye
+library as well. For now, [this trait lives in the nursery][arc_wake], but my
 guess is that this will be a part of the standard library after som maturing.
 
 We choose to pass in a reference to the whole `Reactor` here. This isn't normal.
@@ -233,8 +237,8 @@ without passing around a reference.
 It could deadlock easily since anyone could get a handle to the `executor thread`
 and call park/unpark on it.
 
-
-If one of our `Futures` holds a handle to our thread and takes it with it to a different thread the following could happen:
+If one of our `Futures` holds a handle to our thread, or any unrelated code
+calls `unpark` on our thread, the following could happen:
 
 1. A future could call `unpark` on the executor thread from a different thread
 2. Our `executor` thinks that data is ready and wakes up and polls the future
@@ -246,10 +250,14 @@ run in parallel.
 awake already at that point.
 6. We're deadlocked and our program stops working
 
+> There is also the case that our thread could have what's called a
+`spurious wakeup` ([which can happen unexpectedly][spurious_wakeup]), which
+could cause the same deadlock if we're unlucky.
+
 There are many better solutions, here are some:
 
-  - Use `std::sync::CondVar`
-  - Use [crossbeam::sync::Parker](https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html)
+  - Use [std::sync::CondVar][condvar]
+  - Use [crossbeam::sync::Parker][crossbeam_parker]
 
 ## The Reactor
 
@@ -260,7 +268,7 @@ Since concurrency mostly makes sense when interacting with the outside world (or
 at least some peripheral), we need something to actually abstract over this
 interaction in an asynchronous way. 
 
-This is the `Reactors` job. Most often you'll see reactors in rust use a library called [Mio][mio], which provides non 
+This is the `Reactors` job. Most often you'll see reactors in Rust use a library called [Mio][mio], which provides non 
 blocking APIs and event notification for several platforms.
 
 The reactor will typically give you something like a `TcpStream` (or any other resource) which you'll use to create an I/O request. What you get in return
@@ -270,7 +278,7 @@ is a `Future`.
 >is pretty normal), our `Task` in would instead be a special `TcpStream` which
 >registers interest with the global `Reactor` and no reference is needed.
 
-We can call this kind of `Future` a "leaf Future`, since it's some operation 
+We can call this kind of `Future` a "leaf Future", since it's some operation 
 we'll actually wait on and that we can chain operations on which are performed
 once the leaf future is ready. 
 
@@ -289,8 +297,8 @@ struct Reactor {
     readylist: Arc<Mutex<Vec<usize>>>,
 }
 
-// We just have two kind of events. A timeout event, a "timeout" event called
-// `Timeout` and a `Close` event to close down our reactor.
+// We just have two kind of events. An event called `Timeout`
+// and a `Close` event to close down our reactor.
 #[derive(Debug)]
 enum Event {
     Close,
@@ -310,7 +318,6 @@ impl Reactor {
         let mut handles = vec![];
         // This will be the "Reactor thread"
         let handle = thread::spawn(move || {
-            // This simulates some I/O resource
             for event in rx {
                 let rl_clone = rl_clone.clone();
                 match event {
@@ -318,9 +325,10 @@ impl Reactor {
                     Event::Close => break,
                     Event::Timeout(waker, duration, id) => {
 
-                        // When we get an event we simply spawn a new thread...
+                        // When we get an event we simply spawn a new thread
+                        // which will simulate some I/O resource...
                         let event_handle = thread::spawn(move || {
-                            //... which will just sleep for the number of seconds
+                            //... by sleeping for the number of seconds
                             // we provided when creating the `Task`.
                             thread::sleep(Duration::from_secs(duration));
                             // When it's done sleeping we put the ID of this task
@@ -338,7 +346,7 @@ impl Reactor {
 
             // When we exit the Reactor we first join all the handles on
             // the child threads we've spawned so we catch any panics and
-            // release all resources.
+            // release any resources.
             for handle in handles {
                 handle.join().unwrap();
             }
@@ -699,7 +707,133 @@ fn main() {
 # }
 ```
 
+This is the first time we actually see the `async/await` syntax so let's
+finish this book by explaining them briefly.
+
+Hopefully, the `await` syntax looks pretty familiar. It has a lot in common
+with `yield` and indeed, it works in much the same way.
+
+The `async` keyword can be used on functions as in `async fn(...)` or on a
+block as in `async { ... }`. Both will turn your function, or block, into a
+`Future`.
+
+These `Futures` are rather simple. Imagine our generator from a few chapters
+back. Every `await` point is like a `yield` point.
+
+Instead of `yielding` a value we pass in, it yields the `Future` we're awaiting.
+In turn this `Future` is polled. 
+
+Now, as is the case in our code, our `mainfut` contains two non-leaf futures
+which it awaits, and all that happens is that these state machines are polled
+as well until some "leaf future" in the end is finally polled and either
+returns `Ready` or `Pending`.
+
+The way our example is right now, it's not much better than regular synchronous
+code. For us to actually await multiple futures at the same time we somehow need
+to `spawn` them so they're polled once, but does not cause our thread to sleep
+and wait for them one after one.
+
+Our example as it stands now returns this:
+
+```
+Future got 1 at time: 1.00.
+Future got 2 at time: 3.00.
+```
+
+If these `Futures` were executed asynchronously we would expect to see:
+
+```
+Future got 1 at time: 1.00.
+Future got 2 at time: 2.00.
+```
+
+To accomplish this we can create the simplest possible `spawn` function I could
+come up with:
+
+```rust, ignore, noplaypen
+fn spawn<F: Future>(future: F) -> Pin<Box<F>> {
+    // We start off the same way as we did before
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() });
+    let waker = waker_into_waker(Arc::into_raw(mywaker));
+    let mut cx = Context::from_waker(&waker);
+    
+    // But we need to Box this Future. We can't pin it to this stack frame
+    // since we'll return before the `Future` is resolved so it must be pinned
+    // to the heap.
+    let mut boxed = Box::pin(future);
+    // Now we poll and just discard the result. This way, we register a `Waker`
+    // with our `Reactor` and kick of whatever operation we're expecting.
+    let _ = Future::poll(boxed.as_mut(), &mut cx);
+    
+    // We still need this `Future` since we'll await it later so we return it...
+    boxed
+}
+```
+
+Now if we change our code in `main` to look like this instead.
+
+```rust
+fn main() {
+    let start = Instant::now();
+    let reactor = Reactor::new();
+    let reactor = Arc::new(Mutex::new(reactor));
+    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future2 = Task::new(reactor.clone(), 2, 2);
+
+    let fut1 = async {
+        let val = future1.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!("Future got {} at time: {:.2}.", val, dur);
+    };
+
+    let fut2 = async {
+        let val = future2.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!("Future got {} at time: {:.2}.", val, dur);
+    };
+
+    // You'll notice everything stays the same until this point
+    let mainfut = async {
+        // Here we "kick off" our first `Future`
+        let handle1 = spawn(fut1);
+        // And the second one
+        let handle2 = spawn(fut2);
+
+        // Now, they're already started, and when they get polled in our
+        // executor now they will just return `Pending`, or if we somehow used
+        // so much time that they're already resolved, they will return `Ready`.
+        handle1.await;
+        handle2.await;
+    };
+
+    block_on(mainfut);
+    reactor.lock().map(|mut r| r.close()).unwrap();
+}
+```
+
+If you add this code to our example and run it, you'll see:
+
+```
+Future got 1 at time: 1.00.
+Future got 2 at time: 2.00.
+```
+
+Exactly as we expected.
+
+Now this `spawn` method is not very sophisticated but it explains the concept.
+I've [challenged you to create a better version](./conclusion.md#building-a-better-exectuor) and pointed you at a better resource
+in the next chapter under [reader exercises](./conclusion.md#reader-exercises).
+
+That's actually it for now. There are probably much more to learn, but I think it
+will be easier once the fundamental concepts are there and that further
+exploration will get a lot easier. 
+
+Don't forget the exercises in the last chapter 😊. Have fun until the next time! 
+
 [mio]: https://github.com/tokio-rs/mio
 [arc_wake]: https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html
 [example_repo]: https://github.com/cfsamson/examples-futures
 [playground_example]:https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=ca43dba55c6e3838c5494de45875677f
+[spurious_wakeup]: https://cfsamson.github.io/book-exploring-async-basics/9_3_http_module.html#bonus-section
+[condvar]: https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html
+[crossbeam_parker]: https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html
