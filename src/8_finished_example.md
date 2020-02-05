@@ -154,7 +154,7 @@ impl Reactor {
         let handle = thread::spawn(move || {
             // This simulates some I/O resource
             for event in rx {
-                println!("GOT EVENT: {:?}", event);
+                println!("REACTOR: {:?}", event);
                 let rl_clone = rl_clone.clone();
                 match event {
                     Event::Close => break,

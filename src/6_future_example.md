@@ -569,7 +569,7 @@ fn main() {
 #         let handle = thread::spawn(move || {
 #             // This simulates some I/O resource
 #             for event in rx {
-#                 println!("GOT EVENT: {:?}", event);
+#                 println!("REACTOR: {:?}", event);
 #                 let rl_clone = rl_clone.clone();
 #                 match event {
 #                     Event::Close => break,
@@ -621,6 +621,14 @@ fn main() {
 #     }
 # }
 ```
+
+I added a debug printout of the events the reactor registered interest for so we can observe
+two things:
+
+1. How the `Waker` object looks just like the _trait object_ we talked about in an earlier chapter
+2. In what order the events register interest with the reactor
+
+The last point is relevant when we move on the the last paragraph.
 
 ## Async/Await and concurrent Futures
 
@@ -844,7 +852,7 @@ fn main() {
 #         let handle = thread::spawn(move || {
 #             // This simulates some I/O resource
 #             for event in rx {
-#                 println!("GOT EVENT: {:?}", event);
+#                 println!("REACTOR: {:?}", event);
 #                 let rl_clone = rl_clone.clone();
 #                 match event {
 #                     Event::Close => break,

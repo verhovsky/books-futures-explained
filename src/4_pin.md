@@ -30,7 +30,7 @@ This naming scheme is Rust deliberately testing if you're too tired to safely im
 `!Unpin` it's a good sign that it's time to lay down the work and start over
 tomorrow with a fresh mind.
 
-> That was of course a joke. There are very valid reasons for the names
+> I hope you didn't mind the joke. There are valid reasons for the names
 > that were chosen. If you want you can read a bit of the discussion from the
 > [internals thread][internals_unpin]. The best takeaway from there in my eyes
 > is this quote from `tmandry`:
