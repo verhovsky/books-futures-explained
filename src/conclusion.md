@@ -95,6 +95,8 @@ articles I've already linked to in the book, here are some of my suggestions:
 
 [Jon Gjengset's video on The Why, What and How of Pinning in Rust](https://youtu.be/DkMwYxfSYNQ)
 
+[Withoutboats blog series about async/await](https://boats.gitlab.io/blog/post/2018-01-25-async-i-self-referential-structs/)
+
 [condvar_std]: https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html
 [condvar_wiki]: https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables
 [arcwake]: https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html

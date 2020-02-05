@@ -80,7 +80,7 @@ async/await as keywords (it can even be done using a macro).
 2. No need for context switching and saving/restoring CPU state
 3. No need to handle dynamic stack allocation
 4. Very memory efficient
-5. Allowed for borrows across suspension points
+5. Allows us to borrow across suspension points
 
 The last point is in contrast to `Futures 1.0`. With async/await we can do this:
 
@@ -101,24 +101,30 @@ require any increased memory at all.
 ## How generators work
 
 In Nightly Rust today you can use the `yield` keyword. Basically using this
-keyword in a closure, converts it to a generator. A closure looking like this
-(I'm going to use the terminology that's currently in Rust):
+keyword in a closure, converts it to a generator. A closure could look like this
+before we had a concept of `Pin`:
+
 
 ```rust,noplaypen,ignore
-let a = 4;
-let b = move || {
+#![feature(generators, generator_trait)]
+use std::ops::{Generator, GeneratorState};
+
+fn main() {
+    let a: i32 = 4;
+    let mut gen = move || {
         println!("Hello");
         yield a * 2;
         println!("world!");
     };
 
-if let GeneratorState::Yielded(n) = gen.resume() {
+    if let GeneratorState::Yielded(n) = gen.resume() {
         println!("Got value {}", n);
     }
 
-if let GeneratorState::Complete(()) = gen.resume() {
+    if let GeneratorState::Complete(()) = gen.resume() {
         ()
-};
+    };
+}
 ```
 
 Early on, before there was a consensus about the design of `Pin`, this
@@ -206,18 +212,17 @@ We could forbid that, but **one of the major design goals for the async/await sy
 to allow this**. These kinds of borrows were not possible using `Futures 1.0` so we can't let this
 limitation just slip and call it a day yet.
 
-Instead of discussing it in theory, let's look at some code. 
+Instead of discussing it in theory, let's look at some code.
 
 > We'll use the optimized version of the state machines which is used in Rust today. For a more
-> in deapth explanation see [Tyler Mandry's excellent article: How Rust optimizes async/await][optimizing-await]
+> in depth explanation see [Tyler Mandry's excellent article: How Rust optimizes async/await][optimizing-await]
 
 ```rust,noplaypen,ignore
-let a = 4;
-let b = move || {
-        let to_borrow = String::new("Hello");
+let mut gen = move || {
+        let to_borrow = String::from("Hello");
         let borrowed = &to_borrow;
         println!("{}", borrowed);
-        yield a * 2;
+        yield borrowed.len();
         println!("{} world!", borrowed);
     };
 ```
@@ -263,8 +268,10 @@ impl Generator for GeneratorA {
             GeneratorA::Enter => {
                 let to_borrow = String::from("Hello");
                 let borrowed = &to_borrow;
+                let res = borrowed.len();
+
                 *self = GeneratorA::Yield1 {to_borrow, borrowed};
-                GeneratorState::Yielded(borrowed.len())
+                GeneratorState::Yielded(res)
             }
 
             GeneratorA::Yield1 {to_borrow, borrowed} => {
@@ -383,7 +390,7 @@ But now, let's prevent this problem using `Pin`. We'll discuss
 reading the comments.
 
 ```rust,editable
-#![feature(optin_builtin_traits)]
+#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
 use std::pin::Pin;
 
 pub fn main() {
@@ -407,7 +414,7 @@ pub fn main() {
     //let mut pinned2 = unsafe { Pin::new_unchecked(&mut gen2) };
 
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
-        println!("Got value {}", n);
+        println!("Gen1 got value {}", n);
     }
     
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
