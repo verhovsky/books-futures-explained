@@ -188,7 +188,7 @@ fn main() {
     reactor.lock().map(|mut r| r.close()).unwrap();
 }
 
-//// ===== EXECUTOR =====
+// ============================= EXECUTOR ====================================
 fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
     let waker = waker_into_waker(Arc::into_raw(mywaker));
@@ -212,7 +212,7 @@ fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
     boxed
 }
 
-// ===== FUTURE IMPLEMENTATION =====
+// ====================== FUTURE IMPLEMENTATION ==============================
 #[derive(Clone)]
 struct MyWaker {
     thread: thread::Thread,
@@ -280,7 +280,7 @@ impl Future for Task {
     }
 }
 
-// ===== REACTOR =====
+// =============================== REACTOR ===================================
 struct Reactor {
     dispatcher: Sender&lt;Event&gt;,
     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
@@ -301,7 +301,7 @@ impl Reactor {
         let handle = thread::spawn(move || {
             // This simulates some I/O resource
             for event in rx {
-                println!(&quot;GOT EVENT: {:?}&quot;, event);
+                println!(&quot;REACTOR: {:?}&quot;, event);
                 let rl_clone = rl_clone.clone();
                 match event {
                     Event::Close =&gt; break,

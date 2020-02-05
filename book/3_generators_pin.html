@@ -217,7 +217,7 @@ async/await as keywords (it can even be done using a macro).</li>
 <li>No need for context switching and saving/restoring CPU state</li>
 <li>No need to handle dynamic stack allocation</li>
 <li>Very memory efficient</li>
-<li>Allowed for borrows across suspension points</li>
+<li>Allows us to borrow across suspension points</li>
 </ol>
 <p>The last point is in contrast to <code>Futures 1.0</code>. With async/await we can do this:</p>
 <pre><code class="language-rust ignore">async fn myfn() {
@@ -233,22 +233,27 @@ step require. That means that adding steps to a chain of computations might not
 require any increased memory at all.</p>
 <h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
 <p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this
-keyword in a closure, converts it to a generator. A closure looking like this
-(I'm going to use the terminology that's currently in Rust):</p>
-<pre><code class="language-rust noplaypen ignore">let a = 4;
-let b = move || {
+keyword in a closure, converts it to a generator. A closure could look like this
+before we had a concept of <code>Pin</code>:</p>
+<pre><code class="language-rust noplaypen ignore">#![feature(generators, generator_trait)]
+use std::ops::{Generator, GeneratorState};
+
+fn main() {
+    let a: i32 = 4;
+    let mut gen = move || {
         println!(&quot;Hello&quot;);
         yield a * 2;
         println!(&quot;world!&quot;);
     };
 
-if let GeneratorState::Yielded(n) = gen.resume() {
+    if let GeneratorState::Yielded(n) = gen.resume() {
         println!(&quot;Got value {}&quot;, n);
     }
 
-if let GeneratorState::Complete(()) = gen.resume() {
+    if let GeneratorState::Complete(()) = gen.resume() {
         ()
-};
+    };
+}
 </code></pre>
 <p>Early on, before there was a consensus about the design of <code>Pin</code>, this
 compiled to something looking similar to this:</p>
@@ -330,17 +335,15 @@ you'll also know the basics of how <code>await</code> works. It's very similar.<
 <p>We could forbid that, but <strong>one of the major design goals for the async/await syntax has been
 to allow this</strong>. These kinds of borrows were not possible using <code>Futures 1.0</code> so we can't let this
 limitation just slip and call it a day yet.</p>
-<p>Instead of discussing it in theory, let's look at some code. </p>
+<p>Instead of discussing it in theory, let's look at some code.</p>
 <blockquote>
 <p>We'll use the optimized version of the state machines which is used in Rust today. For a more
-in deapth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
+in depth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
 </blockquote>
-<pre><code class="language-rust noplaypen ignore">let a = 4;
-let b = move || {
-        let to_borrow = String::new(&quot;Hello&quot;);
+<pre><code class="language-rust noplaypen ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
-        println!(&quot;{}&quot;, borrowed);
-        yield a * 2;
+        yield borrowed.len();
         println!(&quot;{} world!&quot;, borrowed);
     };
 </code></pre>
@@ -386,8 +389,10 @@ impl Generator for GeneratorA {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
                 let borrowed = &amp;to_borrow;
+                let res = borrowed.len();
+
                 *self = GeneratorA::Yield1 {to_borrow, borrowed};
-                GeneratorState::Yielded(borrowed.len())
+                GeneratorState::Yielded(res)
             }
 
             GeneratorA::Yield1 {to_borrow, borrowed} =&gt; {
@@ -496,7 +501,7 @@ Rust. This is a big problem!</p>
 <p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
 <code>Pin</code> more in the next chapter, but you'll get an introduction here by just
 reading the comments.</p>
-<pre><pre class="playpen"><code class="language-rust editable">#![feature(optin_builtin_traits)]
+<pre><pre class="playpen"><code class="language-rust editable">#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
 use std::pin::Pin;
 
 pub fn main() {
@@ -520,7 +525,7 @@ pub fn main() {
     //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
 
     if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
-        println!(&quot;Got value {}&quot;, n);
+        println!(&quot;Gen1 got value {}&quot;, n);
     }
     
     if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
@@ -617,6 +622,43 @@ they did their unsafe implementation.</li>
 <p>Hopefully, after this you'll have an idea of what happens when you use the 
 <code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if 
 we want to be able to safely borrow across <code>yield/await</code> points.</p>
+<h2><a class="header" href="#bonus" id="bonus">Bonus</a></h2>
+<p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one we display here in Rust
+today using the <code>static</code> keyword on nightly. Try it for yourself:</p>
+<pre><pre class="playpen"><code class="language-rust">#![feature(generators, generator_trait)]
+use std::ops::{Generator, GeneratorState};
+
+
+pub fn main() {
+    let gen1 = static || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+    
+    let gen2 = static || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+
+    let mut pinned1 = Box::pin(gen1);
+    let mut pinned2 = Box::pin(gen2);
+
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+        println!(&quot;Gen1 got value {}&quot;, n);
+    }
+    
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+        println!(&quot;Gen2 got value {}&quot;, n);
+    };
+
+    let _ = pinned1.as_mut().resume();
+    let _ = pinned2.as_mut().resume();
+}
+</code></pre></pre>
 
                     </main>
 
