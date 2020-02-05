@@ -13,16 +13,9 @@ use std::{
 
 fn main() {
     let start = Instant::now();
-
-    // Many runtimes create a glocal `reactor` we pass it as an argument
     let reactor = Reactor::new();
     let reactor = Arc::new(Mutex::new(reactor));
-    
-    let future1 = Task::new(reactor.clone(), 1, 1); 
-     
-      
-
-      
+    let future1 = Task::new(reactor.clone(), 1, 1);
     let future2 = Task::new(reactor.clone(), 2, 2);
 
     let fut1 = async {
@@ -38,15 +31,17 @@ fn main() {
     };
 
     let mainfut = async {
-        fut1.await;
-        fut2.await;
+        let handle1 = spawn(fut1);
+        let handle2 = spawn(fut2);
+        handle1.await;
+        handle2.await;
     };
 
     block_on(mainfut);
     reactor.lock().map(|mut r| r.close()).unwrap();
 }
 
-//// ============================ EXECUTOR ====================================
+// ====================== FUTURE IMPLEMENTATION ==============================
 fn block_on<F: Future>(mut future: F) -> F::Output {
     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
     let waker = waker_into_waker(Arc::into_raw(mywaker));
@@ -59,6 +54,15 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
         };
     };
     val
+}
+
+fn spawn<F: Future>(future: F) -> Pin<Box<F>> {
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let waker = waker_into_waker(Arc::into_raw(mywaker)); 
+    let mut cx = Context::from_waker(&waker); 
+    let mut boxed = Box::pin(future);
+    let _ = Future::poll(boxed.as_mut(), &mut cx); 
+    boxed
 }
 
 // ====================== FUTURE IMPLEMENTATION ==============================
@@ -150,6 +154,7 @@ impl Reactor {
         let handle = thread::spawn(move || {
             // This simulates some I/O resource
             for event in rx {
+                println!("GOT EVENT: {:?}", event);
                 let rl_clone = rl_clone.clone();
                 match event {
                     Event::Close => break,
