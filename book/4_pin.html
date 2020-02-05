@@ -162,22 +162,21 @@
 </blockquote>
 <p>We already got a brief introduction of <code>Pin</code> in the previous chapters, so we'll
 start off without any further introduction.</p>
-<p>Let's jump strait to some definitions and then create a set of rules to remember. Let's call them the 10 commandments of Pinning. Unfortunately, my stonemasonry
-skills are rather poor, so we'll have to settle by writing them in markdown
-(for now).</p>
+<p>Let's jump strait to some definitions and then create 10 rules to remember when
+we work with <code>Pin</code>.</p>
 <h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
 <p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
 <p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
 <p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
 &quot;not-un-pin&quot;.</p>
-<p>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
+<p><em>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
 <code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
-tomorrow with a fresh mind.</p>
+tomorrow with a fresh mind.</em></p>
 <blockquote>
-<p>I hope you didn't mind the joke. There are valid reasons for the names
-that were chosen. If you want you can read a bit of the discussion from the
-<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. The best takeaway from there in my eyes
+<p>On a more serious note, I feel obliged to mention that there are valid reasons for the names
+that were chosen. If you want to you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my eyes
 is this quote from <code>tmandry</code>:</p>
 <p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
 </blockquote>

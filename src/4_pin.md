@@ -25,13 +25,13 @@ Pin is only relevant for pointers. A reference to an object is a pointer.
 Yep, you're right, that's double negation right there. `!Unpin` means
 "not-un-pin".
 
-This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
+_This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
 `!Unpin` it's a good sign that it's time to lay down the work and start over
-tomorrow with a fresh mind.
+tomorrow with a fresh mind._
 
-> I hope you didn't mind the joke. There are valid reasons for the names
-> that were chosen. If you want you can read a bit of the discussion from the
-> [internals thread][internals_unpin]. The best takeaway from there in my eyes
+> On a more serious note, I feel obliged to mention that there are valid reasons for the names
+> that were chosen. If you want to you can read a bit of the discussion from the
+> [internals thread][internals_unpin]. One of the best takeaways from there in my eyes
 > is this quote from `tmandry`:
 >
 > _Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful._

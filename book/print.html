@@ -865,12 +865,13 @@ impl Generator for GeneratorA {
 the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.</li>
 </ol>
-<p>Hopefully, after this you'll have an idea of what happens when you use the 
-<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if 
+<p>Hopefully, after this you'll have an idea of what happens when you use the
+<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if
 we want to be able to safely borrow across <code>yield/await</code> points.</p>
-<h2><a class="header" href="#bonus" id="bonus">Bonus</a></h2>
-<p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one we display here in Rust
-today using the <code>static</code> keyword on nightly. Try it for yourself:</p>
+<h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
+<p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
+example in Rust today using the <code>static</code> keyword on nightly. Try it for
+yourself:</p>
 <pre><pre class="playpen"><code class="language-rust">#![feature(generators, generator_trait)]
 use std::ops::{Generator, GeneratorState};
 
@@ -918,22 +919,21 @@ pub fn main() {
 </blockquote>
 <p>We already got a brief introduction of <code>Pin</code> in the previous chapters, so we'll
 start off without any further introduction.</p>
-<p>Let's jump strait to some definitions and then create a set of rules to remember. Let's call them the 10 commandments of Pinning. Unfortunately, my stonemasonry
-skills are rather poor, so we'll have to settle by writing them in markdown
-(for now).</p>
+<p>Let's jump strait to some definitions and then create 10 rules to remember when
+we work with <code>Pin</code>.</p>
 <h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
 <p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
 <p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
 <p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
 &quot;not-un-pin&quot;.</p>
-<p>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
+<p><em>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
 <code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
-tomorrow with a fresh mind.</p>
+tomorrow with a fresh mind.</em></p>
 <blockquote>
-<p>I hope you didn't mind the joke. There are valid reasons for the names
-that were chosen. If you want you can read a bit of the discussion from the
-<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. The best takeaway from there in my eyes
+<p>On a more serious note, I feel obliged to mention that there are valid reasons for the names
+that were chosen. If you want to you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my eyes
 is this quote from <code>tmandry</code>:</p>
 <p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
 </blockquote>
