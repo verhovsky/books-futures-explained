@@ -518,7 +518,6 @@ Thanks to [PR#45337][pr45337] you can actually run code like the one in our
 example in Rust today using the `static` keyword on nightly. Try it for
 yourself:
 
-
 ```rust
 #![feature(generators, generator_trait)]
 use std::ops::{Generator, GeneratorState};

@@ -12,9 +12,8 @@
 We already got a brief introduction of `Pin` in the previous chapters, so we'll
 start off without any further introduction.
 
-Let's jump strait to some definitions and then create a set of rules to remember. Let's call them the 10 commandments of Pinning. Unfortunately, my stonemasonry
-skills are rather poor, so we'll have to settle by writing them in markdown
-(for now).
+Let's jump strait to some definitions and then create 10 rules to remember when
+we work with `Pin`.
 
 ## Definitions
 
