@@ -419,7 +419,7 @@ makes sense. Once the data is allocated on the heap it will have a stable addres
 <p>There is no need for us as users of the API to take special care and ensure
 that the self-referential pointer stays valid.</p>
 <p>There are ways to safely give some guarantees on stack pinning as well, but right
-now you need to use a crate like <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">pin_utils</a>:<a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">pin_utils</a> to do that.</p>
+now you need to use a crate like <a href="https://docs.rs/pin-project/">pin_project</a> to do that.</p>
 <h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
 <p>In short, projection is a programming language term. <code>mystruct.field1</code> is a
 projection. Structural pinning is using <code>Pin</code> on fields. This has several

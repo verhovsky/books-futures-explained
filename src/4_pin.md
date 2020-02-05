@@ -290,7 +290,7 @@ There is no need for us as users of the API to take special care and ensure
 that the self-referential pointer stays valid.
 
 There are ways to safely give some guarantees on stack pinning as well, but right
-now you need to use a crate like [pin_utils]:[pin_utils] to do that.
+now you need to use a crate like [pin_project][pin_project] to do that.
 
 ### Projection/structural pinning
 
@@ -311,5 +311,5 @@ This is exactly what we'll do when we implement our own `Futures` stay tuned,
 we're soon finished.
 
 [rfc2349]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
-[pin_utils]: https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md
+[pin_project]: https://docs.rs/pin-project/
 [internals_unpin]: https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12
