@@ -508,15 +508,15 @@ Now, as you see, the consumer of this API must either:
 the value afterwards it will violate the guarantee they promise to uphold when
 they did their unsafe implementation.
 
-Hopefully, after this you'll have an idea of what happens when you use the 
-`yield` or `await` keywords inside an async function, and why we need `Pin` if 
+Hopefully, after this you'll have an idea of what happens when you use the
+`yield` or `await` keywords inside an async function, and why we need `Pin` if
 we want to be able to safely borrow across `yield/await` points.
 
+## Bonus section - self referential generators in Rust today
 
-## Bonus
-
-Thanks to [PR#45337][pr45337] you can actually run code like the one we display here in Rust
-today using the `static` keyword on nightly. Try it for yourself:
+Thanks to [PR#45337][pr45337] you can actually run code like the one in our
+example in Rust today using the `static` keyword on nightly. Try it for
+yourself:
 
 
 ```rust
