@@ -60,19 +60,26 @@ some I/O operation, and the executor where
 ## Futures
 
 Now, when we talk about futures I find it useful to make a distinction between
-futures created by async functions `async fn() { ... }` and async blocks
-`async { ... }` and **leaf** futures.
+non-leaf futures and **leaf** futures.
 
-Runtimes create leaf `Futures`, and provides things like non-blocking sockets,
-an event queue and so on.
+Runtimes create leaf futures which represents a resource like a socket.
+Operations on these resources, like a `Read` on a socket, will be non-blocking
+and instead return a future which we call a leaf future since it's the future
+which we're actually waiting on.
 
+It's unlikely that you'll implement a leaf future yourself unless you're writing
+a runtime, but we'll go through how they're constructed in this book as well.
 
+Non-leaf futures is the kind of futures we as users of a runtime writes
+ourselves using the `async` keyword to create a task which can be run on the
+executor. Often, such a task will `await` a leaf future as one of many
+operations to complete the task.
 
-In theory, we could choose one `Reactor` and one `Executor` that have nothing
-to do with each other besides that one creates leaf `Futures` and the other one
-runs them, but in reality today you'll most often get both in a `Runtime`.
+The key to these tasks is that they're able to yield control to the runtime's
+scheduler and then resume execution again where it left off at a later point.
 
-
+In contrast to leaf futures, these kind of futures is not themselves
+waiting on some I/O resource.
 
 Quite a bit of complexity attributed to `Futures` are actually complexity rooted
 in runtimes. Creating an efficient runtime is hard. 
@@ -84,27 +91,7 @@ The difference between Rust and other languages is that you have to make an
 active choice when it comes to picking a runtime. Most often you'll just use
 the one provided for you.
 
-## Futures 1.0 and Futures 3.0
-
-I'll not spend too much time on this, but it feels wrong to not mention that
-there have been several iterations on how async should work in Rust.
-
-`Futures 3.0` works with the relatively new `async/await` syntax in Rust and
-it's what we'll learn.
-
-Now, since this is rather recent, you can encounter creates that use `Futures 1.0`
-still. This will get resolved in time, but unfortunately it's not always easy
-to know in advance.
-
-A good sign is that if you're required to use combinators like `and_then` then
-you're using `Futures 1.0`.
-
-While they're not directly compatible, there is a tool that let's you relatively
-easily convert a `Future 1.0` to a `Future 3.0` and vice a versa. You can find
-all you need in the [`futures-rs`][futures_rs] crate and all 
-[information you need here][compat_info].
-
-## First things first
+## Before we move on
 
 If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 
