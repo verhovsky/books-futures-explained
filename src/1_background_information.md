@@ -17,45 +17,62 @@ pretty simple. I promise.
 
 Let's get some of the common roadblocks out of the way first.
 
-Async in Rust is different from most other languages in the sense that Rust
-has a very lightweight runtime.
-
-Languages like C#, JavaScript, Java and GO, already includes a runtime 
-for handling concurrency. So if you come from one of those languages this will 
+Languages like C#, JavaScript, Java, GO and many others comes with a runtime
+for handling concurrency. So if you come from one of those languages this will
 seem a bit strange to you.
 
-In Rust you will have to make an active choice about which runtime to use.
+Rust is different from these languages in the sense that Rust doesn't come with
+a runtime for handling concurrency, so you need to use a library which provide
+this for you.
+
+In other words you'll have to make an active choice about which runtime to use
+which will of course seem foreign if the environment you come from provides one
+which "everybody" uses.
 
 ### What Rust's standard library takes care of
 
-1. The definition of an interruptible task
-2. An efficient technique to start, suspend, resume and store tasks which are
-executed concurrently.
-3. A defined way to wake up a suspended task
+1. A common interface representing an operation which will be completed in the
+future through the `Future` trait.
+2. An ergonomic way of creating tasks which can be suspended and resumed through
+the `async` and `await` keywords.
+3. A defined interface wake up a suspended task through the `Waker` trait.
 
 That's really what Rusts standard library does. As you see there is no definition
 of non-blocking I/O, how these tasks are created or how they're run.
 
-
 ### What you need to find elsewhere
 
-A runtime. Well, in Rust we normally divide the runtime into two parts:
+A runtime, often just referred to as an `Executor`.
 
-- The Reactor
-- The Executor
+There are mainly two such runtimes in wide use in the community today 
+[async_std][async_std] and [tokio][tokio].
 
-Reactors create leaf `Futures`, and provides things like non-blocking sockets,
+Executors, accepts one or more asynchronous tasks (`Futures`) and takes
+care of actually running the code we write, suspend the tasks when they're
+waiting for I/O and resume them when they can make progress.
+
+>Now, you might stumble upon articles/comments which mentions both an `Executor`
+and an `Reactor` (also referred to as a `Driver`) as if they're well defined
+concepts you need to know about. This is not true. In practice today you'll only
+interface with the runtime, which provides leaf futures which actually wait for
+some I/O operation, and the executor where  
+
+## Futures
+
+Now, when we talk about futures I find it useful to make a distinction between
+futures created by async functions `async fn() { ... }` and async blocks
+`async { ... }` and **leaf** futures.
+
+Runtimes create leaf `Futures`, and provides things like non-blocking sockets,
 an event queue and so on.
 
-Executors, accepts one or more asynchronous tasks called `Futures` and takes
-care of actually running the code we write, suspend the tasks when they're
-waiting for I/O and resume them.
+
 
 In theory, we could choose one `Reactor` and one `Executor` that have nothing
 to do with each other besides that one creates leaf `Futures` and the other one
 runs them, but in reality today you'll most often get both in a `Runtime`.
 
-There are mainly two such runtimes today [async_std][async_std] and [tokio][tokio].
+
 
 Quite a bit of complexity attributed to `Futures` are actually complexity rooted
 in runtimes. Creating an efficient runtime is hard. 
