@@ -2,15 +2,21 @@
 
 This book aims to explain `Futures` in Rust using an example driven approach.
 
-The goal is to get a better understanding of `Futures` by implementing a toy
-`Reactor`, a very simple `Executor` and our own `Futures`. 
+The goal is to get a better understanding of "async" in Rust by creating a toy
+runtime consisting of a `Reactor` and an `Executor`, and our own futures which
+we can run concurrently.
 
-We'll start off a bit differently than most other explanations. Instead of 
-deferring some of the details about what's special about futures in Rust we 
-try to tackle that head on first. We'll be as brief as possible, but as thorough 
-as needed. This way, most questions will be answered and explored up front. 
+We'll start off a bit differently than most other explanations. Instead of
+deferring some of the details about what `Futures` are and how they're
+implemented, we tackle that head on first.
 
-We'll end up with futures that can run an any executor like `tokio` and `async_str`.
+I learn best when I can take basic understandable concepts and build piece by
+piece of these basic building blocks until everything is understood. This way,
+most questions will be answered and explored up front and the conclusions later
+on seems natural.
+
+I've limited myself to a 200 line main example so that we need keep
+this fairly brief.
 
 In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better

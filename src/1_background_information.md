@@ -13,6 +13,78 @@ information that will help demystify some of the concepts we encounter.
 Actually, after going through these concepts, implementing futures will seem
 pretty simple. I promise.
 
+## Futures
+
+So what is a future?
+
+A future is a representation of some operation which will complete in the
+future.
+
+Now, when we talk about futures I find it useful to make a distinction between
+**non-leaf** futures and **leaf** futures early on because in practice they're
+pretty different from one another.
+
+### Leaf futures
+
+Runtimes create _leaf futures_ which represents a resource like a socket.
+
+```rust, ignore, noplaypen
+// stream is a **leaf-future**
+let mut stream = tokio::net::TcpStream::connect("127.0.0.1:3000");
+```
+
+Operations on these resources, like a `Read` on a socket, will be non-blocking
+and return a future which we call a leaf future since it's the future which
+we're actually waiting on.
+
+It's unlikely that you'll implement a leaf future yourself unless you're writing
+a runtime, but we'll go through how they're constructed in this book as well.
+
+It's also unlikely that you'll pass a leaf-future to a runtime and run it to
+completion alone as you'll understand by reading the next paragraph.
+
+### Non-leaf-futures
+
+Non-leaf-futures is the kind of futures we as _users_ of a runtime writes
+ourselves using the `async` keyword to create a **task** which can be run on the
+executor.
+
+This is an important distinction since these futures represents a
+_set of operations_. Often, such a task will `await` a leaf future as one of
+many operations to complete the task.
+
+```rust
+// Non-leaf-future
+let non_leaf = async {
+    let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap();// <- yield
+    println!("connected!");
+    let result = stream.write(b"hello world\n").await; // <- yield
+    println!("message sent!");
+    // ...
+};
+```
+
+The key to these tasks is that they're able to yield control to the runtime's
+scheduler and then resume execution again where it left off at a later point.
+
+In contrast to leaf futures, these kind of futures does not themselves represent
+an I/O resource. When we poll these futures we either run some code or we yield
+to the scheduler while waiting for some resource to signal us that it's ready so
+we can resume where we left off.
+
+### Runtimes
+
+Quite a bit of complexity attributed to `Futures` are actually complexity rooted
+in runtimes. Creating an efficient runtime is hard.
+
+Learning how to use one correctly can require quite a bit of effort as well, but
+you'll see that there are several similarities between these kind of runtimes so
+learning one makes learning the next much easier.
+
+The difference between Rust and other languages is that you have to make an
+active choice when it comes to picking a runtime. Most often you'll just use
+the one provided for you.
+
 ## Async in Rust
 
 Let's get some of the common roadblocks out of the way first.
@@ -44,7 +116,7 @@ of non-blocking I/O, how these tasks are created or how they're run.
 
 A runtime, often just referred to as an `Executor`.
 
-There are mainly two such runtimes in wide use in the community today 
+There are mainly two such runtimes in wide use in the community today
 [async_std][async_std] and [tokio][tokio].
 
 Executors, accepts one or more asynchronous tasks (`Futures`) and takes
@@ -55,43 +127,10 @@ waiting for I/O and resume them when they can make progress.
 and an `Reactor` (also referred to as a `Driver`) as if they're well defined
 concepts you need to know about. This is not true. In practice today you'll only
 interface with the runtime, which provides leaf futures which actually wait for
-some I/O operation, and the executor where  
+some I/O operation, and the executor where 
 
-## Futures
 
-Now, when we talk about futures I find it useful to make a distinction between
-non-leaf futures and **leaf** futures.
-
-Runtimes create leaf futures which represents a resource like a socket.
-Operations on these resources, like a `Read` on a socket, will be non-blocking
-and instead return a future which we call a leaf future since it's the future
-which we're actually waiting on.
-
-It's unlikely that you'll implement a leaf future yourself unless you're writing
-a runtime, but we'll go through how they're constructed in this book as well.
-
-Non-leaf futures is the kind of futures we as users of a runtime writes
-ourselves using the `async` keyword to create a task which can be run on the
-executor. Often, such a task will `await` a leaf future as one of many
-operations to complete the task.
-
-The key to these tasks is that they're able to yield control to the runtime's
-scheduler and then resume execution again where it left off at a later point.
-
-In contrast to leaf futures, these kind of futures is not themselves
-waiting on some I/O resource.
-
-Quite a bit of complexity attributed to `Futures` are actually complexity rooted
-in runtimes. Creating an efficient runtime is hard. 
-
-Learning how to use one correctly can require quite a bit of effort as well, but you'll see that there are several similarities between these kind of runtimes so
-learning one makes learning the next much easier.
-
-The difference between Rust and other languages is that you have to make an
-active choice when it comes to picking a runtime. Most often you'll just use
-the one provided for you.
-
-## Before we move on
+## Bonus section
 
 If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 

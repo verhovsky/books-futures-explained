@@ -1,12 +1,14 @@
-# Trait objects and fat pointers
+# Waker and Context
 
 > **Relevant for:**
 >
 > - Understanding how the Waker object is constructed
-> - Getting a basic feel for "type erased" objects and what they are
-> - Learning the basics of dynamic dispatch
+> - Learning how the runtime know when a leaf-future can resume
+> - Learning the basics of dynamic dispatch and trait objects
 
-## Trait objects and dynamic dispatch
+## The Waker
+
+The `Waker` trait is an interface where a
 
 One of the most confusing things we encounter when implementing our own `Futures` 
 is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable` 
