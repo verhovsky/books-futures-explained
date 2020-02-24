@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">2.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -153,13 +153,18 @@
                     <main>
                         <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
 <p>This book aims to explain <code>Futures</code> in Rust using an example driven approach.</p>
-<p>The goal is to get a better understanding of <code>Futures</code> by implementing a toy
-<code>Reactor</code>, a very simple <code>Executor</code> and our own <code>Futures</code>. </p>
-<p>We'll start off a bit differently than most other explanations. Instead of 
-deferring some of the details about what's special about futures in Rust we 
-try to tackle that head on first. We'll be as brief as possible, but as thorough 
-as needed. This way, most questions will be answered and explored up front. </p>
-<p>We'll end up with futures that can run an any executor like <code>tokio</code> and <code>async_str</code>.</p>
+<p>The goal is to get a better understanding of &quot;async&quot; in Rust by creating a toy
+runtime consisting of a <code>Reactor</code> and an <code>Executor</code>, and our own futures which
+we can run concurrently.</p>
+<p>We'll start off a bit differently than most other explanations. Instead of
+deferring some of the details about what <code>Futures</code> are and how they're
+implemented, we tackle that head on first.</p>
+<p>I learn best when I can take basic understandable concepts and build piece by
+piece of these basic building blocks until everything is understood. This way,
+most questions will be answered and explored up front and the conclusions later
+on seems natural.</p>
+<p>I've limited myself to a 200 line main example so that we need keep
+this fairly brief.</p>
 <p>In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
 example yourself.</p>
@@ -200,60 +205,102 @@ very well written and very helpful. So thanks!</p>
 information that will help demystify some of the concepts we encounter.</p>
 <p>Actually, after going through these concepts, implementing futures will seem
 pretty simple. I promise.</p>
-<h2><a class="header" href="#async-in-rust" id="async-in-rust">Async in Rust</a></h2>
-<p>Let's get some of the common roadblocks out of the way first.</p>
-<p>Async in Rust is different from most other languages in the sense that Rust
-has a very lightweight runtime.</p>
-<p>Languages like C#, JavaScript, Java and GO, already includes a runtime 
-for handling concurrency. So if you come from one of those languages this will 
+<h2><a class="header" href="#futures" id="futures">Futures</a></h2>
+<p>So what is a future?</p>
+<p>A future is a representation of some operation which will complete in the
+future.</p>
+<p>Async in Rust uses a <code>Poll</code> based approach, in which an asynchronous task will
+have three phases.</p>
+<ol>
+<li><strong>The Poll phase.</strong> A Future is polled which result in the task progressing until
+a point where it can no longer make progress. We often refer to the part of the
+runtime which polls a Future as an executor.</li>
+<li><strong>The Wait phase.</strong> An event source, most often referred to as a reactor,
+registers that a Future is waiting for an event to happen and makes sure that it
+will wake the Future when that event is ready.</li>
+<li><strong>The Wake phase.</strong> The event happens and the Future is woken up. It's now up
+to the executor which polled the Future in step 1 to schedule the future to be
+polled again and make further progress until it completes or reaches a new point
+where it can't make further progress and the cycle repeats.</li>
+</ol>
+<p>Now, when we talk about futures I find it useful to make a distinction between
+<strong>non-leaf</strong> futures and <strong>leaf</strong> futures early on because in practice they're
+pretty different from one another.</p>
+<h3><a class="header" href="#leaf-futures" id="leaf-futures">Leaf futures</a></h3>
+<p>Runtimes create <em>leaf futures</em> which represents a resource like a socket.</p>
+<pre><code class="language-rust ignore noplaypen">// stream is a **leaf-future**
+let mut stream = tokio::net::TcpStream::connect(&quot;127.0.0.1:3000&quot;);
+</code></pre>
+<p>Operations on these resources, like a <code>Read</code> on a socket, will be non-blocking
+and return a future which we call a leaf future since it's the future which
+we're actually waiting on.</p>
+<p>It's unlikely that you'll implement a leaf future yourself unless you're writing
+a runtime, but we'll go through how they're constructed in this book as well.</p>
+<p>It's also unlikely that you'll pass a leaf-future to a runtime and run it to
+completion alone as you'll understand by reading the next paragraph.</p>
+<h3><a class="header" href="#non-leaf-futures" id="non-leaf-futures">Non-leaf-futures</a></h3>
+<p>Non-leaf-futures is the kind of futures we as <em>users</em> of a runtime writes
+ourselves using the <code>async</code> keyword to create a <strong>task</strong> which can be run on the
+executor.</p>
+<p>The bulk of an async program will consist of non-leaf-futures, which are a kind
+of pause-able computation. This is an important distinction since these futures represents a <em>set of operations</em>. Often, such a task will <code>await</code> a leaf future
+as one of many operations to complete the task.</p>
+<pre><code class="language-rust ignore noplaypen">// Non-leaf-future
+let non_leaf = async {
+    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap();// &lt;- yield
+    println!(&quot;connected!&quot;);
+    let result = stream.write(b&quot;hello world\n&quot;).await; // &lt;- yield
+    println!(&quot;message sent!&quot;);
+    ...
+};
+</code></pre>
+<p>The key to these tasks is that they're able to yield control to the runtime's
+scheduler and then resume execution again where it left off at a later point.</p>
+<p>In contrast to leaf futures, these kind of futures does not themselves represent
+an I/O resource. When we poll these futures we either run some code or we yield
+to the scheduler while waiting for some resource to signal us that it's ready so
+we can resume where we left off.</p>
+<h2><a class="header" href="#runtimes" id="runtimes">Runtimes</a></h2>
+<p>Languages like C#, JavaScript, Java, GO and many others comes with a runtime
+for handling concurrency. So if you come from one of those languages this will
 seem a bit strange to you.</p>
-<p>In Rust you will have to make an active choice about which runtime to use.</p>
+<p>Rust is different from these languages in the sense that Rust doesn't come with
+a runtime for handling concurrency, so you need to use a library which provide
+this for you.</p>
+<p>Quite a bit of complexity attributed to <code>Futures</code> are actually complexity rooted
+in runtimes. Creating an efficient runtime is hard.</p>
+<p>Learning how to use one correctly requires quite a bit of effort as well, but
+you'll see that there are several similarities between these kind of runtimes so
+learning one makes learning the next much easier.</p>
+<p>The difference between Rust and other languages is that you have to make an
+active choice when it comes to picking a runtime. Most often, in other languages
+you'll just use the one provided for you.</p>
+<p>An async runtime can be divided into two parts:</p>
+<ol>
+<li>The Executor</li>
+<li>The Reactor</li>
+</ol>
+<p>When Rusts Futures were designed there was a desire to separate the job of
+notifying a <code>Future</code> that it can do more work, and actually doing the work
+on the <code>Future</code>.</p>
+<p>You can think of the former as the reactor's job, and the latter as the
+executors job. These two parts of a runtime interacts using the <code>Waker</code> type.</p>
+<p>The two most popular runtimes for <code>Futures</code> as of writing this is:</p>
+<ul>
+<li><a href="https://github.com/async-rs/async-std">async-std</a></li>
+<li><a href="https://github.com/tokio-rs/tokio">Tokio</a></li>
+</ul>
 <h3><a class="header" href="#what-rusts-standard-library-takes-care-of" id="what-rusts-standard-library-takes-care-of">What Rust's standard library takes care of</a></h3>
 <ol>
-<li>The definition of an interruptible task</li>
-<li>An efficient technique to start, suspend, resume and store tasks which are
-executed concurrently.</li>
-<li>A defined way to wake up a suspended task</li>
+<li>A common interface representing an operation which will be completed in the
+future through the <code>Future</code> trait.</li>
+<li>An ergonomic way of creating tasks which can be suspended and resumed through
+the <code>async</code> and <code>await</code> keywords.</li>
+<li>A defined interface wake up a suspended task through the <code>Waker</code> type.</li>
 </ol>
 <p>That's really what Rusts standard library does. As you see there is no definition
 of non-blocking I/O, how these tasks are created or how they're run.</p>
-<h3><a class="header" href="#what-you-need-to-find-elsewhere" id="what-you-need-to-find-elsewhere">What you need to find elsewhere</a></h3>
-<p>A runtime. Well, in Rust we normally divide the runtime into two parts:</p>
-<ul>
-<li>The Reactor</li>
-<li>The Executor</li>
-</ul>
-<p>Reactors create leaf <code>Futures</code>, and provides things like non-blocking sockets,
-an event queue and so on.</p>
-<p>Executors, accepts one or more asynchronous tasks called <code>Futures</code> and takes
-care of actually running the code we write, suspend the tasks when they're
-waiting for I/O and resume them.</p>
-<p>In theory, we could choose one <code>Reactor</code> and one <code>Executor</code> that have nothing
-to do with each other besides that one creates leaf <code>Futures</code> and the other one
-runs them, but in reality today you'll most often get both in a <code>Runtime</code>.</p>
-<p>There are mainly two such runtimes today <a href="https://github.com/async-rs/async-std">async_std</a> and <a href="https://github.com/tokio-rs/tokio">tokio</a>.</p>
-<p>Quite a bit of complexity attributed to <code>Futures</code> are actually complexity rooted
-in runtimes. Creating an efficient runtime is hard. </p>
-<p>Learning how to use one correctly can require quite a bit of effort as well, but you'll see that there are several similarities between these kind of runtimes so
-learning one makes learning the next much easier.</p>
-<p>The difference between Rust and other languages is that you have to make an
-active choice when it comes to picking a runtime. Most often you'll just use
-the one provided for you.</p>
-<h2><a class="header" href="#futures-10-and-futures-30" id="futures-10-and-futures-30">Futures 1.0 and Futures 3.0</a></h2>
-<p>I'll not spend too much time on this, but it feels wrong to not mention that
-there have been several iterations on how async should work in Rust.</p>
-<p><code>Futures 3.0</code> works with the relatively new <code>async/await</code> syntax in Rust and
-it's what we'll learn.</p>
-<p>Now, since this is rather recent, you can encounter creates that use <code>Futures 1.0</code>
-still. This will get resolved in time, but unfortunately it's not always easy
-to know in advance.</p>
-<p>A good sign is that if you're required to use combinators like <code>and_then</code> then
-you're using <code>Futures 1.0</code>.</p>
-<p>While they're not directly compatible, there is a tool that let's you relatively
-easily convert a <code>Future 1.0</code> to a <code>Future 3.0</code> and vice a versa. You can find
-all you need in the <a href="https://github.com/rust-lang/futures-rs"><code>futures-rs</code></a> crate and all 
-<a href="https://rust-lang.github.io/futures-rs/blog/2019/04/18/compatibility-layer.html">information you need here</a>.</p>
-<h2><a class="header" href="#first-things-first" id="first-things-first">First things first</a></h2>
+<h2><a class="header" href="#bonus-section" id="bonus-section">Bonus section</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 
 try to give a high level overview that will make it easier to learn Rusts 
@@ -268,27 +315,48 @@ try to give a high level overview that will make it easier to learn Rusts
 it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
 <p>I'll be right here when you're back.</p>
 <p>However, if you feel that you have the basics covered, then let's get moving!</p>
-<h1><a class="header" href="#trait-objects-and-fat-pointers" id="trait-objects-and-fat-pointers">Trait objects and fat pointers</a></h1>
+<h1><a class="header" href="#waker-and-context" id="waker-and-context">Waker and Context</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
 <ul>
 <li>Understanding how the Waker object is constructed</li>
-<li>Getting a basic feel for &quot;type erased&quot; objects and what they are</li>
-<li>Learning the basics of dynamic dispatch</li>
+<li>Learning how the runtime know when a leaf-future can resume</li>
+<li>Learning the basics of dynamic dispatch and trait objects</li>
 </ul>
+<p>The <code>Waker</code> type is described as part of <a href="https://github.com/rust-lang/rfcs/blob/master/text/2592-futures.md#waking-up">RFC#2592</a>.</p>
 </blockquote>
-<h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
-<p>One of the most confusing things we encounter when implementing our own <code>Futures</code> 
-is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
-which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait 
+<h2><a class="header" href="#the-waker" id="the-waker">The Waker</a></h2>
+<p>The <code>Waker</code> type allows for a loose coupling between the reactor-part and the executor-part of a runtime.</p>
+<p>By having a wake up mechanism that is <em>not</em> tied to the thing that executes
+the future, runtime-implementors can come up with interesting new wake-up
+mechanisms. An example of this can be spawning a thread to do some work that
+eventually notifies the future, completely independent of the current runtime.</p>
+<p>Without a waker, the executor would be the <em>only</em> way to notify a running
+task, whereas with the waker, we get a loose coupling where it's easy to
+extend the ecosystem with new leaf-level tasks.</p>
+<blockquote>
+<p>If you want to read more about the reasoning behind the <code>Waker</code> type I can
+recommend <a href="https://boats.gitlab.io/blog/post/wakers-i/">Withoutboats articles series about them</a>.</p>
+</blockquote>
+<h2><a class="header" href="#the-context-type" id="the-context-type">The Context type</a></h2>
+<p>As the docs state as of now this type only wrapps a <code>Waker</code>, but it gives some
+flexibility for future evolutions of the API in Rust. The context can hold
+task-local storage and provide space for debugging hooks in later iterations.</p>
+<h2><a class="header" href="#understanding-the-waker" id="understanding-the-waker">Understanding the <code>Waker</code></a></h2>
+<p>One of the most confusing things we encounter when implementing our own <code>Futures</code>
+is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code>
+which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait
 object we construct our selves.</p>
 <blockquote>
-<p>If you want to know more about dynamic dispatch in Rust I can recommend  an article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
+<p>If you want to know more about dynamic dispatch in Rust I can recommend  an 
+article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
 </blockquote>
 <p>Let's explain this a bit more in detail.</p>
 <h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
-<p>Let's take a look at the size of some different pointer types in Rust. If we
-run the following code. <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
+<p>To get a better understanding of how we implement the <code>Waker</code> in Rust, we need
+to take a step back and talk about some fundamentals. Let's start by taking a
+look at the size of some different pointer types in Rust. </p>
+<p>Run the following code <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
 <pre><pre class="playpen"><code class="language-rust"># use std::mem::size_of;
 trait SomeTrait { }
 
@@ -324,7 +392,8 @@ information.</p>
 <li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
 </ul>
 <p>The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To accomplish this we use <em>dynamic dispatch</em>.</p>
+except that it implements the methods defined by our trait. To accomplish this
+we use <em>dynamic dispatch</em>.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
 <blockquote>
@@ -392,9 +461,20 @@ fn main() {
 }
 
 </code></pre></pre>
-<p>The reason we go through this will be clear later on when we implement our own
-<code>Waker</code> we'll actually set up a <code>vtable</code> like we do here to and knowing what
-it is will make this much less mysterious.</p>
+<p>Now that you know this you also know why how we implement the <code>Waker</code> type
+in Rust.</p>
+<p>Later on, when we implement our own <code>Waker</code> we'll actually set up a <code>vtable</code>
+like we do here to and knowing why we do that and how it works will make this
+much less mysterious.</p>
+<h2><a class="header" href="#bonus-section-1" id="bonus-section-1">Bonus section</a></h2>
+<p>You might wonder why the <code>Waker</code> was implemented like this and not just as a
+normal trait?</p>
+<p>The reason is flexibility. Implementing the Waker the way we do here gives a lot
+of flexibility of choosing what memory management scheme to use.</p>
+<p>The &quot;normal&quot; way is by using an <code>Arc</code> to use reference count keep track of when
+a Waker object can be dropped. However, this is not the only way, you could also
+use purely global functions and state, or any other way you wish.</p>
+<p>This leaves a lot of options on the table for runtime implementors.</p>
 <h1><a class="header" href="#generators" id="generators">Generators</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
@@ -2343,6 +2423,21 @@ articles I've already linked to in the book, here are some of my suggestions:</p
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

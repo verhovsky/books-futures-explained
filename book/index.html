@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">2.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -151,13 +151,18 @@
                     <main>
                         <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
 <p>This book aims to explain <code>Futures</code> in Rust using an example driven approach.</p>
-<p>The goal is to get a better understanding of <code>Futures</code> by implementing a toy
-<code>Reactor</code>, a very simple <code>Executor</code> and our own <code>Futures</code>. </p>
-<p>We'll start off a bit differently than most other explanations. Instead of 
-deferring some of the details about what's special about futures in Rust we 
-try to tackle that head on first. We'll be as brief as possible, but as thorough 
-as needed. This way, most questions will be answered and explored up front. </p>
-<p>We'll end up with futures that can run an any executor like <code>tokio</code> and <code>async_str</code>.</p>
+<p>The goal is to get a better understanding of &quot;async&quot; in Rust by creating a toy
+runtime consisting of a <code>Reactor</code> and an <code>Executor</code>, and our own futures which
+we can run concurrently.</p>
+<p>We'll start off a bit differently than most other explanations. Instead of
+deferring some of the details about what <code>Futures</code> are and how they're
+implemented, we tackle that head on first.</p>
+<p>I learn best when I can take basic understandable concepts and build piece by
+piece of these basic building blocks until everything is understood. This way,
+most questions will be answered and explored up front and the conclusions later
+on seems natural.</p>
+<p>I've limited myself to a 200 line main example so that we need keep
+this fairly brief.</p>
 <p>In the end I've made some reader exercises you can do if you want to fix some
 of the most glaring omissions and shortcuts we took and create a slightly better
 example yourself.</p>
@@ -206,6 +211,21 @@ very well written and very helpful. So thanks!</p>
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

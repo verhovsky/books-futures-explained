@@ -20,6 +20,20 @@ So what is a future?
 A future is a representation of some operation which will complete in the
 future.
 
+Async in Rust uses a `Poll` based approach, in which an asynchronous task will
+have three phases.
+
+1. **The Poll phase.** A Future is polled which result in the task progressing until
+a point where it can no longer make progress. We often refer to the part of the
+runtime which polls a Future as an executor.
+2. **The Wait phase.** An event source, most often referred to as a reactor,
+registers that a Future is waiting for an event to happen and makes sure that it
+will wake the Future when that event is ready.
+3. **The Wake phase.** The event happens and the Future is woken up. It's now up
+to the executor which polled the Future in step 1 to schedule the future to be
+polled again and make further progress until it completes or reaches a new point
+where it can't make further progress and the cycle repeats.
+
 Now, when we talk about futures I find it useful to make a distinction between
 **non-leaf** futures and **leaf** futures early on because in practice they're
 pretty different from one another.
@@ -49,18 +63,18 @@ Non-leaf-futures is the kind of futures we as _users_ of a runtime writes
 ourselves using the `async` keyword to create a **task** which can be run on the
 executor.
 
-This is an important distinction since these futures represents a
-_set of operations_. Often, such a task will `await` a leaf future as one of
-many operations to complete the task.
+The bulk of an async program will consist of non-leaf-futures, which are a kind
+of pause-able computation. This is an important distinction since these futures represents a _set of operations_. Often, such a task will `await` a leaf future
+as one of many operations to complete the task.
 
-```rust
+```rust, ignore, noplaypen
 // Non-leaf-future
 let non_leaf = async {
     let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap();// <- yield
     println!("connected!");
     let result = stream.write(b"hello world\n").await; // <- yield
     println!("message sent!");
-    // ...
+    ...
 };
 ```
 
@@ -72,22 +86,7 @@ an I/O resource. When we poll these futures we either run some code or we yield
 to the scheduler while waiting for some resource to signal us that it's ready so
 we can resume where we left off.
 
-### Runtimes
-
-Quite a bit of complexity attributed to `Futures` are actually complexity rooted
-in runtimes. Creating an efficient runtime is hard.
-
-Learning how to use one correctly can require quite a bit of effort as well, but
-you'll see that there are several similarities between these kind of runtimes so
-learning one makes learning the next much easier.
-
-The difference between Rust and other languages is that you have to make an
-active choice when it comes to picking a runtime. Most often you'll just use
-the one provided for you.
-
-## Async in Rust
-
-Let's get some of the common roadblocks out of the way first.
+## Runtimes
 
 Languages like C#, JavaScript, Java, GO and many others comes with a runtime
 for handling concurrency. So if you come from one of those languages this will
@@ -97,9 +96,33 @@ Rust is different from these languages in the sense that Rust doesn't come with
 a runtime for handling concurrency, so you need to use a library which provide
 this for you.
 
-In other words you'll have to make an active choice about which runtime to use
-which will of course seem foreign if the environment you come from provides one
-which "everybody" uses.
+Quite a bit of complexity attributed to `Futures` are actually complexity rooted
+in runtimes. Creating an efficient runtime is hard.
+
+Learning how to use one correctly requires quite a bit of effort as well, but
+you'll see that there are several similarities between these kind of runtimes so
+learning one makes learning the next much easier.
+
+The difference between Rust and other languages is that you have to make an
+active choice when it comes to picking a runtime. Most often, in other languages
+you'll just use the one provided for you.
+
+An async runtime can be divided into two parts:
+
+1. The Executor
+2. The Reactor
+
+When Rusts Futures were designed there was a desire to separate the job of
+notifying a `Future` that it can do more work, and actually doing the work
+on the `Future`.
+
+You can think of the former as the reactor's job, and the latter as the
+executors job. These two parts of a runtime interacts using the `Waker` type.
+
+The two most popular runtimes for `Futures` as of writing this is:
+
+- [async-std](https://github.com/async-rs/async-std)
+- [Tokio](https://github.com/tokio-rs/tokio)
 
 ### What Rust's standard library takes care of
 
@@ -107,28 +130,10 @@ which "everybody" uses.
 future through the `Future` trait.
 2. An ergonomic way of creating tasks which can be suspended and resumed through
 the `async` and `await` keywords.
-3. A defined interface wake up a suspended task through the `Waker` trait.
+3. A defined interface wake up a suspended task through the `Waker` type.
 
 That's really what Rusts standard library does. As you see there is no definition
 of non-blocking I/O, how these tasks are created or how they're run.
-
-### What you need to find elsewhere
-
-A runtime, often just referred to as an `Executor`.
-
-There are mainly two such runtimes in wide use in the community today
-[async_std][async_std] and [tokio][tokio].
-
-Executors, accepts one or more asynchronous tasks (`Futures`) and takes
-care of actually running the code we write, suspend the tasks when they're
-waiting for I/O and resume them when they can make progress.
-
->Now, you might stumble upon articles/comments which mentions both an `Executor`
-and an `Reactor` (also referred to as a `Driver`) as if they're well defined
-concepts you need to know about. This is not true. In practice today you'll only
-interface with the runtime, which provides leaf futures which actually wait for
-some I/O operation, and the executor where 
-
 
 ## Bonus section
 

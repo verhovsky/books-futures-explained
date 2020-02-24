@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Trait objects and fat pointers - Futures Explained in 200 Lines of Rust</title>
+        <title>Waker and Context - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_trait_objects.html" class="active"><strong aria-hidden="true">2.</strong> Trait objects and fat pointers</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_waker_context.html" class="active"><strong aria-hidden="true">2.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,27 +149,48 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#trait-objects-and-fat-pointers" id="trait-objects-and-fat-pointers">Trait objects and fat pointers</a></h1>
+                        <h1><a class="header" href="#waker-and-context" id="waker-and-context">Waker and Context</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
 <ul>
 <li>Understanding how the Waker object is constructed</li>
-<li>Getting a basic feel for &quot;type erased&quot; objects and what they are</li>
-<li>Learning the basics of dynamic dispatch</li>
+<li>Learning how the runtime know when a leaf-future can resume</li>
+<li>Learning the basics of dynamic dispatch and trait objects</li>
 </ul>
+<p>The <code>Waker</code> type is described as part of <a href="https://github.com/rust-lang/rfcs/blob/master/text/2592-futures.md#waking-up">RFC#2592</a>.</p>
 </blockquote>
-<h2><a class="header" href="#trait-objects-and-dynamic-dispatch" id="trait-objects-and-dynamic-dispatch">Trait objects and dynamic dispatch</a></h2>
-<p>One of the most confusing things we encounter when implementing our own <code>Futures</code> 
-is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code> 
-which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait 
+<h2><a class="header" href="#the-waker" id="the-waker">The Waker</a></h2>
+<p>The <code>Waker</code> type allows for a loose coupling between the reactor-part and the executor-part of a runtime.</p>
+<p>By having a wake up mechanism that is <em>not</em> tied to the thing that executes
+the future, runtime-implementors can come up with interesting new wake-up
+mechanisms. An example of this can be spawning a thread to do some work that
+eventually notifies the future, completely independent of the current runtime.</p>
+<p>Without a waker, the executor would be the <em>only</em> way to notify a running
+task, whereas with the waker, we get a loose coupling where it's easy to
+extend the ecosystem with new leaf-level tasks.</p>
+<blockquote>
+<p>If you want to read more about the reasoning behind the <code>Waker</code> type I can
+recommend <a href="https://boats.gitlab.io/blog/post/wakers-i/">Withoutboats articles series about them</a>.</p>
+</blockquote>
+<h2><a class="header" href="#the-context-type" id="the-context-type">The Context type</a></h2>
+<p>As the docs state as of now this type only wrapps a <code>Waker</code>, but it gives some
+flexibility for future evolutions of the API in Rust. The context can hold
+task-local storage and provide space for debugging hooks in later iterations.</p>
+<h2><a class="header" href="#understanding-the-waker" id="understanding-the-waker">Understanding the <code>Waker</code></a></h2>
+<p>One of the most confusing things we encounter when implementing our own <code>Futures</code>
+is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code>
+which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait
 object we construct our selves.</p>
 <blockquote>
-<p>If you want to know more about dynamic dispatch in Rust I can recommend  an article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
+<p>If you want to know more about dynamic dispatch in Rust I can recommend  an 
+article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
 </blockquote>
 <p>Let's explain this a bit more in detail.</p>
 <h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
-<p>Let's take a look at the size of some different pointer types in Rust. If we
-run the following code. <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
+<p>To get a better understanding of how we implement the <code>Waker</code> in Rust, we need
+to take a step back and talk about some fundamentals. Let's start by taking a
+look at the size of some different pointer types in Rust. </p>
+<p>Run the following code <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
 <pre><pre class="playpen"><code class="language-rust"># use std::mem::size_of;
 trait SomeTrait { }
 
@@ -205,7 +226,8 @@ information.</p>
 <li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
 </ul>
 <p>The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To accomplish this we use <em>dynamic dispatch</em>.</p>
+except that it implements the methods defined by our trait. To accomplish this
+we use <em>dynamic dispatch</em>.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
 <blockquote>
@@ -273,9 +295,20 @@ fn main() {
 }
 
 </code></pre></pre>
-<p>The reason we go through this will be clear later on when we implement our own
-<code>Waker</code> we'll actually set up a <code>vtable</code> like we do here to and knowing what
-it is will make this much less mysterious.</p>
+<p>Now that you know this you also know why how we implement the <code>Waker</code> type
+in Rust.</p>
+<p>Later on, when we implement our own <code>Waker</code> we'll actually set up a <code>vtable</code>
+like we do here to and knowing why we do that and how it works will make this
+much less mysterious.</p>
+<h2><a class="header" href="#bonus-section" id="bonus-section">Bonus section</a></h2>
+<p>You might wonder why the <code>Waker</code> was implemented like this and not just as a
+normal trait?</p>
+<p>The reason is flexibility. Implementing the Waker the way we do here gives a lot
+of flexibility of choosing what memory management scheme to use.</p>
+<p>The &quot;normal&quot; way is by using an <code>Arc</code> to use reference count keep track of when
+a Waker object can be dropped. However, this is not the only way, you could also
+use purely global functions and state, or any other way you wish.</p>
+<p>This leaves a lot of options on the table for runtime implementors.</p>
 
                     </main>
 
@@ -314,6 +347,21 @@ it is will make this much less mysterious.</p>
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         

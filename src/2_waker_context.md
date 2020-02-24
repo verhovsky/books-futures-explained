@@ -5,24 +5,50 @@
 > - Understanding how the Waker object is constructed
 > - Learning how the runtime know when a leaf-future can resume
 > - Learning the basics of dynamic dispatch and trait objects
+>
+> The `Waker` type is described as part of [RFC#2592][rfc2592].
 
 ## The Waker
 
-The `Waker` trait is an interface where a
+The `Waker` type allows for a loose coupling between the reactor-part and the executor-part of a runtime.
 
-One of the most confusing things we encounter when implementing our own `Futures` 
-is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable` 
-which allows us to use dynamic dispatch to call methods on a _type erased_ trait 
+By having a wake up mechanism that is _not_ tied to the thing that executes
+the future, runtime-implementors can come up with interesting new wake-up
+mechanisms. An example of this can be spawning a thread to do some work that
+eventually notifies the future, completely independent of the current runtime.
+
+Without a waker, the executor would be the _only_ way to notify a running
+task, whereas with the waker, we get a loose coupling where it's easy to
+extend the ecosystem with new leaf-level tasks.
+
+> If you want to read more about the reasoning behind the `Waker` type I can
+> recommend [Withoutboats articles series about them](https://boats.gitlab.io/blog/post/wakers-i/).
+
+## The Context type
+
+As the docs state as of now this type only wrapps a `Waker`, but it gives some
+flexibility for future evolutions of the API in Rust. The context can hold
+task-local storage and provide space for debugging hooks in later iterations.
+
+## Understanding the `Waker`
+
+One of the most confusing things we encounter when implementing our own `Futures`
+is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable`
+which allows us to use dynamic dispatch to call methods on a _type erased_ trait
 object we construct our selves.
 
->If you want to know more about dynamic dispatch in Rust I can recommend  an article written by Adam Schwalm called [Exploring Dynamic Dispatch in Rust](https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/).
+>If you want to know more about dynamic dispatch in Rust I can recommend  an 
+article written by Adam Schwalm called [Exploring Dynamic Dispatch in Rust](https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/).
 
 Let's explain this a bit more in detail.
 
 ## Fat pointers in Rust
 
-Let's take a look at the size of some different pointer types in Rust. If we
-run the following code. _(You'll have to press "play" to see the output)_:
+To get a better understanding of how we implement the `Waker` in Rust, we need
+to take a step back and talk about some fundamentals. Let's start by taking a
+look at the size of some different pointer types in Rust. 
+
+Run the following code _(You'll have to press "play" to see the output)_:
 
 ``` rust
 # use std::mem::size_of;
@@ -65,7 +91,8 @@ The layout for a pointer to a _trait object_ looks like this:
 - The second 8 bytes points to the `vtable` for the trait object
 
 The reason for this is to allow us to refer to an object we know nothing about
-except that it implements the methods defined by our trait. To accomplish this we use _dynamic dispatch_.
+except that it implements the methods defined by our trait. To accomplish this
+we use _dynamic dispatch_.
 
 Let's explain this in code instead of words by implementing our own trait
 object from these parts:
@@ -136,6 +163,25 @@ fn main() {
 
 ```
 
-The reason we go through this will be clear later on when we implement our own
-`Waker` we'll actually set up a `vtable` like we do here to and knowing what
-it is will make this much less mysterious.
+Now that you know this you also know why how we implement the `Waker` type
+in Rust.
+
+Later on, when we implement our own `Waker` we'll actually set up a `vtable`
+like we do here to and knowing why we do that and how it works will make this
+much less mysterious.
+
+## Bonus section
+
+You might wonder why the `Waker` was implemented like this and not just as a
+normal trait?
+
+The reason is flexibility. Implementing the Waker the way we do here gives a lot
+of flexibility of choosing what memory management scheme to use.
+
+The "normal" way is by using an `Arc` to use reference count keep track of when
+a Waker object can be dropped. However, this is not the only way, you could also
+use purely global functions and state, or any other way you wish.
+
+This leaves a lot of options on the table for runtime implementors.
+
+[rfc2592]:https://github.com/rust-lang/rfcs/blob/master/text/2592-futures.md#waking-up

@@ -1,63 +1,67 @@
-/*
+/* Base16 Atelier Dune Light - Theme */
+/* by Bram de Haan (http://atelierbram.github.io/syntax-highlighting/atelier-schemes/dune) */
+/* Original Base16 color scheme by Chris Kempson (https://github.com/chriskempson/base16) */
 
-Visual Studio-like style based on original C# coloring by Jason Diamond <jason@diamond.name>
+/* Atelier-Dune Comment */
+.hljs-comment {
+  color:  rgb(255, 115, 0);;
+  font-style: italic;
+}
+.hljs-quote {
+  color: #AAA;
+}
 
-*/
+/* Atelier-Dune Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attribute,
+.hljs-tag,
+.hljs-name,
+.hljs-regexp,
+.hljs-link,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: #d73737;
+}
+
+/* Atelier-Dune Orange */
+.hljs-number,
+.hljs-meta,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params {
+  color: #b65611;
+}
+
+/* Atelier-Dune Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet {
+  color: #60ac39;
+}
+
+/* Atelier-Dune Blue */
+.hljs-title,
+.hljs-section {
+  color: #6684e1;
+}
+
+/* Atelier-Dune Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+  color: #b854d4;
+}
+
 .hljs {
   display: block;
   overflow-x: auto;
+  background: #f1f1f1;
+  color: #6e6b5e;
   padding: 0.5em;
-  background: rgba(253, 153, 3, 0.027);
-  color: black;
 }
-
-.hljs-comment,
-.hljs-quote,
-.hljs-variable {
-  color: #008000;
-}
-
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-built_in,
-.hljs-name,
-.hljs-tag {
-  color: #00f;
-}
-
-.hljs-string,
-.hljs-title,
-.hljs-section,
-.hljs-attribute,
-.hljs-literal,
-.hljs-template-tag,
-.hljs-template-variable,
-.hljs-type,
-.hljs-addition {
-  color: #a31515;
-}
-
-.hljs-deletion,
-.hljs-selector-attr,
-.hljs-selector-pseudo,
-.hljs-meta {
-  color: #2b91af;
-}
-
-.hljs-doctag {
-  color: #808080;
-}
-
-.hljs-attr {
-  color: #f00;
-}
-
-.hljs-symbol,
-.hljs-bullet,
-.hljs-link {
-  color: #00b0e8;
-}
-
 
 .hljs-emphasis {
   font-style: italic;
@@ -65,4 +69,14 @@ Visual Studio-like style based on original C# coloring by Jason Diamond <jason@d
 
 .hljs-strong {
   font-weight: bold;
+}
+
+.hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+
+.hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0;
 }
