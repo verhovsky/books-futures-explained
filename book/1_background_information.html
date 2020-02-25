@@ -203,7 +203,7 @@ executor.</p>
 <p>The bulk of an async program will consist of non-leaf-futures, which are a kind
 of pause-able computation. This is an important distinction since these futures represents a <em>set of operations</em>. Often, such a task will <code>await</code> a leaf future
 as one of many operations to complete the task.</p>
-<pre><code class="language-rust ignore noplaypen">// Non-leaf-future
+<pre><code class="language-rust ignore noplaypen edition2018">// Non-leaf-future
 let non_leaf = async {
     let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap();// &lt;- yield
     println!(&quot;connected!&quot;);
@@ -311,21 +311,6 @@ it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
 
         </div>
 
-        
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload(true); // force reload from server (not from cache)
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
         
 
         

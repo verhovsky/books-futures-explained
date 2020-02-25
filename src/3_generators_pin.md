@@ -518,6 +518,12 @@ Thanks to [PR#45337][pr45337] you can actually run code like the one in our
 example in Rust today using the `static` keyword on nightly. Try it for
 yourself:
 
+    Beware that the API is changing rapidly. As I was writing this book
+    Generators had an API change adding support for a "resume" argument to
+    be passed into the generator closure.
+
+    Follow the progress on the [tracking issue #43122][issue43122] for [RFC#2033][rfc2033].
+
 ```rust
 #![feature(generators, generator_trait)]
 use std::ops::{Generator, GeneratorState};
@@ -541,16 +547,16 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
 
-    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!("Gen1 got value {}", n);
     }
     
-    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!("Gen2 got value {}", n);
     };
 
-    let _ = pinned1.as_mut().resume();
-    let _ = pinned2.as_mut().resume();
+    let _ = pinned1.as_mut().resume(());
+    let _ = pinned2.as_mut().resume(());
 }
 ```
 
@@ -560,3 +566,4 @@ pub fn main() {
 [rfc1832]: https://github.com/rust-lang/rfcs/pull/1832
 [optimizing-await]: https://tmandry.gitlab.io/blog/posts/optimizing-await-1/
 [pr45337]: https://github.com/rust-lang/rust/pull/45337/files
+[issue43122]: https://github.com/rust-lang/rust/issues/43122
