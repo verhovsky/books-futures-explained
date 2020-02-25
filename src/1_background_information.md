@@ -67,7 +67,7 @@ The bulk of an async program will consist of non-leaf-futures, which are a kind
 of pause-able computation. This is an important distinction since these futures represents a _set of operations_. Often, such a task will `await` a leaf future
 as one of many operations to complete the task.
 
-```rust, ignore, noplaypen
+```rust, ignore, noplaypen, edition2018
 // Non-leaf-future
 let non_leaf = async {
     let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap();// <- yield
