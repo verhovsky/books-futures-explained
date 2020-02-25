@@ -518,11 +518,11 @@ Thanks to [PR#45337][pr45337] you can actually run code like the one in our
 example in Rust today using the `static` keyword on nightly. Try it for
 yourself:
 
-    Beware that the API is changing rapidly. As I was writing this book
-    Generators had an API change adding support for a "resume" argument to
-    be passed into the generator closure.
-
-    Follow the progress on the [tracking issue #43122][issue43122] for [RFC#2033][rfc2033].
+>Beware that the API is changing rapidly. As I was writing this book, generators
+had an API change adding support for a "resume" argument to get passed into the
+generator closure.
+>
+>Follow the progress on the [tracking issue #4312][issue43122] for [RFC#033][rfc2033].
 
 ```rust
 #![feature(generators, generator_trait)]
