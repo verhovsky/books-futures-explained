@@ -4,7 +4,7 @@
 >
 > - High level introduction to concurrency in Rust
 > - Knowing what Rust provides and not when working with async code
-> - Understanding why we need runtimes 
+> - Understanding why we need a runtime-library in Rust
 > - Getting pointers to further reading on concurrency in general
 
 Before we start implementing our `Futures` , we'll go through some background
@@ -12,6 +12,18 @@ information that will help demystify some of the concepts we encounter.
 
 Actually, after going through these concepts, implementing futures will seem
 pretty simple. I promise.
+
+## Popular alternatives for writing concurrent programs
+
+So let's kick this off by first taking a brief look into what the popular
+options we have for writing concurrent programs
+
+### Callback based approcah
+
+You probably already know this from Javascript since it's extremely common:
+
+
+
 
 ## Futures
 
