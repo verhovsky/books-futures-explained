@@ -10,14 +10,14 @@ Now one way of accomplishing this is letting the OS take care of everything for
 us. We do this by simply spawning a new OS thread for each task we want to
 accomplish and write code like we normally would.
 
-**Pros:**
+**Advantages:**
 
 - Simple
 - Easy to use
 - Switching between tasks is reasonably fast
 - You get parallelism for free
 
-**Cons:**
+**Drawbacks:**
 
 - OS level threads come with a rather large stack. If you have many tasks
 waiting simultaneously (like you would in a web-server under heavy load) you'll
@@ -79,7 +79,7 @@ These "jumps" are know as context switches. Your OS is doing it many times each
 second as you read this.
 
 
-The main advantages are:
+**Advantages:**
 
 1. Simple to use. The code will look like it does when using OS threads.
 2. A "context switch" is reasonably fast
@@ -88,22 +88,22 @@ thousands of green threads running.
 4. It's easy to incorporate [_preemtion_](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/green-threads#preemptive-multitasking)
 which puts a lot of control in the hands of the runtime implementors.
 
-The main cons are:
+**Drawbacks:**
 
 1. The stacks might need to grow. Solving this is not easy and will have a cost.
 2. You need to save all the CPU state on every switch
-3. It's not a _zero cost abstraction_ (which is one of the reasons Rust removed
-them early on).
-4. Complicated to implement correctly if you want to support many different
+3. It's not a _zero cost abstraction_ (Rust had green threads early on and this
+was one of the reasons they were removed).
+1. Complicated to implement correctly if you want to support many different
 platforms.
 
 If you were to implement green threads in Rust, it could look something like
 this:
 
-    The example presented below is from an earlier book I wrote about green
-    threads called [Green Threads Explained in 200 lines of Rust.](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/)
-    If you want to know what's going on everything is explained in detail
-    in that book.
+>The example presented below is from an earlier book I wrote about green
+>threads called [Green Threads Explained in 200 lines of Rust.](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/)
+>If you want to know what's going on you'll find everything explained in detail
+>in that book.
 
 ```rust
 #![feature(asm)]
@@ -398,3 +398,8 @@ impl Runtime {
     }
 }
 ```
+
+We're keeping this super simple, and you might wonder what's the difference
+between this approach and the one using OS threads. The difference is that the
+callbacks are run on the same thread. The OS threads we create are basically
+just used as timers.

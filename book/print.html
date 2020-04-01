@@ -199,14 +199,14 @@ pros and cons for each of them.</p>
 <p>Now one way of accomplishing this is letting the OS take care of everything for 
 us. We do this by simply spawning a new OS thread for each task we want to
 accomplish and write code like we normally would.</p>
-<p><strong>Pros:</strong></p>
+<p><strong>Advantages:</strong></p>
 <ul>
 <li>Simple</li>
 <li>Easy to use</li>
 <li>Switching between tasks is reasonably fast</li>
 <li>You get parallelism for free</li>
 </ul>
-<p><strong>Cons:</strong></p>
+<p><strong>Drawbacks:</strong></p>
 <ul>
 <li>OS level threads come with a rather large stack. If you have many tasks
 waiting simultaneously (like you would in a web-server under heavy load) you'll
@@ -260,7 +260,7 @@ task is finished</li>
 </ol>
 <p>These &quot;jumps&quot; are know as context switches. Your OS is doing it many times each
 second as you read this.</p>
-<p>The main advantages are:</p>
+<p><strong>Advantages:</strong></p>
 <ol>
 <li>Simple to use. The code will look like it does when using OS threads.</li>
 <li>A &quot;context switch&quot; is reasonably fast</li>
@@ -269,22 +269,23 @@ thousands of green threads running.</li>
 <li>It's easy to incorporate <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/green-threads#preemptive-multitasking"><em>preemtion</em></a>
 which puts a lot of control in the hands of the runtime implementors.</li>
 </ol>
-<p>The main cons are:</p>
+<p><strong>Drawbacks:</strong></p>
 <ol>
 <li>The stacks might need to grow. Solving this is not easy and will have a cost.</li>
 <li>You need to save all the CPU state on every switch</li>
-<li>It's not a <em>zero cost abstraction</em> (which is one of the reasons Rust removed
-them early on).</li>
+<li>It's not a <em>zero cost abstraction</em> (Rust had green threads early on and this
+was one of the reasons they were removed).</li>
 <li>Complicated to implement correctly if you want to support many different
 platforms.</li>
 </ol>
 <p>If you were to implement green threads in Rust, it could look something like
 this:</p>
-<pre><code>The example presented below is from an earlier book I wrote about green
-threads called [Green Threads Explained in 200 lines of Rust.](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/)
-If you want to know what's going on everything is explained in detail
-in that book.
-</code></pre>
+<blockquote>
+<p>The example presented below is from an earlier book I wrote about green
+threads called <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust.</a>
+If you want to know what's going on you'll find everything explained in detail
+in that book.</p>
+</blockquote>
 <pre><pre class="playpen"><code class="language-rust">#![feature(asm)]
 #![feature(naked_functions)]
 use std::ptr;
@@ -570,6 +571,10 @@ impl Runtime {
     }
 }
 </code></pre></pre>
+<p>We're keeping this super simple, and you might wonder what's the difference
+between this approach and the one using OS threads. The difference is that the
+callbacks are run on the same thread. The OS threads we create are basically
+just used as timers.</p>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
