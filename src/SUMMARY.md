@@ -2,6 +2,7 @@
 
 [Introduction](./introduction.md)
 
+- [Why Futures](./1_why_futures.md)
 - [Some background information](./1_background_information.md)
 - [Waker and Context](./2_waker_context.md)
 - [Generators](./3_generators_pin.md)

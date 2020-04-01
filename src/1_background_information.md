@@ -13,18 +13,6 @@ information that will help demystify some of the concepts we encounter.
 Actually, after going through these concepts, implementing futures will seem
 pretty simple. I promise.
 
-## Popular alternatives for writing concurrent programs
-
-So let's kick this off by first taking a brief look into what the popular
-options we have for writing concurrent programs
-
-### Callback based approcah
-
-You probably already know this from Javascript since it's extremely common:
-
-
-
-
 ## Futures
 
 So what is a future?
