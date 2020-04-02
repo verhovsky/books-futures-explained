@@ -403,3 +403,16 @@ We're keeping this super simple, and you might wonder what's the difference
 between this approach and the one using OS threads. The difference is that the
 callbacks are run on the same thread. The OS threads we create are basically
 just used as timers.
+
+## From callbacks to promises
+
+You might start to wonder by now, when are we going to talk about Futures?
+
+Soon, my dear friend. There is a point to all this. You see, syntactically
+the development of Rusts concurrency primitives mirrors that of Javascripts so
+we're soon about to segway over to our main topic.
+
+Promises is not only used in Javascript but in other languages as well
+
+
+
