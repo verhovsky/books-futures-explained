@@ -358,9 +358,11 @@ the same. You can always go back and read the book which explains it later.
 ### Callback based approaches
 
 You probably already know what we're going to talk about in the next paragraphs
-from Javascript which I assume most know. If your exposure to Javascript has
-given you any sorts of PTSD earlier in life, close your eyes now and scroll down
-for 2-3 seconds. You'll find a link there that takes you to safety.
+from Javascript which I assume most know. 
+
+>If your exposure to Javascript has given you any sorts of PTSD earlier in life,
+close your eyes now and scroll down for 2-3 seconds. You'll find a link there
+that takes you to safety.
 
 The whole idea behind a callback based approach is to save a pointer to a set of
 instructions we want to run later. We can save that pointer on the stack before
@@ -542,3 +544,8 @@ exploring Rusts Futures.
 > promises are _eagerly_ evaluated. That means that once it's created, it starts
 > running a task. Rusts Futures on the other hand is _lazily_ evaluated. They
 > need to be polled once before they do any work. You'll see in a moment.
+
+<br />
+<div style="text-align: center;  padding-top: 2em;"> 
+<a href="/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
+</div>
