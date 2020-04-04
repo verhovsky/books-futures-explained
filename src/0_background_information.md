@@ -356,7 +356,7 @@ Still hanging in there? Good. Don't get frustrated if the code above is
 difficult to understand. If I hadn't written it myself I would probably feel
 the same. You can always go back and read the book which explains it later.
 
-### Callback based approaches
+## Callback based approaches
 
 You probably already know what we're going to talk about in the next paragraphs
 from Javascript which I assume most know. 
