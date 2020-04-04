@@ -1,4 +1,4 @@
-# Some background information
+# Futures in Rust
 
 > **Relevant for:**
 >
