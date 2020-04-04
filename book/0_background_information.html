@@ -272,7 +272,7 @@ in that book. The code below is wildly unsafe and it's just to show a real examp
 It's not in any way meant to showcase &quot;best practice&quot;. Just so we're on
 the same page.</p>
 </blockquote>
-<pre><pre class="playpen"><code class="language-rust">#![feature(asm)]
+<pre><pre class="playpen"><code class="language-rust edition2018">#![feature(asm)]
 #![feature(naked_functions)]
 use std::ptr;
 
@@ -464,7 +464,7 @@ unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
     : &quot;alignstack&quot;
     );
 }
-
+# #[cfg(not(windows))]
 fn main() {
     let mut runtime = Runtime::new();
     runtime.init();
@@ -481,7 +481,8 @@ fn main() {
     });
     runtime.run();
 }
-
+# #[cfg(windows)]
+# fn main() { }
 </code></pre></pre>
 <p>Still hanging in there? Good. Don't get frustrated if the code above is
 difficult to understand. If I hadn't written it myself I would probably feel
@@ -627,7 +628,7 @@ a state machine which can be in one of three states: <code>pending</code>, <code
 promise in the state <code>pending</code>.</p>
 <p>Since promises are re-written as state machines they also enable an even better
 syntax where we now can write our last example like this:</p>
-<pre><code>async function run() {
+<pre><code class="language-js ignore">async function run() {
     await timer(200);
     await timer(100);
     await timer(50);

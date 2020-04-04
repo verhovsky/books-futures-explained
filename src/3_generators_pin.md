@@ -541,16 +541,16 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
 
-    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!("Gen1 got value {}", n);
     }
     
-    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!("Gen2 got value {}", n);
     };
 
-    let _ = pinned1.as_mut().resume();
-    let _ = pinned2.as_mut().resume();
+    let _ = pinned1.as_mut().resume(());
+    let _ = pinned2.as_mut().resume(());
 }
 ```
 

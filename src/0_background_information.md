@@ -138,7 +138,7 @@ this:
 > It's not in any way meant to showcase "best practice". Just so we're on
 > the same page.
 
-```rust
+```rust, edition2018
 #![feature(asm)]
 #![feature(naked_functions)]
 use std::ptr;
@@ -331,7 +331,7 @@ unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
     : "alignstack"
     );
 }
-
+# #[cfg(not(windows))]
 fn main() {
     let mut runtime = Runtime::new();
     runtime.init();
@@ -348,7 +348,8 @@ fn main() {
     });
     runtime.run();
 }
-
+# #[cfg(windows)]
+# fn main() { }
 ```
 
 Still hanging in there? Good. Don't get frustrated if the code above is
@@ -516,7 +517,7 @@ promise in the state `pending`.
 Since promises are re-written as state machines they also enable an even better
 syntax where we now can write our last example like this:
 
-```
+```js, ignore
 async function run() {
     await timer(200);
     await timer(100);
