@@ -56,6 +56,27 @@ fn main() {
 }
 ```
 
+OS threads sure has some pretty big advantages. So why all this talk about
+"async" and concurrency in the first place?
+
+First of all. For computers to be [_efficient_](https://en.wikipedia.org/wiki/Efficiency) it needs to multitask. Once you
+start to look under the covers (like [how an operating system works](https://os.phil-opp.com/async-await/)) 
+you'll see concurrency everywhere. It's very fundamental in everything we do.
+
+Secondly, we have the web. Webservers is all about I/O and handling small tasks
+(requests). When the number of small tasks is large it's not a good fit for OS
+threads as of today because of the memory they require and the overhead involved
+when creating new threads. That's why you'll see so many async web frameworks
+and database drivers today.
+
+However, for a huge number of tasks, the standard OS threads will often be the
+right solution. So, just think twice about your problem before you reach for an
+async library.
+
+Now, let's look at some other options for multitasking. They all have in common
+that they implement a way to do multitasking by implementing a "userland"
+runtime:
+
 ## Green threads
 
 Green threads has been popularized by GO in the recent years. Green threads
@@ -77,7 +98,6 @@ task is finished
 
 These "jumps" are know as context switches. Your OS is doing it many times each
 second as you read this.
-
 
 **Advantages:**
 
@@ -320,14 +340,13 @@ Rust uses today which we'll soon get to.
 **Drawbacks:**
 
 - Each task must save the state it needs for later, the memory usage will grow
-linearly with the number of tasks i .
-- Can be hard to reason about, also known as "callback hell".
+linearly with the number of callbacks in a task.
+- Can be hard to reason about, many people already know this as as "callback hell".
 - Sharing state between tasks is a hard problem in Rust using this approach due
 to it's ownership model.
 
-The
-
-If we did that in Rust it could look something like this:
+An extremely simplified example of a how a callback based approach could look
+like is:
 
 ```rust
 fn program_main() {
@@ -400,19 +419,79 @@ impl Runtime {
 ```
 
 We're keeping this super simple, and you might wonder what's the difference
-between this approach and the one using OS threads. The difference is that the
-callbacks are run on the same thread. The OS threads we create are basically
-just used as timers.
+between this approach and the one using OS threads an passing in the callbacks
+to the OS threads directly. The difference is that the callbacks are run on the
+same thread using this example. The OS threads we create are basically just used
+as timers.
 
 ## From callbacks to promises
 
 You might start to wonder by now, when are we going to talk about Futures?
 
-Soon, my dear friend. There is a point to all this. You see, syntactically
-the development of Rusts concurrency primitives mirrors that of Javascripts so
-we're soon about to segway over to our main topic.
+Well, we're getting there. You see `promises`, `futures` and `deferreds` are 
+often used interchangeably in day to day jargon. There are some formal
+differences between which is used which we'll not cover here but it's worth
+explaining promises a bit as a segway to Rusts Futures.
 
-Promises is not only used in Javascript but in other languages as well
+First of all, many languages has a concept of promises but I'll use the ones
+from Javascript as an example.
 
+Promises is one way to deal with the complexity which comes with a callback
+based approach.
 
+Instead of:
 
+```js, ignore
+setTimer(200, () => {
+    setTimer(100, () => {
+        setTimer(50, () => {
+            console.log("I'm the last one");
+        })
+    })
+})
+```
+
+We can to this:
+
+```js, ignore
+function timer(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+timer(200)
+.then(() => return timer(100))
+.then(() => return timer(50))
+.then(() => console.log("I'm the last one));
+```
+
+The change is even more substantial under the hood. You see, promises return
+a state which is either `pending`, `fulfilled` or `rejected`. So when we call
+`timer(200)` in the sample above, we get back a promise in the state `pending`.
+
+A `promise` is a state machine which makes one `step` when the I/O operation
+is finished.
+
+This allows for an even better syntax where we now can write our last example
+like this:
+
+```
+async function run() {
+    await timer(200);
+    await timer(100);
+    await timer(50);
+    console.log("I'm the last one");
+}
+```
+
+Now this is also where the similarities stop. The reason we went through all
+this is to get an introduction and get into the right mindset for exploring
+Rusts Futures.
+
+Syntactically though, this is relevant. Rusts Futures 1.0 was a lot like the
+promises example above, and Rusts Futures 3.0 is a lot like async/await
+in our last example.
+
+>To avoid confusion later on: There is one difference you should know. Javascript
+>promises are _eagerly_ evaluated. That means that once it's created, it starts
+>running a task. Rusts Futures on the other hand is _lazily_ evaluated. They
+>need to be polled once before they do any work. You'll see in a moment.

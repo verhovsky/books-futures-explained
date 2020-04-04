@@ -242,6 +242,22 @@ fn main() {
     t2.join().unwrap();
 }
 </code></pre></pre>
+<p>OS threads sure has some pretty big advantages. So why all this talk about
+&quot;async&quot; and concurrency in the first place?</p>
+<p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> it needs to multitask. Once you
+start to look under the covers (like <a href="https://os.phil-opp.com/async-await/">how an operating system works</a>) 
+you'll see concurrency everywhere. It's very fundamental in everything we do.</p>
+<p>Secondly, we have the web. Webservers is all about I/O and handling small tasks
+(requests). When the number of small tasks is large it's not a good fit for OS
+threads as of today because of the memory they require and the overhead involved
+when creating new threads. That's why you'll see so many async web frameworks
+and database drivers today.</p>
+<p>However, for a huge number of tasks, the standard OS threads will often be the
+right solution. So, just think twice about your problem before you reach for an
+async library.</p>
+<p>Now, let's look at some other options for multitasking. They all have in common
+that they implement a way to do multitasking by implementing a &quot;userland&quot;
+runtime:</p>
 <h2><a class="header" href="#green-threads" id="green-threads">Green threads</a></h2>
 <p>Green threads has been popularized by GO in the recent years. Green threads
 uses the same basic technique as operating systems does to handle concurrency.</p>
@@ -496,13 +512,13 @@ Rust uses today which we'll soon get to.</p>
 <p><strong>Drawbacks:</strong></p>
 <ul>
 <li>Each task must save the state it needs for later, the memory usage will grow
-linearly with the number of tasks i .</li>
-<li>Can be hard to reason about, also known as &quot;callback hell&quot;.</li>
+linearly with the number of callbacks in a task.</li>
+<li>Can be hard to reason about, many people already know this as as &quot;callback hell&quot;.</li>
 <li>Sharing state between tasks is a hard problem in Rust using this approach due
 to it's ownership model.</li>
 </ul>
-<p>The</p>
-<p>If we did that in Rust it could look something like this:</p>
+<p>An extremely simplified example of a how a callback based approach could look
+like is:</p>
 <pre><pre class="playpen"><code class="language-rust">fn program_main() {
     println!(&quot;So we start the program here!&quot;);
     set_timeout(200, || {
@@ -572,15 +588,65 @@ impl Runtime {
 }
 </code></pre></pre>
 <p>We're keeping this super simple, and you might wonder what's the difference
-between this approach and the one using OS threads. The difference is that the
-callbacks are run on the same thread. The OS threads we create are basically
-just used as timers.</p>
+between this approach and the one using OS threads an passing in the callbacks
+to the OS threads directly. The difference is that the callbacks are run on the
+same thread using this example. The OS threads we create are basically just used
+as timers.</p>
 <h2><a class="header" href="#from-callbacks-to-promises" id="from-callbacks-to-promises">From callbacks to promises</a></h2>
 <p>You might start to wonder by now, when are we going to talk about Futures?</p>
-<p>Soon, my dear friend. There is a point to all this. You see, syntactically
-the development of Rusts concurrency primitives mirrors that of Javascripts so
-we're soon about to segway over to our main topic.</p>
-<p>Promises is not only used in Javascript but in other languages as well</p>
+<p>Well, we're getting there. You see <code>promises</code>, <code>futures</code> and <code>deferreds</code> are 
+often used interchangeably in day to day jargon. There are some formal
+differences between which is used which we'll not cover here but it's worth
+explaining promises a bit as a segway to Rusts Futures.</p>
+<p>First of all, many languages has a concept of promises but I'll use the ones
+from Javascript as an example.</p>
+<p>Promises is one way to deal with the complexity which comes with a callback
+based approach.</p>
+<p>Instead of:</p>
+<pre><code class="language-js ignore">setTimer(200, () =&gt; {
+    setTimer(100, () =&gt; {
+        setTimer(50, () =&gt; {
+            console.log(&quot;I'm the last one&quot;);
+        })
+    })
+})
+</code></pre>
+<p>We can to this:</p>
+<pre><code class="language-js ignore">function timer(ms) {
+    return new Promise((resolve) =&gt; setTimeout(resolve, ms))
+}
+
+timer(200)
+.then(() =&gt; return timer(100))
+.then(() =&gt; return timer(50))
+.then(() =&gt; console.log(&quot;I'm the last one));
+</code></pre>
+<p>The change is even more substantial under the hood. You see, promises return
+a state which is either <code>pending</code>, <code>fulfilled</code> or <code>rejected</code>. So when we call
+<code>timer(200)</code> in the sample above, we get back a promise in the state <code>pending</code>.</p>
+<p>A <code>promise</code> is a state machine which makes one <code>step</code> when the I/O operation
+is finished.</p>
+<p>This allows for an even better syntax where we now can write our last example
+like this:</p>
+<pre><code>async function run() {
+    await timer(200);
+    await timer(100);
+    await timer(50);
+    console.log(&quot;I'm the last one&quot;);
+}
+</code></pre>
+<p>Now this is also where the similarities stop. The reason we went through all
+this is to get an introduction and get into the right mindset for exploring
+Rusts Futures.</p>
+<p>Syntactically though, this is relevant. Rusts Futures 1.0 was a lot like the
+promises example above, and Rusts Futures 3.0 is a lot like async/await
+in our last example.</p>
+<blockquote>
+<p>To avoid confusion later on: There is one difference you should know. Javascript
+promises are <em>eagerly</em> evaluated. That means that once it's created, it starts
+running a task. Rusts Futures on the other hand is <em>lazily</em> evaluated. They
+need to be polled once before they do any work. You'll see in a moment.</p>
+</blockquote>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
 <blockquote>
 <p><strong>Relevant for:</strong></p>
