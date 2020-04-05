@@ -129,6 +129,67 @@ the `async` and `await` keywords.
 That's really what Rusts standard library does. As you see there is no definition
 of non-blocking I/O, how these tasks are created or how they're run.
 
+## I/O vs CPU intensive tasks
+
+As you know now, what you normally write are called non-leaf futures. Let's
+take a look at this async block using pseudo-rust as example:
+
+```rust, ignore
+let non_leaf = async {
+    let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap(); <-- yield
+    
+    // request a large dataset
+    let result = stream.write(get_dataset_request).await.unwrap(); <-- yield
+    
+    // wait for the dataset
+    let mut response = vec![];
+    stream.read(&mut response).await.unwrap(); <-- yield
+
+    // do some CPU-intensive analysis on the dataset
+    let report = analyzer::analyze_data(response).unwrap();
+    
+    // send the results back
+    stream.write(report).await.unwrap(); // <-- yield
+};
+```
+
+Now, as you'll see when we go through how Futures work, the code we write between
+the yield points are run on the same thread as our executor.
+
+That means that while our `analyzer` is working on the dataset, the executor
+is busy doing calculations instead of handling new requests.
+
+Fortunately there are a few ways to handle this, and it's not difficult, but it's
+something you must be aware of:
+
+1. We could create a new leaf future which sends our task to another thread and
+resolves when the task is finished. We could `await` this leaf-future like any
+other future.
+
+2. The runtime could have some kind of supervisor that monitors how much time
+different tasks take, and move the executor itself to a different thread.
+
+3. You can create a reactor yourself which is compatible with the runtime which
+does the analysis any way you see fit, and returns a Future which can be awaited.
+
+Now #1 is the usual way of handling this, but some executors implement #2 as well.
+The problem with #2 is that if you switch runtime you need to make sure that it
+supports this kind of supervision as well or else you will end up blocking the
+executor.
+
+#3 is more of theoretical importance, normally you'd be happy by sending the task
+to the thread-pool most runtimes provide.
+
+Most executors have a way to accomplish #1 using methods like `spawn_blocking`.
+
+These methods send the task to a thread-pool created by the runtime where you
+can either perform CPU-intensive tasks or "blocking" tasks which is not supported
+by the runtime.
+
+Now, armed with this knowledge you are already on a good way for understanding
+Futures, but we're not gonna stop yet, there is lots of details to cover. Take a
+break or a cup of coffe and get ready as we go for a deep dive in the next chapters.
+
 ## Bonus section
 
 If you find the concepts of concurrency and async programming confusing in
