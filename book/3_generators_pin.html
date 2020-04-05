@@ -656,7 +656,7 @@ the syntax used in generators:</p>
     };
 </code></pre>
 <p>Compare that with a similar example using async blocks:</p>
-<pre><code>let mut fut = async || {
+<pre><code class="language-rust ignore">let mut fut = async || {
         let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
         SomeResource::some_task().await;

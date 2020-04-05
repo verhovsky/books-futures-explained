@@ -562,7 +562,7 @@ let mut gen = move || {
 
 Compare that with a similar example using async blocks:
 
-```
+```rust, ignore
 let mut fut = async || {
         let to_borrow = String::from("Hello");
         let borrowed = &to_borrow;
