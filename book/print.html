@@ -1175,13 +1175,10 @@ machine for the generator defined aboce.</p>
 <p>We step through each step &quot;manually&quot; in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
 trait for our generators which would let us do this:</p>
-<pre><pre class="playpen"><code class="language-rust ingore">
-# #![allow(unused_variables)]
-#fn main() {
-for val in generator {
+<pre><code class="language-rust ignore">for val in generator {
     println!(&quot;{}&quot;, val);
 }
-#}</code></pre></pre>
+</code></pre>
 <p>It's a pretty trivial change to make, but this chapter is already getting long.
 Just keep this in the back of your head as we move forward.</p>
 <p>Now what does our rewritten state machine look like with this example?</p>
@@ -1386,7 +1383,9 @@ one huge problem with this:</p>
 </code></pre></pre>
 <p>The problem however is that in safe Rust we can still do this:</p>
 <p><em>Run the code and compare the results. Do you see the problem?</em></p>
-<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+<pre><pre class="playpen"><code class="language-rust should_panic"># #![feature(never_type)] // Force nightly compiler to be used in playground
+# // by betting on it's true that this type is named after it's stabilization date...
+pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
 
@@ -1461,10 +1460,15 @@ one huge problem with this:</p>
 # }
 </code></pre></pre>
 <p>Wait? What happened to &quot;Hello&quot;?</p>
-<p>Turns out that while the example above compiles
-just fine, we expose consumers of this this API to both possible undefined
-behavior and other memory errors while using just safe Rust. This is a big
-problem!</p>
+<p>Turns out that while the example above compiles just fine, we expose consumers
+of this this API to both possible undefined behavior and other memory errors
+while using just safe Rust. This is a big problem!</p>
+<blockquote>
+<p>I've actually forced the code above to use the nightly version of the compiler.
+If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=5cbe9897c0e23a502afd2740c7e78b98">the example above on the playground</a>,
+you'll see that it runs without panic on the current stable (1.42.0) but
+panics on the current nightly (1.44.0). Scary!</p>
+</blockquote>
 <p>We'll explain exactly what happened using a slightly simpler example in the next
 chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
 the last topic before we implement our main Futures example.</p>
@@ -2103,7 +2107,7 @@ impl Generator for GeneratorA {
                 // the `String` earlier since these references will point to the
                 // location in this stack frame which will not be valid anymore
                 // when this function returns.
-                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = this {
                     *borrowed = to_borrow;
                 }
 

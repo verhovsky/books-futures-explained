@@ -746,7 +746,7 @@ impl Generator for GeneratorA {
                 // the `String` earlier since these references will point to the
                 // location in this stack frame which will not be valid anymore
                 // when this function returns.
-                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = this {
                     *borrowed = to_borrow;
                 }
 
