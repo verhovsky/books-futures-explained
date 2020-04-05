@@ -1472,6 +1472,12 @@ the last topic before we implement our main Futures example.</p>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
 example in Rust today using the <code>static</code> keyword on nightly. Try it for
 yourself:</p>
+<blockquote>
+<p>Beware that the API is changing rapidly. As I was writing this book, generators
+had an API change adding support for a &quot;resume&quot; argument to get passed into the
+generator closure.</p>
+<p>Follow the progress on the <a href="https://github.com/rust-lang/rust/issues/43122">tracking issue #4312</a> for <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#033</a>.</p>
+</blockquote>
 <pre><pre class="playpen"><code class="language-rust">#![feature(generators, generator_trait)]
 use std::ops::{Generator, GeneratorState};
 
@@ -3286,6 +3292,21 @@ articles I've already linked to in the book, here are some of my suggestions:</p
 
         </div>
 
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3001");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload(true); // force reload from server (not from cache)
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
         
 
         
