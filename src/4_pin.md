@@ -560,7 +560,7 @@ But now, let's prevent this problem using `Pin`. We'll discuss
 reading the comments.
 
 ```rust
-#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
+#![feature(optin_builtin_traits, negative_impls)] // needed to implement `!Unpin`
 use std::pin::Pin;
 
 pub fn main() {
