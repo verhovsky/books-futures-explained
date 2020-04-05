@@ -303,9 +303,10 @@ impl Test {
             _marker: PhantomPinned,
         }
     }
-    fn init(&mut self) {
+    fn init<'a>(self: Pin<&'a mut Self>) {
         let self_ptr: *const String = &self.a;
-        self.b = self_ptr;
+        let this = unsafe { self.get_unchecked_mut() };
+        this.b = self_ptr;
     }
 
     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
@@ -329,15 +330,18 @@ Let's see what happens if we run our example now:
 
 ```rust
 pub fn main() {
+    // test1 is safe to move before we initialize it
     let mut test1 = Test::new("test1");
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) }; 
+    // Notice how we shadow `test1` to prevent it from beeing accessed again
+    let mut test1 = unsafe { Pin::new_unchecked(&mut test1) };
+    Test::init(test1.as_mut());
+     
     let mut test2 = Test::new("test2");
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&mut test2) };
+    let mut test2 = unsafe { Pin::new_unchecked(&mut test2) };
+    Test::init(test2.as_mut());
 
-    println!("a: {}, b: {}", Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
-    println!("a: {}, b: {}", Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
+    println!("a: {}, b: {}", Test::a(test1.as_ref()), Test::b(test1.as_ref()));
+    println!("a: {}, b: {}", Test::a(test2.as_ref()), Test::b(test2.as_ref()));
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
@@ -360,9 +364,10 @@ pub fn main() {
 #             _marker: PhantomPinned,
 #         }
 #     }
-#     fn init(&mut self) {
+#     fn init<'a>(self: Pin<&'a mut Self>) {
 #         let self_ptr: *const String = &self.a;
-#         self.b = self_ptr;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
 #     }
 # 
 #     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
@@ -376,20 +381,21 @@ pub fn main() {
 ```
 
 Now, if we try to pull the same trick which got us in to trouble the last time
-you'll get a compilation error. So t
+you'll get a compilation error.
 
 ```rust, compile_fail
 pub fn main() {
     let mut test1 = Test::new("test1");
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) }; 
+    let mut test1 = unsafe { Pin::new_unchecked(&mut test1) };
+    Test::init(test1.as_mut());
+     
     let mut test2 = Test::new("test2");
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&mut test2) };
+    let mut test2 = unsafe { Pin::new_unchecked(&mut test2) };
+    Test::init(test2.as_mut());
 
-    println!("a: {}, b: {}", Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
-    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!("a: {}, b: {}", Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
+    println!("a: {}, b: {}", Test::a(test1.as_ref()), Test::b(test1.as_ref()));
+    std::mem::swap(test1.as_mut(), test2.as_mut());
+    println!("a: {}, b: {}", Test::a(test2.as_ref()), Test::b(test2.as_ref()));
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
@@ -412,9 +418,10 @@ pub fn main() {
 #             _marker: PhantomPinned,
 #         }
 #     }
-#     fn init(&mut self) {
+#     fn init<'a>(self: Pin<&'a mut Self>) {
 #         let self_ptr: *const String = &self.a;
-#         self.b = self_ptr;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
 #     }
 # 
 #     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
@@ -427,9 +434,25 @@ pub fn main() {
 # }
 ```
 
+As you see from the error you get by running the code the type system prevents
+us from swapping the pinned pointers.
+
 > It's important to note that stack pinning will always depend on the current
 > stack frame we're in, so we can't create a self referential object in one
 > stack frame and return it since any pointers we take to "self" is invalidated.
+> 
+> It also puts a lot of responsibility in your hands if you pin a value to the
+> stack. A mistake that is easy to make is, forgetting to shadow the original variable 
+> since you could drop the pinned pointer and access the old value
+> after it's initialized like this:
+>
+> ```rust, ignore
+>    let mut test1 = Test::new("test1");
+>    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) };
+>    Test::init(test1_pin.as_mut());
+>    drop(test1_pin);
+>    println!("{:?}", test1.b);
+> ```
 
 ## Pinning to the heap
 
@@ -481,7 +504,7 @@ pub fn main() {
 }
 ```
 
-The fact that boxing (heap allocating) a value that implements `!Unpin` is safe
+The fact that pinning a heap allocated value that implements `!Unpin` is safe
 makes sense. Once the data is allocated on the heap it will have a stable address.
 
 There is no need for us as users of the API to take special care and ensure
@@ -496,16 +519,16 @@ now you need to use a crate like [pin_project][pin_project] to do that.
 equivalent to `&'a mut T`. in other words: `Unpin` means it's OK for this type
 to be moved even when pinned, so `Pin` will have no effect on such a type.
 
-2. Getting a `&mut T` to a pinned pointer requires unsafe if `T: !Unpin`. In
+2. Getting a `&mut T` to a pinned T requires unsafe if `T: !Unpin`. In
 other words: requiring a pinned pointer to a type which is `!Unpin` prevents
 the _user_ of that API from moving that value unless it choses to write `unsafe`
 code.
 
 3. Pinning does nothing special with memory allocation like putting it into some
-"read only" memory or anything fancy. It only tells the compiler that some
-operations on this value should be forbidden.
+"read only" memory or anything fancy. It only uses the type system to prevent
+certain operations on this value.
 
-4. Most standard library types implement `Unpin`. The same goes for most
+1. Most standard library types implement `Unpin`. The same goes for most
 "normal" types you encounter in Rust. `Futures` and `Generators` are two
 exceptions.
 
@@ -514,8 +537,9 @@ justification for stabilizing them was to allow that. There are still corner
 cases in the API which are being explored.
 
 6. The implementation behind objects that are `!Unpin` is most likely unsafe.
-Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating and reading fields of a self referential struct still requires `unsafe`.
+Moving such a type after it has been pinned can cause the universe to crash. As of the time of writing
+this book, creating and reading fields of a self referential struct still requires `unsafe`
+(the only way to do it is to create a struct containing raw pointers to itself).
 
 7. You can add a `!Unpin` bound on a type on nightly with a feature flag, or
 by adding `std::marker::PhantomPinned` to your type on stable.

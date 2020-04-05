@@ -161,10 +161,14 @@
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
-<p>The second difficult part is understanding Generators and the <code>Pin</code> type. Since
-they're related we'll start off by exploring generators first. By doing that
-we'll soon get to see why we need to be able to &quot;pin&quot; some data to a fixed
-location in memory and get an introduction to <code>Pin</code> as well.</p>
+<h2><a class="header" href="#why-generators" id="why-generators">Why generators?</a></h2>
+<p>Generators/yield and async/await are so similar that once you understand one
+you should be able to understand the other. </p>
+<p>It's much easier for me to provide runnable and short examples using Generators
+instead of Futures which require us to introduce a lot of concepts now that
+we'll cover later just to show an example.</p>
+<p>A small bonus is that you'll have a pretty good introduction to both Generators
+and Async/Await by the end of this chapter.</p>
 <p>Basically, there were three main options discussed when designing how Rust would
 handle concurrency:</p>
 <ol>
@@ -222,7 +226,7 @@ async/await as keywords (it can even be done using a macro).</li>
 <p>Async in Rust is implemented using Generators. So to understand how Async really
 works we need to understand generators first. Generators in Rust are implemented
 as state machines. The memory footprint of a chain of computations is only
-defined by the largest footprint of what the largest step require. </p>
+defined by the largest footprint of what the largest step require.</p>
 <p>That means that adding steps to a chain of computations might not require any
 increased memory at all and it's one of the reasons why Futures and Async in
 Rust has very little overhead.</p>
@@ -294,7 +298,7 @@ impl Generator for GeneratorA {
     type Return = ();
     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
         // lets us get ownership over current state
-        match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
+        match std::mem::replace(self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) =&gt; {
 
           /*----code before yield----*/
@@ -386,7 +390,7 @@ impl Generator for GeneratorA {
     type Return = ();
     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
         // lets us get ownership over current state
-        match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
+        match std::mem::replace(self, GeneratorA::Exit) {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
                 let borrowed = &amp;to_borrow; // &lt;--- NB!
@@ -639,6 +643,31 @@ If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&am
 you'll see that it runs without panic on the current stable (1.42.0) but
 panics on the current nightly (1.44.0). Scary!</p>
 </blockquote>
+<h2><a class="header" href="#async-blocks-and-generators" id="async-blocks-and-generators">Async blocks and generators</a></h2>
+<p>Futures in Rust are implemented as state machines much the same way Generators
+are state machines.</p>
+<p>You might have noticed the similarites in the syntax used in async blocks and
+the syntax used in generators:</p>
+<pre><code class="language-rust ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>Compare that with a similar example using async blocks:</p>
+<pre><code>let mut fut = async || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        SomeResource::some_task().await;
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>The difference is that Futures has different states than what a <code>Generator</code> would
+have. The states of a Rust Futures is either: <code>Pending</code> or <code>Ready</code>.</p>
+<p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
+a Future works and the way a Generator work internally is similar. </p>
+<p>The same goes for the challenges of borrowin across yield/await points.</p>
 <p>We'll explain exactly what happened using a slightly simpler example in the next
 chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
 the last topic before we implement our main Futures example.</p>

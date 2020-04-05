@@ -193,23 +193,16 @@ fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
     let waker = waker_into_waker(Arc::into_raw(mywaker));
     let mut cx = Context::from_waker(&amp;waker);
+
+    // SAFETY: we shadow `future` so it can't be accessed again.
+    let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
     let val = loop {
-        let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
-        match Future::poll(pinned, &amp;mut cx) {
+        match Future::poll(future.as_mut(), &amp;mut cx) {
             Poll::Ready(val) =&gt; break val,
             Poll::Pending =&gt; thread::park(),
         };
     };
     val
-}
-
-fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-    let waker = waker_into_waker(Arc::into_raw(mywaker)); 
-    let mut cx = Context::from_waker(&amp;waker); 
-    let mut boxed = Box::pin(future);
-    let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
-    boxed
 }
 
 // ====================== FUTURE IMPLEMENTATION ==============================
@@ -233,7 +226,7 @@ fn mywaker_wake(s: &amp;MyWaker) {
 }
 
 fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
-    let arc = unsafe { Arc::from_raw(s).clone() };
+    let arc = unsafe { Arc::from_raw(s) };
     std::mem::forget(arc.clone()); // increase ref count
     RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
 }

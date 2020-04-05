@@ -152,45 +152,56 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
-<p>This book aims to explain <code>Futures</code> in Rust using an example driven approach.</p>
-<p>The goal is to get a better understanding of &quot;async&quot; in Rust by creating a toy
-runtime consisting of a <code>Reactor</code> and an <code>Executor</code>, and our own futures which
-we can run concurrently.</p>
-<p>We'll start off a bit differently than most other explanations. Instead of
-deferring some of the details about what <code>Futures</code> are and how they're
-implemented, we tackle that head on first.</p>
-<p>I learn best when I can take basic understandable concepts and build piece by
-piece of these basic building blocks until everything is understood. This way,
-most questions will be answered and explored up front and the conclusions later
-on seems natural.</p>
-<p>I've limited myself to a 200 line main example so that we need keep
-this fairly brief.</p>
-<p>In the end I've made some reader exercises you can do if you want to fix some
-of the most glaring omissions and shortcuts we took and create a slightly better
-example yourself.</p>
+<p>This book aims to explain <code>Futures</code> in Rust using an example driven approach,
+exploring why they're designed the way they are, the alternatives and how
+they work.</p>
+<p>Going into the level of detail I do in this book is not needed to use futures
+or async/await in Rust. It's for the curious out there that want to know <em>how</em>
+it all works.</p>
+<h2><a class="header" href="#what-this-book-covers" id="what-this-book-covers">What this book covers</a></h2>
+<p>This book will try to explain everything you might wonder about up until the
+topic of different types of executors and runtimes. We'll just implement a very
+simple runtime in this book introducing some concepts but it's enough to get
+started.</p>
+<p><a href="https://github.com/stjepang">Stjepan Glavina</a> has made an excellent series of
+articles about async runtimes and executors, and if the rumors are right he's
+even working on a new async runtime that should be easy enough to use as
+learning material.</p>
+<p>The way you should go about it is to read this book first, then continue
+reading the <a href="https://stjepang.github.io/">articles from stejpang</a> to learn more
+about runtimes and how they work, especially:</p>
+<ol>
+<li><a href="https://stjepang.github.io/2020/01/25/build-your-own-block-on.html">Build your own block_on()</a></li>
+<li><a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">Build your own executor</a></li>
+</ol>
+<p>I've limited myself to a 200 line main example (hence the title) to limit the
+scope and introduce an example that can easily be explored further.</p>
+<p>However, there is a lot to digest and it's not what I would call easy, but we'll
+take everything step by step so get a cup of tea and relax. </p>
+<p>I hope you enjoy the ride.</p>
 <blockquote>
 <p>This book is developed in the open, and contributions are welcome. You'll find
 <a href="https://github.com/cfsamson/books-futures-explained">the repository for the book itself here</a>. The final example which
-you can clone, fork or copy <a href="https://github.com/cfsamson/examples-futures">can be found here</a></p>
+you can clone, fork or copy <a href="https://github.com/cfsamson/examples-futures">can be found here</a>. Any suggestions
+or improvements can be filed as a PR or in the issue tracker for the book.</p>
 </blockquote>
-<h2><a class="header" href="#what-does-this-book-give-you-that-isnt-covered-elsewhere" id="what-does-this-book-give-you-that-isnt-covered-elsewhere">What does this book give you that isn't covered elsewhere?</a></h2>
-<p>There are many good resources and examples already. First
-of all, this book will focus on <code>Futures</code> and <code>async/await</code> specifically and
-not in the context of any specific runtime.</p>
-<p>Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to <a href="https://github.com/rust-lang/mdBook">Mdbook</a> the examples can even be edited and explored further
-by uncommenting certain lines or adding new ones yourself. I use that quite a
-but throughout so keep an eye out when reading through editable code segments.</p>
-<p>It's all code that you can download, play with and learn from.</p>
-<p>We'll and end up with an understandable example including a <code>Future</code>
-implementation, an <code>Executor</code> and a <code>Reactor</code> in less than 200 lines of code. 
-We don't rely on any dependencies or real I/O which means it's very easy to 
-explore further and try your own ideas.</p>
+<h2><a class="header" href="#reader-exercises-and-further-reading" id="reader-exercises-and-further-reading">Reader exercises and further reading</a></h2>
+<p>In the last <a href="conclusion.html">chapter</a> I've taken the liberty to suggest some
+small exercises if you want to explore a little further.</p>
+<p>This book is also the fourth book I have written about concurrent programming
+in Rust. If you like it, you might want to check out the others as well:</p>
+<ul>
+<li><a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of rust</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/">The Node Experiment - Exploring Async Basics with Rust</a></li>
+<li><a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/">Epoll, Kqueue and IOCP Explained with Rust</a></li>
+</ul>
 <h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
 <p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
 <code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
-much is built upon.  Even the RFCs that much of the design is built upon is 
-very well written and very helpful. So thanks!</p>
+much is built upon.</p>
+<p>A special thanks to <a href="https://github.com/jonhoo">Johnhoo</a> who was kind enough to
+give me some feedback on an early draft of this book. He has not read the
+finished product and has in no way endorsed it, but a thanks is definitely due.</p>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some Background Information</a></h1>
 <p>Before we go into the details about Futures in Rust, let's take a quick look
 at the alternatives for handling concurrent programming in general and some
@@ -255,10 +266,12 @@ fn main() {
 <p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> it needs to multitask. Once you
 start to look under the covers (like <a href="https://os.phil-opp.com/async-await/">how an operating system works</a>)
 you'll see concurrency everywhere. It's very fundamental in everything we do.</p>
-<p>Secondly, we have the web. Webservers is all about I/O and handling small tasks
+<p>Secondly, we have the web. </p>
+<p>Webservers is all about I/O and handling small tasks
 (requests). When the number of small tasks is large it's not a good fit for OS
 threads as of today because of the memory they require and the overhead involved
-when creating new threads. This gets even more relevant when the load is variable
+when creating new threads. </p>
+<p>This gets even more relevant when the load is variable
 which means the current number of tasks a program has at any point in time is
 unpredictable. That's why you'll see so many async web frameworks and database
 drivers today.</p>
@@ -276,8 +289,7 @@ task(thread) to another by doing a &quot;context switch&quot;.</p>
 such a system) which then continues running a different task.</p>
 <p>Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no
-need for async, await, Futures or Pin. All this would be implementation details
-for the library.</p>
+need for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. </p>
 <p>The typical flow will be like this:</p>
 <ol>
 <li>Run som non-blocking code</li>
@@ -288,7 +300,7 @@ for the library.</p>
 task is finished</li>
 <li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread to run and jump to that</li>
 </ol>
-<p>These &quot;jumps&quot; are know as context switches. Your OS is doing it many times each
+<p>These &quot;jumps&quot; are know as <strong>context switches</strong>. Your OS is doing it many times each
 second as you read this.</p>
 <p><strong>Advantages:</strong></p>
 <ol>
@@ -537,9 +549,9 @@ the same. You can always go back and read the book which explains it later.</p>
 <p>You probably already know what we're going to talk about in the next paragraphs
 from Javascript which I assume most know. </p>
 <blockquote>
-<p>If your exposure to Javascript has given you any sorts of PTSD earlier in life,
-close your eyes now and scroll down for 2-3 seconds. You'll find a link there
-that takes you to safety.</p>
+<p>If your exposure to Javascript callbacks has given you any sorts of PTSD earlier
+in life, close your eyes now and scroll down for 2-3 seconds. You'll find a link
+there that takes you to safety.</p>
 </blockquote>
 <p>The whole idea behind a callback based approach is to save a pointer to a set of
 instructions we want to run later. We can save that pointer on the stack before
@@ -558,8 +570,8 @@ Rust uses today which we'll soon get to.</p>
 <li>Each task must save the state it needs for later, the memory usage will grow
 linearly with the number of callbacks in a chain of computations.</li>
 <li>Can be hard to reason about, many people already know this as as &quot;callback hell&quot;.</li>
-<li>It's a very different way of writing a program, and it can be difficult to
-get an understanding of the program flow.</li>
+<li>It's a very different way of writing a program, and will require a substantial
+rewrite to go from a &quot;normal&quot; program flow to one that uses a &quot;callback based&quot; flow.</li>
 <li>Sharing state between tasks is a hard problem in Rust using this approach due
 to it's ownership model.</li>
 </ul>
@@ -568,15 +580,15 @@ like is:</p>
 <pre><pre class="playpen"><code class="language-rust">fn program_main() {
     println!(&quot;So we start the program here!&quot;);
     set_timeout(200, || {
-        println!(&quot;We create tasks which gets run when they're finished!&quot;);
+        println!(&quot;We create tasks with a callback that runs once the task finished!&quot;);
     });
     set_timeout(100, || {
-        println!(&quot;We can even chain callbacks...&quot;);
+        println!(&quot;We can even chain sub-tasks...&quot;);
         set_timeout(50, || {
             println!(&quot;...like this!&quot;);
         })
     });
-    println!(&quot;While our tasks are executing we can do other stuff here.&quot;);
+    println!(&quot;While our tasks are executing we can do other stuff instead of waiting.&quot;);
 }
 
 fn main() {
@@ -635,16 +647,17 @@ impl Runtime {
 </code></pre></pre>
 <p>We're keeping this super simple, and you might wonder what's the difference
 between this approach and the one using OS threads an passing in the callbacks
-to the OS threads directly. The difference is that the callbacks are run on the
+to the OS threads directly. </p>
+<p>The difference is that the callbacks are run on the
 same thread using this example. The OS threads we create are basically just used
 as timers.</p>
 <h2><a class="header" href="#from-callbacks-to-promises" id="from-callbacks-to-promises">From callbacks to promises</a></h2>
 <p>You might start to wonder by now, when are we going to talk about Futures?</p>
 <p>Well, we're getting there. You see <code>promises</code>, <code>futures</code> and other names for
-deferred computations are often used interchangeably. There are formal
-differences between them but we'll not cover that here but it's worth
-explaining <code>promises</code> a bit since they're widely known due to beeing used in
-Javascript and will serve as segway to Rusts Futures.</p>
+deferred computations are often used interchangeably. </p>
+<p>There are formal differences between them but we'll not cover that here but it's
+worth explaining <code>promises</code> a bit since they're widely known due to being used
+in Javascript and have a lot in common with Rusts Futures.</p>
 <p>First of all, many languages has a concept of promises but I'll use the ones
 from Javascript in the examples below.</p>
 <p>Promises is one way to deal with the complexity which comes with a callback
@@ -670,10 +683,10 @@ timer(200)
 </code></pre>
 <p>The change is even more substantial under the hood. You see, promises return
 a state machine which can be in one of three states: <code>pending</code>, <code>fulfilled</code> or 
-<code>rejected</code>. So when we call <code>timer(200)</code> in the sample above, we get back a 
-promise in the state <code>pending</code>.</p>
+<code>rejected</code>. </p>
+<p>When we call <code>timer(200)</code> in the sample above, we get back a promise in the state <code>pending</code>.</p>
 <p>Since promises are re-written as state machines they also enable an even better
-syntax where we now can write our last example like this:</p>
+syntax which allows us to write our last example like this:</p>
 <pre><code class="language-js ignore">async function run() {
     await timer(200);
     await timer(100);
@@ -683,9 +696,9 @@ syntax where we now can write our last example like this:</p>
 </code></pre>
 <p>You can consider the <code>run</code> function a <em>pausable</em> task consisting of several
 sub-tasks. On each &quot;await&quot; point it yields control to the scheduler (in this
-case it's the well known Javascript event loop). Once one of the sub-tasks changes
-state to either <code>fulfilled</code> or <code>rejected</code> the task is scheduled to continue to
-the next step.</p>
+case it's the well known Javascript event loop). </p>
+<p>Once one of the sub-tasks changes state to either <code>fulfilled</code> or <code>rejected</code> the
+task is scheduled to continue to the next step.</p>
 <p>Syntactically, Rusts Futures 1.0 was a lot like the promises example above and
 Rusts Futures 3.0 is a lot like async/await in our last example.</p>
 <p>Now this is also where the similarities with Rusts Futures stop. The reason we 
@@ -695,7 +708,7 @@ exploring Rusts Futures.</p>
 <p>To avoid confusion later on: There is one difference you should know. Javascript
 promises are <em>eagerly</em> evaluated. That means that once it's created, it starts
 running a task. Rusts Futures on the other hand is <em>lazily</em> evaluated. They
-need to be polled once before they do any work. You'll see in a moment.</p>
+need to be polled once before they do any work.</p>
 </blockquote>
 <br />
 <div style="text-align: center;  padding-top: 2em;"> 
@@ -1045,10 +1058,14 @@ use purely global functions and state, or any other way you wish.</p>
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
-<p>The second difficult part is understanding Generators and the <code>Pin</code> type. Since
-they're related we'll start off by exploring generators first. By doing that
-we'll soon get to see why we need to be able to &quot;pin&quot; some data to a fixed
-location in memory and get an introduction to <code>Pin</code> as well.</p>
+<h2><a class="header" href="#why-generators" id="why-generators">Why generators?</a></h2>
+<p>Generators/yield and async/await are so similar that once you understand one
+you should be able to understand the other. </p>
+<p>It's much easier for me to provide runnable and short examples using Generators
+instead of Futures which require us to introduce a lot of concepts now that
+we'll cover later just to show an example.</p>
+<p>A small bonus is that you'll have a pretty good introduction to both Generators
+and Async/Await by the end of this chapter.</p>
 <p>Basically, there were three main options discussed when designing how Rust would
 handle concurrency:</p>
 <ol>
@@ -1106,7 +1123,7 @@ async/await as keywords (it can even be done using a macro).</li>
 <p>Async in Rust is implemented using Generators. So to understand how Async really
 works we need to understand generators first. Generators in Rust are implemented
 as state machines. The memory footprint of a chain of computations is only
-defined by the largest footprint of what the largest step require. </p>
+defined by the largest footprint of what the largest step require.</p>
 <p>That means that adding steps to a chain of computations might not require any
 increased memory at all and it's one of the reasons why Futures and Async in
 Rust has very little overhead.</p>
@@ -1178,7 +1195,7 @@ impl Generator for GeneratorA {
     type Return = ();
     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
         // lets us get ownership over current state
-        match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
+        match std::mem::replace(self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) =&gt; {
 
           /*----code before yield----*/
@@ -1270,7 +1287,7 @@ impl Generator for GeneratorA {
     type Return = ();
     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
         // lets us get ownership over current state
-        match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
+        match std::mem::replace(self, GeneratorA::Exit) {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
                 let borrowed = &amp;to_borrow; // &lt;--- NB!
@@ -1523,6 +1540,31 @@ If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&am
 you'll see that it runs without panic on the current stable (1.42.0) but
 panics on the current nightly (1.44.0). Scary!</p>
 </blockquote>
+<h2><a class="header" href="#async-blocks-and-generators" id="async-blocks-and-generators">Async blocks and generators</a></h2>
+<p>Futures in Rust are implemented as state machines much the same way Generators
+are state machines.</p>
+<p>You might have noticed the similarites in the syntax used in async blocks and
+the syntax used in generators:</p>
+<pre><code class="language-rust ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>Compare that with a similar example using async blocks:</p>
+<pre><code>let mut fut = async || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        SomeResource::some_task().await;
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>The difference is that Futures has different states than what a <code>Generator</code> would
+have. The states of a Rust Futures is either: <code>Pending</code> or <code>Ready</code>.</p>
+<p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
+a Future works and the way a Generator work internally is similar. </p>
+<p>The same goes for the challenges of borrowin across yield/await points.</p>
 <p>We'll explain exactly what happened using a slightly simpler example in the next
 chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
 the last topic before we implement our main Futures example.</p>
@@ -1835,9 +1877,10 @@ impl Test {
             _marker: PhantomPinned,
         }
     }
-    fn init(&amp;mut self) {
+    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
         let self_ptr: *const String = &amp;self.a;
-        self.b = self_ptr;
+        let this = unsafe { self.get_unchecked_mut() };
+        this.b = self_ptr;
     }
 
     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
@@ -1856,15 +1899,18 @@ and let users avoid <code>unsafe</code> we need to pin our data on the heap inst
 we'll show in a second.</p>
 <p>Let's see what happens if we run our example now:</p>
 <pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    // test1 is safe to move before we initialize it
     let mut test1 = Test::new(&quot;test1&quot;);
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
+    // Notice how we shadow `test1` to prevent it from beeing accessed again
+    let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
+    Test::init(test1.as_mut());
+     
     let mut test2 = Test::new(&quot;test2&quot;);
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
+    let mut test2 = unsafe { Pin::new_unchecked(&amp;mut test2) };
+    Test::init(test2.as_mut());
 
-    println!(&quot;a: {}, b: {}&quot;, Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
-    println!(&quot;a: {}, b: {}&quot;, Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1.as_ref()), Test::b(test1.as_ref()));
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2.as_ref()), Test::b(test2.as_ref()));
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
@@ -1887,9 +1933,10 @@ we'll show in a second.</p>
 #             _marker: PhantomPinned,
 #         }
 #     }
-#     fn init(&amp;mut self) {
+#     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
 #         let self_ptr: *const String = &amp;self.a;
-#         self.b = self_ptr;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
 #     }
 # 
 #     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
@@ -1902,18 +1949,19 @@ we'll show in a second.</p>
 # }
 </code></pre></pre>
 <p>Now, if we try to pull the same trick which got us in to trouble the last time
-you'll get a compilation error. So t</p>
+you'll get a compilation error.</p>
 <pre><pre class="playpen"><code class="language-rust compile_fail">pub fn main() {
     let mut test1 = Test::new(&quot;test1&quot;);
-    test1.init();
-    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
+    let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
+    Test::init(test1.as_mut());
+     
     let mut test2 = Test::new(&quot;test2&quot;);
-    test2.init();
-    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
+    let mut test2 = unsafe { Pin::new_unchecked(&amp;mut test2) };
+    Test::init(test2.as_mut());
 
-    println!(&quot;a: {}, b: {}&quot;, Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
-    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!(&quot;a: {}, b: {}&quot;, Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1.as_ref()), Test::b(test1.as_ref()));
+    std::mem::swap(test1.as_mut(), test2.as_mut());
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2.as_ref()), Test::b(test2.as_ref()));
 }
 # use std::pin::Pin;
 # use std::marker::PhantomPinned;
@@ -1936,9 +1984,10 @@ you'll get a compilation error. So t</p>
 #             _marker: PhantomPinned,
 #         }
 #     }
-#     fn init(&amp;mut self) {
+#     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
 #         let self_ptr: *const String = &amp;self.a;
-#         self.b = self_ptr;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
 #     }
 # 
 #     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
@@ -1950,10 +1999,22 @@ you'll get a compilation error. So t</p>
 #     }
 # }
 </code></pre></pre>
+<p>As you see from the error you get by running the code the type system prevents
+us from swapping the pinned pointers.</p>
 <blockquote>
 <p>It's important to note that stack pinning will always depend on the current
 stack frame we're in, so we can't create a self referential object in one
 stack frame and return it since any pointers we take to &quot;self&quot; is invalidated.</p>
+<p>It also puts a lot of responsibility in your hands if you pin a value to the
+stack. A mistake that is easy to make is, forgetting to shadow the original variable 
+since you could drop the pinned pointer and access the old value
+after it's initialized like this:</p>
+<pre><code class="language-rust ignore">   let mut test1 = Test::new(&quot;test1&quot;);
+   let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) };
+   Test::init(test1_pin.as_mut());
+   drop(test1_pin);
+   println!(&quot;{:?}&quot;, test1.b);
+</code></pre>
 </blockquote>
 <h2><a class="header" href="#pinning-to-the-heap" id="pinning-to-the-heap">Pinning to the heap</a></h2>
 <p>For completeness let's remove some unsafe and the need for an <code>init</code> method
@@ -2001,7 +2062,7 @@ pub fn main() {
     println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
 }
 </code></pre></pre>
-<p>The fact that boxing (heap allocating) a value that implements <code>!Unpin</code> is safe
+<p>The fact that pinning a heap allocated value that implements <code>!Unpin</code> is safe
 makes sense. Once the data is allocated on the heap it will have a stable address.</p>
 <p>There is no need for us as users of the API to take special care and ensure
 that the self-referential pointer stays valid.</p>
@@ -2015,15 +2076,15 @@ equivalent to <code>&amp;'a mut T</code>. in other words: <code>Unpin</code> mea
 to be moved even when pinned, so <code>Pin</code> will have no effect on such a type.</p>
 </li>
 <li>
-<p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: !Unpin</code>. In
+<p>Getting a <code>&amp;mut T</code> to a pinned T requires unsafe if <code>T: !Unpin</code>. In
 other words: requiring a pinned pointer to a type which is <code>!Unpin</code> prevents
 the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code>
 code.</p>
 </li>
 <li>
 <p>Pinning does nothing special with memory allocation like putting it into some
-&quot;read only&quot; memory or anything fancy. It only tells the compiler that some
-operations on this value should be forbidden.</p>
+&quot;read only&quot; memory or anything fancy. It only uses the type system to prevent
+certain operations on this value.</p>
 </li>
 <li>
 <p>Most standard library types implement <code>Unpin</code>. The same goes for most
@@ -2037,8 +2098,9 @@ cases in the API which are being explored.</p>
 </li>
 <li>
 <p>The implementation behind objects that are <code>!Unpin</code> is most likely unsafe.
-Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
+Moving such a type after it has been pinned can cause the universe to crash. As of the time of writing
+this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>
+(the only way to do it is to create a struct containing raw pointers to itself).</p>
 </li>
 <li>
 <p>You can add a <code>!Unpin</code> bound on a type on nightly with a feature flag, or
@@ -2232,26 +2294,33 @@ a <code>Future</code> has resolved and should be polled again.</p>
 <p><strong>Our Executor will look like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// Our executor takes any object which implements the `Future` trait
 fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+
     // the first thing we do is to construct a `Waker` which we'll pass on to
     // the `reactor` so it can wake us up when an event is ready. 
     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
     let waker = waker_into_waker(Arc::into_raw(mywaker));
+
     // The context struct is just a wrapper for a `Waker` object. Maybe in the
     // future this will do more, but right now it's just a wrapper.
     let mut cx = Context::from_waker(&amp;waker);
+
+    // So, since we run this on one thread and run one future to completion
+    // we can pin the `Future` to the stack. This is unsafe, but saves an
+    // allocation. We could `Box::pin` it too if we wanted. This is however
+    // safe since we shadow `future` so it can't be accessed again and will
+    // not move until it's dropped.
+    let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
 
     // We poll in a loop, but it's not a busy loop. It will only run when
     // an event occurs, or a thread has a &quot;spurious wakeup&quot; (an unexpected wakeup
     // that can happen for no good reason).
     let val = loop {
-        // So, since we run this on one thread and run one future to completion
-        // we can pin the `Future` to the stack. This is unsafe, but saves an
-        // allocation. We could `Box::pin` it too if we wanted. This is however
-        // safe since we don't move the `Future` here.
-        let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
+        
         match Future::poll(pinned, &amp;mut cx) {
+
             // when the Future is ready we're finished
             Poll::Ready(val) =&gt; break val,
+
             // If we get a `pending` future we just go to sleep...
             Poll::Pending =&gt; thread::park(),
         };
@@ -2315,7 +2384,7 @@ fn mywaker_wake(s: &amp;MyWaker) {
 // Since we use an `Arc` cloning is just increasing the refcount on the smart
 // pointer.
 fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
-    let arc = unsafe { Arc::from_raw(s).clone() };
+    let arc = unsafe { Arc::from_raw(s) };
     std::mem::forget(arc.clone()); // increase ref count
     RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
 }
@@ -2353,24 +2422,30 @@ impl Task {
 
 // This is our `Future` implementation
 impl Future for Task {
+
     // The output for our kind of `leaf future` is just an `usize`. For other
     // futures this could be something more interesting like a byte array.
     type Output = usize;
     fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
         let mut r = self.reactor.lock().unwrap();
+
         // we check with the `Reactor` if this future is in its &quot;readylist&quot;
         // i.e. if it's `Ready`
         if r.is_ready(self.id) {
+
             // if it is, we return the data. In this case it's just the ID of
             // the task since this is just a very simple example.
             Poll::Ready(self.id)
         } else if self.is_registered {
+
             // If the future is registered alredy, we just return `Pending`
             Poll::Pending
         } else {
+
             // If we get here, it must be the first time this `Future` is polled
             // so we register a task with our `reactor`
             r.register(self.data, cx.waker().clone(), self.id);
+
             // oh, we have to drop the lock on our `Mutex` here because we can't
             // have a shared and exclusive borrow at the same time
             drop(r);
@@ -2399,11 +2474,10 @@ guess is that this will be a part of the standard library after som maturing.</p
 <p>We choose to pass in a reference to the whole <code>Reactor</code> here. This isn't normal.
 The reactor will often be a global resource which let's us register interests
 without passing around a reference.</p>
+<blockquote>
 <h3><a class="header" href="#why-using-thread-parkunpark-is-a-bad-idea-for-a-library" id="why-using-thread-parkunpark-is-a-bad-idea-for-a-library">Why using thread park/unpark is a bad idea for a library</a></h3>
 <p>It could deadlock easily since anyone could get a handle to the <code>executor thread</code>
 and call park/unpark on it.</p>
-<p>If one of our <code>Futures</code> holds a handle to our thread, or any unrelated code
-calls <code>unpark</code> on our thread, the following could happen:</p>
 <ol>
 <li>A future could call <code>unpark</code> on the executor thread from a different thread</li>
 <li>Our <code>executor</code> thinks that data is ready and wakes up and polls the future</li>
@@ -2415,12 +2489,13 @@ run in parallel.</li>
 awake already at that point.</li>
 <li>We're deadlocked and our program stops working</li>
 </ol>
+</blockquote>
 <blockquote>
 <p>There is also the case that our thread could have what's called a
 <code>spurious wakeup</code> (<a href="https://cfsamson.github.io/book-exploring-async-basics/9_3_http_module.html#bonus-section">which can happen unexpectedly</a>), which
 could cause the same deadlock if we're unlucky.</p>
 </blockquote>
-<p>There are many better solutions, here are some:</p>
+<p>There are several better solutions, here are some:</p>
 <ul>
 <li>Use <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html">std::sync::CondVar</a></li>
 <li>Use <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html">crossbeam::sync::Parker</a></li>
@@ -2441,16 +2516,26 @@ is pretty normal), our <code>Task</code> in would instead be a special <code>Tcp
 registers interest with the global <code>Reactor</code> and no reference is needed.</p>
 </blockquote>
 <p>We can call this kind of <code>Future</code> a &quot;leaf Future&quot;, since it's some operation 
-we'll actually wait on and that we can chain operations on which are performed
-once the leaf future is ready. </p>
+we'll actually wait on and which we can chain operations on which are performed
+once the leaf future is ready.</p>
+<p>The reactor we create here will also create <strong>leaf-futures</strong>, accept a waker and
+call it once the task is finished.</p>
+<p>The task we're implementing is the simplest I could find. It's a timer that
+only spawns a thread and puts it to sleep for a number of seconds we specify
+when acquiring the leaf-future.</p>
+<p>To be able to run the code here in the browser there is not much real I/O we
+can do so just pretend that this is actually represents some useful I/O operation
+for the sake of this example.</p>
 <p><strong>Our Reactor will look like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
 // code possible to run in the book and in the playground
 struct Reactor {
+
     // we need some way of registering a Task with the reactor. Normally this
     // would be an &quot;interest&quot; in an I/O event
     dispatcher: Sender&lt;Event&gt;,
     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+
     // This is a list of tasks that are ready, which means they should be polled
     // for data.
     readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
@@ -2475,11 +2560,13 @@ impl Reactor {
         // This `Vec` will hold handles to all threads we spawn so we can
         // join them later on and finish our programm in a good manner
         let mut handles = vec![];
+
         // This will be the &quot;Reactor thread&quot;
         let handle = thread::spawn(move || {
             for event in rx {
                 let rl_clone = rl_clone.clone();
                 match event {
+
                     // If we get a close event we break out of the loop we're in
                     Event::Close =&gt; break,
                     Event::Timeout(waker, duration, id) =&gt; {
@@ -2487,12 +2574,15 @@ impl Reactor {
                         // When we get an event we simply spawn a new thread
                         // which will simulate some I/O resource...
                         let event_handle = thread::spawn(move || {
+
                             //... by sleeping for the number of seconds
                             // we provided when creating the `Task`.
                             thread::sleep(Duration::from_secs(duration));
+
                             // When it's done sleeping we put the ID of this task
                             // on the &quot;readylist&quot;
                             rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
+
                             // Then we call `wake` which will wake up our
                             // executor and start polling the futures
                             waker.wake();
@@ -2519,6 +2609,7 @@ impl Reactor {
     }
 
     fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
+
         // registering an event is as simple as sending an `Event` through
         // the channel.
         self.dispatcher
@@ -2570,6 +2661,7 @@ fn main() {
 
     // Many runtimes create a glocal `reactor` we pass it as an argument
     let reactor = Reactor::new();
+
     // Since we'll share this between threads we wrap it in a 
     // atmically-refcounted- mutex.
     let reactor = Arc::new(Mutex::new(reactor));
@@ -2605,6 +2697,7 @@ fn main() {
 
     // This executor will block the main thread until the futures is resolved
     block_on(mainfut);
+
     // When we're done, we want to shut down our reactor thread so our program
     // ends nicely.
     reactor.lock().map(|mut r| r.close()).unwrap();
@@ -2623,15 +2716,6 @@ fn main() {
 #         };
 #     };
 #     val
-# }
-# 
-# fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-#     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-#     let waker = waker_into_waker(Arc::into_raw(mywaker)); 
-#     let mut cx = Context::from_waker(&amp;waker); 
-#     let mut boxed = Box::pin(future);
-#     let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
-#     boxed
 # }
 # 
 # // ====================== FUTURE IMPLEMENTATION ==============================
@@ -2783,21 +2867,18 @@ two things:</p>
 </ol>
 <p>The last point is relevant when we move on the the last paragraph.</p>
 <h2><a class="header" href="#asyncawait-and-concurrent-futures" id="asyncawait-and-concurrent-futures">Async/Await and concurrent Futures</a></h2>
-<p>This is the first time we actually see the <code>async/await</code> syntax so let's
-finish this book by explaining them briefly.</p>
-<p>Hopefully, the <code>await</code> syntax looks pretty familiar. It has a lot in common
-with <code>yield</code> and indeed, it works in much the same way.</p>
 <p>The <code>async</code> keyword can be used on functions as in <code>async fn(...)</code> or on a
 block as in <code>async { ... }</code>. Both will turn your function, or block, into a
 <code>Future</code>.</p>
 <p>These <code>Futures</code> are rather simple. Imagine our generator from a few chapters
 back. Every <code>await</code> point is like a <code>yield</code> point.</p>
-<p>Instead of <code>yielding</code> a value we pass in, it yields the <code>Future</code> we're awaiting.
-In turn this <code>Future</code> is polled. </p>
+<p>Instead of <code>yielding</code> a value we pass in, it yields the <code>Future</code> we're awaiting,
+so when we poll a future the first time we run the code up until the first
+<code>await</code> point where it yields a new Future we poll and so on until we reach
+a <strong>leaf-future</strong>.</p>
 <p>Now, as is the case in our code, our <code>mainfut</code> contains two non-leaf futures
 which it awaits, and all that happens is that these state machines are polled
-as well until some &quot;leaf future&quot; in the end is finally polled and either
-returns <code>Ready</code> or <code>Pending</code>.</p>
+until some &quot;leaf future&quot; in the end either returns <code>Ready</code> or <code>Pending</code>.</p>
 <p>The way our example is right now, it's not much better than regular synchronous
 code. For us to actually await multiple futures at the same time we somehow need
 to <code>spawn</code> them so they're polled once, but does not cause our thread to sleep
@@ -2810,242 +2891,12 @@ Future got 2 at time: 3.00.
 <pre><code class="language-ignore">Future got 1 at time: 1.00.
 Future got 2 at time: 2.00.
 </code></pre>
-<p>To accomplish this we can create the simplest possible <code>spawn</code> function I could
-come up with:</p>
-<pre><code class="language-rust ignore noplaypen">fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-    // We start off the same way as we did before
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() });
-    let waker = waker_into_waker(Arc::into_raw(mywaker));
-    let mut cx = Context::from_waker(&amp;waker);
-    
-    // But we need to Box this Future. We can't pin it to this stack frame
-    // since we'll return before the `Future` is resolved so it must be pinned
-    // to the heap.
-    let mut boxed = Box::pin(future);
-    // Now we poll and just discard the result. This way, we register a `Waker`
-    // with our `Reactor` and kick of whatever operation we're expecting.
-    let _ = Future::poll(boxed.as_mut(), &amp;mut cx);
-    
-    // We still need this `Future` since we'll await it later so we return it...
-    boxed
-}
-</code></pre>
-<p>Now if we change our code in <code>main</code> to look like this instead.</p>
-<pre><pre class="playpen"><code class="language-rust edition2018"># use std::{
-#     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
-#     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
-#     thread::{self, JoinHandle}, time::{Duration, Instant}
-# };
-fn main() {
-    let start = Instant::now();
-    let reactor = Reactor::new();
-    let reactor = Arc::new(Mutex::new(reactor));
-    let future1 = Task::new(reactor.clone(), 1, 1);
-    let future2 = Task::new(reactor.clone(), 2, 2);
-
-    let fut1 = async {
-        let val = future1.await;
-        let dur = (Instant::now() - start).as_secs_f32();
-        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
-    };
-
-    let fut2 = async {
-        let val = future2.await;
-        let dur = (Instant::now() - start).as_secs_f32();
-        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
-    };
-
-    // You'll notice everything stays the same until this point
-    let mainfut = async {
-        // Here we &quot;kick off&quot; our first `Future`
-        let handle1 = spawn(fut1);
-        // And the second one
-        let handle2 = spawn(fut2);
-
-        // Now, they're already started, and when they get polled in our
-        // executor now they will just return `Pending`, or if we somehow used
-        // so much time that they're already resolved, they will return `Ready`.
-        handle1.await;
-        handle2.await;
-    };
-
-    block_on(mainfut);
-    reactor.lock().map(|mut r| r.close()).unwrap();
-}
-# // ============================= EXECUTOR ====================================
-# fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
-#     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-#     let waker = waker_into_waker(Arc::into_raw(mywaker));
-#     let mut cx = Context::from_waker(&amp;waker);
-#     let val = loop {
-#         let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
-#         match Future::poll(pinned, &amp;mut cx) {
-#             Poll::Ready(val) =&gt; break val,
-#             Poll::Pending =&gt; thread::park(),
-#         };
-#     };
-#     val
-# }
-# 
-# fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-#     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-#     let waker = waker_into_waker(Arc::into_raw(mywaker)); 
-#     let mut cx = Context::from_waker(&amp;waker); 
-#     let mut boxed = Box::pin(future);
-#     let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
-#     boxed
-# }
-# 
-# // ====================== FUTURE IMPLEMENTATION ==============================
-# #[derive(Clone)]
-# struct MyWaker {
-#     thread: thread::Thread,
-# }
-# 
-# #[derive(Clone)]
-# pub struct Task {
-#     id: usize,
-#     reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
-#     data: u64,
-#     is_registered: bool,
-# }
-# 
-# fn mywaker_wake(s: &amp;MyWaker) {
-#     let waker_ptr: *const MyWaker = s;
-#     let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
-#     waker_arc.thread.unpark();
-# }
-# 
-# fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
-#     let arc = unsafe { Arc::from_raw(s).clone() };
-#     std::mem::forget(arc.clone()); // increase ref count
-#     RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
-# }
-# 
-# const VTABLE: RawWakerVTable = unsafe {
-#     RawWakerVTable::new(
-#         |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
-#         |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
-#         |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
-#         |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
-#     )
-# };
-# 
-# fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
-#     let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
-#     unsafe { Waker::from_raw(raw_waker) }
-# }
-# 
-# impl Task {
-#     fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
-#         Task {
-#             id,
-#             reactor,
-#             data,
-#             is_registered: false,
-#         }
-#     }
-# }
-# 
-# impl Future for Task {
-#     type Output = usize;
-#     fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
-#         let mut r = self.reactor.lock().unwrap();
-#         if r.is_ready(self.id) {
-#             Poll::Ready(self.id)
-#         } else if self.is_registered {
-#             Poll::Pending
-#         } else {
-#             r.register(self.data, cx.waker().clone(), self.id);
-#             drop(r);
-#             self.is_registered = true;
-#             Poll::Pending
-#         }
-#     }
-# }
-# 
-# // =============================== REACTOR ===================================
-# struct Reactor {
-#     dispatcher: Sender&lt;Event&gt;,
-#     handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
-#     readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
-# }
-# #[derive(Debug)]
-# enum Event {
-#     Close,
-#     Timeout(Waker, u64, usize),
-# }
-# 
-# impl Reactor {
-#     fn new() -&gt; Self {
-#         let (tx, rx) = channel::&lt;Event&gt;();
-#         let readylist = Arc::new(Mutex::new(vec![]));
-#         let rl_clone = readylist.clone();
-#         let mut handles = vec![];
-#         let handle = thread::spawn(move || {
-#             // This simulates some I/O resource
-#             for event in rx {
-#                 println!(&quot;REACTOR: {:?}&quot;, event);
-#                 let rl_clone = rl_clone.clone();
-#                 match event {
-#                     Event::Close =&gt; break,
-#                     Event::Timeout(waker, duration, id) =&gt; {
-#                         let event_handle = thread::spawn(move || {
-#                             thread::sleep(Duration::from_secs(duration));
-#                             rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
-#                             waker.wake();
-#                         });
-# 
-#                         handles.push(event_handle);
-#                     }
-#                 }
-#             }
-# 
-#             for handle in handles {
-#                 handle.join().unwrap();
-#             }
-#         });
-# 
-#         Reactor {
-#             readylist,
-#             dispatcher: tx,
-#             handle: Some(handle),
-#         }
-#     }
-# 
-#     fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
-#         self.dispatcher
-#             .send(Event::Timeout(waker, duration, data))
-#             .unwrap();
-#     }
-# 
-#     fn close(&amp;mut self) {
-#         self.dispatcher.send(Event::Close).unwrap();
-#     }
-# 
-#     fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
-#         self.readylist
-#             .lock()
-#             .map(|rl| rl.iter().any(|id| *id == id_to_check))
-#             .unwrap()
-#     }
-# }
-# 
-# impl Drop for Reactor {
-#     fn drop(&amp;mut self) {
-#         self.handle.take().map(|h| h.join().unwrap()).unwrap();
-#     }
-# }
-</code></pre></pre>
-<p>Now, if we try to run our example again</p>
-<p>If you add this code to our example and run it, you'll see:</p>
-<pre><code class="language-ignore">Future got 1 at time: 1.00.
-Future got 2 at time: 2.00.
-</code></pre>
-<p>Exactly as we expected.</p>
-<p>Now this <code>spawn</code> method is not very sophisticated but it explains the concept.
-I've <a href="./conclusion.html#building-a-better-exectuor">challenged you to create a better version</a> and pointed you at a better resource
-in the next chapter under <a href="./conclusion.html#reader-exercises">reader exercises</a>.</p>
+<p>Now, this is the point where I'll refer you to some better resources for
+implementing just that. You should have a pretty good understanding of the
+concept of Futures by now.</p>
+<p>The next step should be getting to know how more advanced runtimes work and
+how they implement different ways of running Futures to completion.</p>
+<p>I <a href="./conclusion.html#building-a-better-exectuor">challenge you to create a better version</a>.</p>
 <p>That's actually it for now. There are probably much more to learn, but I think it
 will be easier once the fundamental concepts are there and that further
 exploration will get a lot easier. </p>
@@ -3094,23 +2945,16 @@ fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
     let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
     let waker = waker_into_waker(Arc::into_raw(mywaker));
     let mut cx = Context::from_waker(&amp;waker);
+
+    // SAFETY: we shadow `future` so it can't be accessed again.
+    let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
     let val = loop {
-        let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
-        match Future::poll(pinned, &amp;mut cx) {
+        match Future::poll(future.as_mut(), &amp;mut cx) {
             Poll::Ready(val) =&gt; break val,
             Poll::Pending =&gt; thread::park(),
         };
     };
     val
-}
-
-fn spawn&lt;F: Future&gt;(future: F) -&gt; Pin&lt;Box&lt;F&gt;&gt; {
-    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
-    let waker = waker_into_waker(Arc::into_raw(mywaker)); 
-    let mut cx = Context::from_waker(&amp;waker); 
-    let mut boxed = Box::pin(future);
-    let _ = Future::poll(boxed.as_mut(), &amp;mut cx); 
-    boxed
 }
 
 // ====================== FUTURE IMPLEMENTATION ==============================
@@ -3134,7 +2978,7 @@ fn mywaker_wake(s: &amp;MyWaker) {
 }
 
 fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
-    let arc = unsafe { Arc::from_raw(s).clone() };
+    let arc = unsafe { Arc::from_raw(s) };
     std::mem::forget(arc.clone()); // increase ref count
     RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
 }

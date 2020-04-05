@@ -1,56 +1,66 @@
 # Futures Explained in 200 Lines of Rust
 
-This book aims to explain `Futures` in Rust using an example driven approach.
+This book aims to explain `Futures` in Rust using an example driven approach,
+exploring why they're designed the way they are, the alternatives and how
+they work.
 
-The goal is to get a better understanding of "async" in Rust by creating a toy
-runtime consisting of a `Reactor` and an `Executor`, and our own futures which
-we can run concurrently.
+Going into the level of detail I do in this book is not needed to use futures
+or async/await in Rust. It's for the curious out there that want to know _how_
+it all works.
 
-We'll start off a bit differently than most other explanations. Instead of
-deferring some of the details about what `Futures` are and how they're
-implemented, we tackle that head on first.
+## What this book covers
 
-I learn best when I can take basic understandable concepts and build piece by
-piece of these basic building blocks until everything is understood. This way,
-most questions will be answered and explored up front and the conclusions later
-on seems natural.
+This book will try to explain everything you might wonder about up until the
+topic of different types of executors and runtimes. We'll just implement a very
+simple runtime in this book introducing some concepts but it's enough to get
+started.
 
-I've limited myself to a 200 line main example so that we need keep
-this fairly brief.
+[Stjepan Glavina](https://github.com/stjepang) has made an excellent series of
+articles about async runtimes and executors, and if the rumors are right he's
+even working on a new async runtime that should be easy enough to use as
+learning material.
 
-In the end I've made some reader exercises you can do if you want to fix some
-of the most glaring omissions and shortcuts we took and create a slightly better
-example yourself.
+The way you should go about it is to read this book first, then continue
+reading the [articles from stejpang](https://stjepang.github.io/) to learn more
+about runtimes and how they work, especially:
+
+1. [Build your own block_on()](https://stjepang.github.io/2020/01/25/build-your-own-block-on.html)
+2. [Build your own executor](https://stjepang.github.io/2020/01/31/build-your-own-executor.html)
+
+I've limited myself to a 200 line main example (hence the title) to limit the
+scope and introduce an example that can easily be explored further.
+
+However, there is a lot to digest and it's not what I would call easy, but we'll
+take everything step by step so get a cup of tea and relax. 
+
+I hope you enjoy the ride.
 
 > This book is developed in the open, and contributions are welcome. You'll find
 > [the repository for the book itself here][book_repo]. The final example which
-> you can clone, fork or copy [can be found here][example_repo]
+> you can clone, fork or copy [can be found here][example_repo]. Any suggestions
+> or improvements can be filed as a PR or in the issue tracker for the book.
 
-## What does this book give you that isn't covered elsewhere?
+## Reader exercises and further reading
 
-There are many good resources and examples already. First
-of all, this book will focus on `Futures` and `async/await` specifically and
-not in the context of any specific runtime.
+In the last [chapter](conclusion.md) I've taken the liberty to suggest some
+small exercises if you want to explore a little further.
 
-Secondly, I've always found small runnable examples very exiting to learn from. 
-Thanks to [Mdbook][mdbook] the examples can even be edited and explored further
-by uncommenting certain lines or adding new ones yourself. I use that quite a
-but throughout so keep an eye out when reading through editable code segments.
+This book is also the fourth book I have written about concurrent programming
+in Rust. If you like it, you might want to check out the others as well:
 
-It's all code that you can download, play with and learn from.
-
-We'll and end up with an understandable example including a `Future`
-implementation, an `Executor` and a `Reactor` in less than 200 lines of code. 
-We don't rely on any dependencies or real I/O which means it's very easy to 
-explore further and try your own ideas.
-
+- [Green Threads Explained in 200 lines of rust](https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/)
+- [The Node Experiment - Exploring Async Basics with Rust](https://cfsamson.github.io/book-exploring-async-basics/)
+- [Epoll, Kqueue and IOCP Explained with Rust](https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/)
 
 ## Credits and thanks
 
 I'll like to take the chance of thanking the people behind `mio`, `tokio`, 
 `async_std`, `Futures`, `libc`, `crossbeam` and many other libraries which so
-much is built upon.  Even the RFCs that much of the design is built upon is 
-very well written and very helpful. So thanks!
+much is built upon.
+
+A special thanks to [Johnhoo](https://github.com/jonhoo) who was kind enough to
+give me some feedback on an early draft of this book. He has not read the
+finished product and has in no way endorsed it, but a thanks is definitely due.
 
 [mdbook]: https://github.com/rust-lang/mdBook
 [book_repo]: https://github.com/cfsamson/books-futures-explained
