@@ -2930,8 +2930,6 @@ fn main() {
     };
 
     let mainfut = async {
-        let handle1 = spawn(fut1);
-        let handle2 = spawn(fut2);
         handle1.await;
         handle2.await;
     };
