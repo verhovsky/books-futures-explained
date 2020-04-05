@@ -222,7 +222,7 @@ We step through each step "manually" in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the `Iterator`
 trait for our generators which would let us do this:
 
-```rust, ingore
+```rust, ignore
 for val in generator {
     println!("{}", val);
 }
@@ -447,7 +447,9 @@ pub fn main() {
 The problem however is that in safe Rust we can still do this:
 
 _Run the code and compare the results. Do you see the problem?_
-```rust
+```rust, should_panic
+# #![feature(never_type)] // Force nightly compiler to be used in playground
+# // by betting on it's true that this type is named after it's stabilization date...
 pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
@@ -525,10 +527,14 @@ pub fn main() {
 
 Wait? What happened to "Hello"?
 
-Turns out that while the example above compiles
-just fine, we expose consumers of this this API to both possible undefined
-behavior and other memory errors while using just safe Rust. This is a big
-problem!
+Turns out that while the example above compiles just fine, we expose consumers
+of this this API to both possible undefined behavior and other memory errors
+while using just safe Rust. This is a big problem!
+
+> I've actually forced the code above to use the nightly version of the compiler.
+> If you run [the example above on the playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=5cbe9897c0e23a502afd2740c7e78b98),
+> you'll see that it runs without panic on the current stable (1.42.0) but
+> panics on the current nightly (1.44.0). Scary!
 
 We'll explain exactly what happened using a slightly simpler example in the next
 chapter and we'll fix our generator using `Pin` so join me as we explore
