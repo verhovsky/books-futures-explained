@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">2.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html" class="active"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -151,99 +151,53 @@
                     <main>
                         <h1><a class="header" href="#pin" id="pin">Pin</a></h1>
 <blockquote>
-<p><strong>Relevant for</strong></p>
+<p><strong>Overview</strong></p>
 <ol>
-<li>Understanding <code>Generators</code> and <code>Futures</code></li>
-<li>Knowing how to use <code>Pin</code> is required when implementing your own <code>Future</code></li>
-<li>Understanding how to make self-referential types safe to use in Rust</li>
-<li>Learning how borrowing across <code>await</code> points is accomplished</li>
+<li>Learn how to use <code>Pin</code> and why it's required when implementing your own <code>Future</code></li>
+<li>Understand how to make self-referential types safe to use in Rust</li>
+<li>Learn how borrowing across <code>await</code> points is accomplished</li>
+<li>Get a set of practical rules to help you work with <code>Pin</code></li>
 </ol>
 <p><code>Pin</code> was suggested in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">RFC#2349</a></p>
 </blockquote>
-<p>We already got a brief introduction of <code>Pin</code> in the previous chapters, so we'll
-start off without any further introduction.</p>
-<p>Let's jump strait to some definitions and then create 10 rules to remember when
-we work with <code>Pin</code>.</p>
+<p>Let's jump strait to it. Pinning is one of those subjects which is hard to wrap
+your head around in the start, but once you unlock a mental model for it
+it gets significantly easier to reason about.</p>
 <h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
+<p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
 <p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
-<p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
 <p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
 &quot;not-un-pin&quot;.</p>
-<p><em>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
-<code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
-tomorrow with a fresh mind.</em></p>
 <blockquote>
-<p>On a more serious note, I feel obliged to mention that there are valid reasons for the names
-that were chosen. If you want to you can read a bit of the discussion from the
-<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my eyes
-is this quote from <code>tmandry</code>:</p>
-<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
+<p><em>This naming scheme is one of Rusts safety features where it deliberately
+tests if you're too tired to safely implement a type with this marker. If
+you're starting to get confused, or even angry, by <code>!Unpin</code> it's a good sign
+that it's time to lay down the work and start over tomorrow with a fresh mind.</em></p>
 </blockquote>
-<p>For the next paragraph we'll rename these markers to:</p>
+<p>On a more serious note, I feel obliged to mention that there are valid reasons
+for the names that were chosen. Naming is not easy, and I considered renaming
+<code>Unpin</code> and <code>!Unpin</code> in this book to make them easier to reason about. </p>
+<p>However, an experienced member of the Rust community convinced me that that there
+is just too many nuances and edge-cases to consider which is easily overlooked when
+naively giving these markers different names, and I'm convinced that we'll
+just have to get used to them and use them as is.</p>
+<p>If you want to you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my
+eyes is this quote from <code>tmandry</code>:</p>
 <blockquote>
-<p><code>!Unpin</code> = <code>MustStay</code> and <code>Unpin</code> = <code>CanMove</code></p>
+<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer
+looks. For Unpin types, this unpinning is directly supported by the type; you
+can do this implicitly. You can even swap out the object with another before you
+put the pin back. For other types, you must be much more careful.</em></p>
 </blockquote>
-<p>It just makes it much easier to talk about them.</p>
-<h2><a class="header" href="#rules-to-remember" id="rules-to-remember">Rules to remember</a></h2>
-<ol>
-<li>
-<p>If <code>T: CanMove</code> (which is the default), then <code>Pin&lt;'a, T&gt;</code> is entirely equivalent to <code>&amp;'a mut T</code>. in other words: <code>CanMove</code> means it's OK for this type to be moved even when pinned, so <code>Pin</code> will have no effect on such a type.</p>
-</li>
-<li>
-<p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: MustStay</code>. In other words: requiring a pinned pointer to a type which is <code>MustStay</code> prevents the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code> code.</p>
-</li>
-<li>
-<p>Pinning does nothing special with memory allocation like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
-</li>
-<li>
-<p>Most standard library types implement <code>CanMove</code>. The same goes for most
-&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
-exceptions.</p>
-</li>
-<li>
-<p>The main use case for <code>Pin</code> is to allow self referential types, the whole
-justification for stabilizing them was to allow that. There are still corner
-cases in the API which are being explored.</p>
-</li>
-<li>
-<p>The implementation behind objects that are <code>MustStay</code> is most likely unsafe.
-Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
-</li>
-<li>
-<p>You can add a <code>MustStay</code> bound on a type on nightly with a feature flag, or
-by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
-</li>
-<li>
-<p>You can either pin a value to memory on the stack or on the heap.</p>
-</li>
-<li>
-<p>Pinning a <code>MustStay</code> pointer to the stack requires <code>unsafe</code></p>
-</li>
-<li>
-<p>Pinning a <code>MustStay</code> pointer to the heap does not require <code>unsafe</code>. There is a shortcut for doing this using <code>Box::pin</code>.</p>
-</li>
-</ol>
-<blockquote>
-<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the 
-guarantees you normally get from the compiler. An <code>unsafe</code> implementation can 
-be perfectly safe to do, but you have no safety net.</p>
-</blockquote>
-<p>Let's take a look at an example:</p>
-<pre><pre class="playpen"><code class="language-rust editable">use std::pin::Pin;
-
-fn main() {
-    let mut test1 = Test::new(&quot;test1&quot;);
-    test1.init();
-    let mut test2 = Test::new(&quot;test2&quot;);
-    test2.init();
-
-    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
-    std::mem::swap(&amp;mut test1, &amp;mut test2); // try commenting out this line
-    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
-
-}
+<h2><a class="header" href="#pinning-and-self-referential-structs" id="pinning-and-self-referential-structs">Pinning and self-referential structs</a></h2>
+<p>Let's start where we left off in the last chapter by making the problem we
+saw using a self-referential struct in our generator a lot simpler by making
+some self-referential structs that are easier to reason about than our
+state machines:</p>
+<p>For now our example will look like this:</p>
+<pre><code class="language-rust ignore">use std::pin::Pin;
 
 #[derive(Debug)]
 struct Test {
@@ -259,7 +213,7 @@ impl Test {
             b: std::ptr::null(),
         }
     }
-    
+
     fn init(&amp;mut self) {
         let self_ref: *const String = &amp;self.a;
         self.b = self_ref;
@@ -273,7 +227,7 @@ impl Test {
         unsafe {&amp;*(self.b)}
     }
 }
-</code></pre></pre>
+</code></pre>
 <p>Let's walk through this example since we'll be using it the rest of this chapter.</p>
 <p>We have a self-referential struct <code>Test</code>. <code>Test</code> needs an <code>init</code> method to be
 created which is strange but we'll need that to keep this example as short as
@@ -281,25 +235,165 @@ possible.</p>
 <p><code>Test</code> provides two methods to get a reference to the value of the fields
 <code>a</code> and <code>b</code>. Since <code>b</code> is a reference to <code>a</code> we store it as a pointer since
 the borrowing rules of Rust doesn't allow us to define this lifetime.</p>
+<p>Now, let's use this example to explain the problem we encounter in detail. As
+you see, this works as expected:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     // We need an `init` method to actually set our self-reference
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
 <p>In our main method we first instantiate two instances of <code>Test</code> and print out
-the value of the fields on <code>test1</code>. We get:</p>
+the value of the fields on <code>test1</code>. We get what we'd expect:</p>
 <pre><code class="language-rust ignore">a: test1, b: test1
+a: test2, b: test2
 </code></pre>
-<p>Next we swap the data stored at the memory location which <code>test1</code> is pointing to
-with the data stored at the memory location <code>test2</code> is pointing to and vice a versa.</p>
-<p>We should expect that printing the fields of <code>test2</code> should display the same as
-<code>test1</code> (since the object we printed before the swap has moved there now).</p>
-<pre><code class="language-rust ignore">a: test1, b: test2
+<p>Let's see what happens if we swap the data stored at the memory location
+which <code>test1</code> is pointing to with the data stored at the memory location
+<code>test2</code> is pointing to and vice a versa.</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    std::mem::swap(&amp;mut test1, &amp;mut test2);
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
+<p>Naively, we could think that what we should get a debug print of <code>test1</code> two
+times like this</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test1, b: test1
 </code></pre>
-<p>The pointer to <code>b</code> still points to the old location. That location is now
-occupied with the string &quot;test2&quot;. This can be a bit hard to visualize so I made
-a figure that i hope can help.</p>
+<p>But instead we get:</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test1, b: test2
+</code></pre>
+<p>The pointer to <code>test2.b</code> still points to the old location which is inside <code>test1</code>
+now. The struct is not self-referential anymore, it holds a pointer to a field
+in a different object. That means we can't rely on the lifetime of <code>test2.b</code> to
+be tied to the lifetime of <code>test2</code> anymore.</p>
+<p>If your still not convinced, this should at least convince you:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    std::mem::swap(&amp;mut test1, &amp;mut test2);
+    test1.a = &quot;I've totally changed now!&quot;.to_string();
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
+<p>That shouldn't happen. There is no serious error yet, but as you can imagine
+it's easy to create serious bugs using this code.</p>
+<p>I created a diagram to help visualize what's going on:</p>
 <p><strong>Fig 1: Before and after swap</strong>
 <img src="./assets/swap_problem.jpg" alt="swap_problem" /></p>
 <p>As you can see this results in unwanted behavior. It's easy to get this to 
 segfault, show UB and fail in other spectacular ways as well.</p>
-<p>If we change the example to using <code>Pin</code> instead:</p>
-<pre><pre class="playpen"><code class="language-rust editable">use std::pin::Pin;
+<h2><a class="header" href="#pinning-to-the-stack" id="pinning-to-the-stack">Pinning to the stack</a></h2>
+<p>Now, we can solve this problem by using <code>Pin</code> instead. Let's take a look at what
+our example would look like then:</p>
+<pre><code class="language-rust ignore">use std::pin::Pin;
 use std::marker::PhantomPinned;
 
 #[derive(Debug)]
@@ -333,8 +427,14 @@ impl Test {
         unsafe { &amp;*(self.b) }
     }
 }
-
-pub fn main() {
+</code></pre>
+<p>Now, what we've done here is pinning a stack address. That will always be
+<code>unsafe</code> if our type implements <code>!Unpin</code>.</p>
+<p>We use the same tricks here, including requiring an <code>init</code>. If we want to fix that
+and let users avoid <code>unsafe</code> we need to pin our data on the heap instead which
+we'll show in a second.</p>
+<p>Let's see what happens if we run our example now:</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
     let mut test1 = Test::new(&quot;test1&quot;);
     test1.init();
     let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
@@ -342,33 +442,103 @@ pub fn main() {
     test2.init();
     let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
 
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test1_pin.as_ref()),
-        Test::b(test1_pin.as_ref())
-    );
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test2_pin.as_ref()),
-        Test::b(test2_pin.as_ref())
-    );
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
 }
-
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init(&amp;mut self) {
+#         let self_ptr: *const String = &amp;self.a;
+#         self.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
 </code></pre></pre>
-<p>Now, what we've done here is pinning a stack address. That will always be
-<code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>).</p>
-<p>We use some tricks here, including requiring an <code>init</code>. If we want to fix that
-and let users avoid <code>unsafe</code> we need to pin our data on the heap instead.</p>
+<p>Now, if we try to pull the same trick which got us in to trouble the last time
+you'll get a compilation error. So t</p>
+<pre><pre class="playpen"><code class="language-rust compile_fail">pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
+
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
+    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
+}
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init(&amp;mut self) {
+#         let self_ptr: *const String = &amp;self.a;
+#         self.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
+</code></pre></pre>
 <blockquote>
-<p>Stack pinning will always depend on the current stack frame we're in, so we
-can't create a self referential object in one stack frame and return it since
-any pointers we take to &quot;self&quot; is invalidated.</p>
+<p>It's important to note that stack pinning will always depend on the current
+stack frame we're in, so we can't create a self referential object in one
+stack frame and return it since any pointers we take to &quot;self&quot; is invalidated.</p>
 </blockquote>
-<p>The next example solves some of our friction at the cost of a heap allocation.</p>
-<pre><pre class="playpen"><code class="language-rust editbable">use std::pin::Pin;
+<h2><a class="header" href="#pinning-to-the-heap" id="pinning-to-the-heap">Pinning to the heap</a></h2>
+<p>For completeness let's remove some unsafe and the need for an <code>init</code> method
+at the cost of a heap allocation. Pinning to the heap is safe so the user
+doesn't need to implement any unsafe code:</p>
+<pre><pre class="playpen"><code class="language-rust">use std::pin::Pin;
 use std::marker::PhantomPinned;
 
 #[derive(Debug)]
@@ -407,9 +577,6 @@ pub fn main() {
     let mut test2 = Test::new(&quot;test2&quot;);
 
     println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(&amp;mut test1, &amp;mut test2);
     println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
 }
 </code></pre></pre>
@@ -419,6 +586,58 @@ makes sense. Once the data is allocated on the heap it will have a stable addres
 that the self-referential pointer stays valid.</p>
 <p>There are ways to safely give some guarantees on stack pinning as well, but right
 now you need to use a crate like <a href="https://docs.rs/pin-project/">pin_project</a> to do that.</p>
+<h2><a class="header" href="#practical-rules-for-pinning" id="practical-rules-for-pinning">Practical rules for Pinning</a></h2>
+<ol>
+<li>
+<p>If <code>T: Unpin</code> (which is the default), then <code>Pin&lt;'a, T&gt;</code> is entirely
+equivalent to <code>&amp;'a mut T</code>. in other words: <code>Unpin</code> means it's OK for this type
+to be moved even when pinned, so <code>Pin</code> will have no effect on such a type.</p>
+</li>
+<li>
+<p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: !Unpin</code>. In
+other words: requiring a pinned pointer to a type which is <code>!Unpin</code> prevents
+the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code>
+code.</p>
+</li>
+<li>
+<p>Pinning does nothing special with memory allocation like putting it into some
+&quot;read only&quot; memory or anything fancy. It only tells the compiler that some
+operations on this value should be forbidden.</p>
+</li>
+<li>
+<p>Most standard library types implement <code>Unpin</code>. The same goes for most
+&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
+exceptions.</p>
+</li>
+<li>
+<p>The main use case for <code>Pin</code> is to allow self referential types, the whole
+justification for stabilizing them was to allow that. There are still corner
+cases in the API which are being explored.</p>
+</li>
+<li>
+<p>The implementation behind objects that are <code>!Unpin</code> is most likely unsafe.
+Moving such a type can cause the universe to crash. As of the time of writing
+this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
+</li>
+<li>
+<p>You can add a <code>!Unpin</code> bound on a type on nightly with a feature flag, or
+by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
+</li>
+<li>
+<p>You can either pin a value to memory on the stack or on the heap.</p>
+</li>
+<li>
+<p>Pinning a <code>!Unpin</code> pointer to the stack requires <code>unsafe</code></p>
+</li>
+<li>
+<p>Pinning a <code>!Unpin</code> pointer to the heap does not require <code>unsafe</code>. There is a shortcut for doing this using <code>Box::pin</code>.</p>
+</li>
+</ol>
+<blockquote>
+<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the 
+guarantees you normally get from the compiler. An <code>unsafe</code> implementation can 
+be perfectly safe to do, but you have no safety net.</p>
+</blockquote>
 <h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
 <p>In short, projection is a programming language term. <code>mystruct.field1</code> is a
 projection. Structural pinning is using <code>Pin</code> on fields. This has several
@@ -431,6 +650,130 @@ extra care must be taken when implementing <code>Drop</code> for pinned types.</
 <h2><a class="header" href="#putting-it-all-together" id="putting-it-all-together">Putting it all together</a></h2>
 <p>This is exactly what we'll do when we implement our own <code>Futures</code> stay tuned, 
 we're soon finished.</p>
+<h2><a class="header" href="#bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin" id="bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin">Bonus section: Fixing our self-referential generator and learning more about Pin</a></h2>
+<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
+<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
+reading the comments.</p>
+<pre><pre class="playpen"><code class="language-rust">#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
+use std::pin::Pin;
+
+pub fn main() {
+    let gen1 = GeneratorA::start();
+    let gen2 = GeneratorA::start();
+    // Before we pin the pointers, this is safe to do
+    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
+
+    // constructing a `Pin::new()` on a type which does not implement `Unpin` is
+    // unsafe. A value pinned to heap can be constructed while staying in safe
+    // Rust so we can use that to avoid unsafe. You can also use crates like
+    // `pin_utils` to pin to the stack safely, just remember that they use
+    // unsafe under the hood so it's like using an already-reviewed unsafe
+    // implementation.
+
+    let mut pinned1 = Box::pin(gen1);
+    let mut pinned2 = Box::pin(gen2);
+
+    // Uncomment these if you think it's safe to pin the values to the stack instead 
+    // (it is in this case). Remember to comment out the two previous lines first.
+    //let mut pinned1 = unsafe { Pin::new_unchecked(&amp;mut gen1) };
+    //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
+
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+        println!(&quot;Gen1 got value {}&quot;, n);
+    }
+    
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+        println!(&quot;Gen2 got value {}&quot;, n);
+    };
+
+    // This won't work:
+    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
+    // This will work but will just swap the pointers so nothing bad happens here:
+    // std::mem::swap(&amp;mut pinned1, &amp;mut pinned2);
+
+    let _ = pinned1.as_mut().resume();
+    let _ = pinned2.as_mut().resume();
+}
+
+enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  
+    Complete(R), 
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+}
+
+enum GeneratorA {
+    Enter,
+    Yield1 {
+        to_borrow: String,
+        borrowed: *const String,
+    },
+    Exit,
+}
+
+impl GeneratorA {
+    fn start() -&gt; Self {
+        GeneratorA::Enter
+    }
+}
+
+// This tells us that the underlying pointer is not safe to move after pinning.
+// In this case, only we as implementors &quot;feel&quot; this, however, if someone is
+// relying on our Pinned pointer this will prevent them from moving it. You need
+// to enable the feature flag `#![feature(optin_builtin_traits)]` and use the
+// nightly compiler to implement `!Unpin`. Normally, you would use
+// `std::marker::PhantomPinned` to indicate that the struct is `!Unpin`.
+impl !Unpin for GeneratorA { }
+
+impl Generator for GeneratorA {
+    type Yield = usize;
+    type Return = ();
+    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+        // lets us get ownership over current state
+        let this = unsafe { self.get_unchecked_mut() };
+            match this {
+            GeneratorA::Enter =&gt; {
+                let to_borrow = String::from(&quot;Hello&quot;);
+                let borrowed = &amp;to_borrow;
+                let res = borrowed.len();
+                *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+
+                // Trick to actually get a self reference. We can't reference
+                // the `String` earlier since these references will point to the
+                // location in this stack frame which will not be valid anymore
+                // when this function returns.
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                    *borrowed = to_borrow;
+                }
+
+                GeneratorState::Yielded(res)
+            }
+
+            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+                println!(&quot;{} world&quot;, borrowed);
+                *this = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+</code></pre></pre>
+<p>Now, as you see, the consumer of this API must either:</p>
+<ol>
+<li>Box the value and thereby allocating it on the heap</li>
+<li>Use <code>unsafe</code> and pin the value to the stack. The user knows that if they move
+the value afterwards it will violate the guarantee they promise to uphold when
+they did their unsafe implementation.</li>
+</ol>
+<p>Hopefully, after this you'll have an idea of what happens when you use the
+<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if
+we want to be able to safely borrow across <code>yield/await</code> points.</p>
 
                     </main>
 

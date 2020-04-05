@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">2.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -191,20 +191,525 @@ explore further and try your own ideas.</p>
 <code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
 much is built upon.  Even the RFCs that much of the design is built upon is 
 very well written and very helpful. So thanks!</p>
-<h1><a class="header" href="#some-background-information" id="some-background-information">Some background information</a></h1>
+<h1><a class="header" href="#some-background-information" id="some-background-information">Some Background Information</a></h1>
+<p>Before we go into the details about Futures in Rust, let's take a quick look
+at the alternatives for handling concurrent programming in general and some
+pros and cons for each of them.</p>
+<p>While we do that we'll get some information on concurrency which will make it
+easier for us when we dive in to Futures specifically.</p>
 <blockquote>
-<p><strong>Relevant for:</strong></p>
+<p>For fun, I've added a small snipped of runnable code with most of the examples.
+If you're like me, things get way more interesting then and maybe you'll se some
+things you haven't seen before along the way.</p>
+</blockquote>
+<h2><a class="header" href="#threads-provided-by-the-operating-system" id="threads-provided-by-the-operating-system">Threads provided by the operating system</a></h2>
+<p>Now, one way of accomplishing this is letting the OS take care of everything for
+us. We do this by simply spawning a new OS thread for each task we want to
+accomplish and write code like we normally would.</p>
+<p>The runtime we use to handle concurrency for us is the operating system itself.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Simple</li>
+<li>Easy to use</li>
+<li>Switching between tasks is reasonably fast</li>
+<li>You get parallelism for free</li>
+</ul>
+<p><strong>Drawbacks:</strong></p>
+<ul>
+<li>OS level threads come with a rather large stack. If you have many tasks
+waiting simultaneously (like you would in a web-server under heavy load) you'll
+run out of memory pretty fast.</li>
+<li>There are a lot of syscalls involved. This can be pretty costly when the number
+of tasks is high.</li>
+<li>The OS has many things it needs to handle. It might not switch back to your
+thread as fast as you'd wish.</li>
+<li>Might not be an option on some systems</li>
+</ul>
+<p><strong>Using OS threads in Rust looks like this:</strong></p>
+<pre><pre class="playpen"><code class="language-rust">use std::thread;
+
+fn main() {
+    println!(&quot;So we start the program here!&quot;);
+    let t1 = thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(200));
+        println!(&quot;We create tasks which gets run when they're finished!&quot;);
+    });
+
+    let t2 = thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(100));
+        println!(&quot;We can even chain callbacks...&quot;);
+        let t3 = thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(50));
+            println!(&quot;...like this!&quot;);
+        });
+        t3.join().unwrap();
+    });
+    println!(&quot;While our tasks are executing we can do other stuff here.&quot;);
+
+    t1.join().unwrap();
+    t2.join().unwrap();
+}
+</code></pre></pre>
+<p>OS threads sure has some pretty big advantages. So why all this talk about
+&quot;async&quot; and concurrency in the first place?</p>
+<p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> it needs to multitask. Once you
+start to look under the covers (like <a href="https://os.phil-opp.com/async-await/">how an operating system works</a>)
+you'll see concurrency everywhere. It's very fundamental in everything we do.</p>
+<p>Secondly, we have the web. Webservers is all about I/O and handling small tasks
+(requests). When the number of small tasks is large it's not a good fit for OS
+threads as of today because of the memory they require and the overhead involved
+when creating new threads. This gets even more relevant when the load is variable
+which means the current number of tasks a program has at any point in time is
+unpredictable. That's why you'll see so many async web frameworks and database
+drivers today.</p>
+<p>However, for a huge number of problems, the standard OS threads will often be the
+right solution. So, just think twice about your problem before you reach for an
+async library.</p>
+<p>Now, let's look at some other options for multitasking. They all have in common
+that they implement a way to do multitasking by having a &quot;userland&quot;
+runtime:</p>
+<h2><a class="header" href="#green-threads" id="green-threads">Green threads</a></h2>
+<p>Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a &quot;context switch&quot;.</p>
+<p>We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.</p>
+<p>Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no
+need for async, await, Futures or Pin. All this would be implementation details
+for the library.</p>
+<p>The typical flow will be like this:</p>
+<ol>
+<li>Run som non-blocking code</li>
+<li>Make a blocking call to some external resource</li>
+<li>CPU jumps to the &quot;main&quot; thread which schedules a different thread to run and
+&quot;jumps&quot; to that stack</li>
+<li>Run some non-blocking code on the new thread until a new blocking call or the
+task is finished</li>
+<li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread to run and jump to that</li>
+</ol>
+<p>These &quot;jumps&quot; are know as context switches. Your OS is doing it many times each
+second as you read this.</p>
+<p><strong>Advantages:</strong></p>
+<ol>
+<li>Simple to use. The code will look like it does when using OS threads.</li>
+<li>A &quot;context switch&quot; is reasonably fast</li>
+<li>Each stack only gets a little memory to start with so you can have hundred of
+thousands of green threads running.</li>
+<li>It's easy to incorporate <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/green-threads#preemptive-multitasking"><em>preemtion</em></a>
+which puts a lot of control in the hands of the runtime implementors.</li>
+</ol>
+<p><strong>Drawbacks:</strong></p>
+<ol>
+<li>The stacks might need to grow. Solving this is not easy and will have a cost.</li>
+<li>You need to save all the CPU state on every switch</li>
+<li>It's not a <em>zero cost abstraction</em> (Rust had green threads early on and this
+was one of the reasons they were removed).</li>
+<li>Complicated to implement correctly if you want to support many different
+platforms.</li>
+</ol>
+<p>If you were to implement green threads in Rust, it could look something like
+this:</p>
+<blockquote>
+<p>The example presented below is an adapted example from an earlier gitbook I
+wrote about green threads called <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust.</a>
+If you want to know what's going on you'll find everything explained in detail
+in that book. The code below is wildly unsafe and it's just to show a real example.
+It's not in any way meant to showcase &quot;best practice&quot;. Just so we're on
+the same page.</p>
+</blockquote>
+<pre><pre class="playpen"><code class="language-rust edition2018">#![feature(asm)]
+#![feature(naked_functions)]
+use std::ptr;
+
+const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
+const MAX_THREADS: usize = 4;
+static mut RUNTIME: usize = 0;
+
+pub struct Runtime {
+    threads: Vec&lt;Thread&gt;,
+    current: usize,
+}
+
+#[derive(PartialEq, Eq, Debug)]
+enum State {
+    Available,
+    Running,
+    Ready,
+}
+
+struct Thread {
+    id: usize,
+    stack: Vec&lt;u8&gt;,
+    ctx: ThreadContext,
+    state: State,
+    task: Option&lt;Box&lt;dyn Fn()&gt;&gt;,
+}
+
+#[derive(Debug, Default)]
+#[repr(C)]
+struct ThreadContext {
+    rsp: u64,
+    r15: u64,
+    r14: u64,
+    r13: u64,
+    r12: u64,
+    rbx: u64,
+    rbp: u64,
+    thread_ptr: u64,
+}
+
+impl Thread {
+    fn new(id: usize) -&gt; Self {
+        Thread {
+            id,
+            stack: vec![0_u8; DEFAULT_STACK_SIZE],
+            ctx: ThreadContext::default(),
+            state: State::Available,
+            task: None,
+        }
+    }
+}
+
+impl Runtime {
+    pub fn new() -&gt; Self {
+        let base_thread = Thread {
+            id: 0,
+            stack: vec![0_u8; DEFAULT_STACK_SIZE],
+            ctx: ThreadContext::default(),
+            state: State::Running,
+            task: None,
+        };
+
+        let mut threads = vec![base_thread];
+        threads[0].ctx.thread_ptr = &amp;threads[0] as *const Thread as u64;
+        let mut available_threads: Vec&lt;Thread&gt; = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
+        threads.append(&amp;mut available_threads);
+
+        Runtime {
+            threads,
+            current: 0,
+        }
+    }
+
+    pub fn init(&amp;self) {
+        unsafe {
+            let r_ptr: *const Runtime = self;
+            RUNTIME = r_ptr as usize;
+        }
+    }
+
+    pub fn run(&amp;mut self) -&gt; ! {
+        while self.t_yield() {}
+        std::process::exit(0);
+    }
+
+    fn t_return(&amp;mut self) {
+        if self.current != 0 {
+            self.threads[self.current].state = State::Available;
+            self.t_yield();
+        }
+    }
+
+    fn t_yield(&amp;mut self) -&gt; bool {
+        let mut pos = self.current;
+        while self.threads[pos].state != State::Ready {
+            pos += 1;
+            if pos == self.threads.len() {
+                pos = 0;
+            }
+            if pos == self.current {
+                return false;
+            }
+        }
+        
+        if self.threads[self.current].state != State::Available {
+            self.threads[self.current].state = State::Ready;
+        }
+
+        self.threads[pos].state = State::Running;
+        let old_pos = self.current;
+        self.current = pos;
+
+        unsafe {
+            switch(&amp;mut self.threads[old_pos].ctx, &amp;self.threads[pos].ctx);
+        }
+        true
+    }
+
+    pub fn spawn&lt;F: Fn() + 'static&gt;(f: F){
+        unsafe {
+            let rt_ptr = RUNTIME as *mut Runtime;
+            let available = (*rt_ptr)
+                .threads
+                .iter_mut()
+                .find(|t| t.state == State::Available)
+                .expect(&quot;no available thread.&quot;);
+                
+            let size = available.stack.len();
+            let s_ptr = available.stack.as_mut_ptr();
+            available.task = Some(Box::new(f));
+            available.ctx.thread_ptr = available as *const Thread as u64;
+            ptr::write(s_ptr.offset((size - 8) as isize) as *mut u64, guard as u64);
+            ptr::write(s_ptr.offset((size - 16) as isize) as *mut u64, call as u64);
+            available.ctx.rsp = s_ptr.offset((size - 16) as isize) as u64;
+            available.state = State::Ready;
+        }
+    }
+}
+
+fn call(thread: u64) {
+    let thread = unsafe { &amp;*(thread as *const Thread) };
+    if let Some(f) = &amp;thread.task {
+        f();
+    }
+}
+
+#[naked]
+fn guard() {
+    unsafe {
+        let rt_ptr = RUNTIME as *mut Runtime;
+        let rt = &amp;mut *rt_ptr;
+        println!(&quot;THREAD {} FINISHED.&quot;, rt.threads[rt.current].id);
+        rt.t_return();
+    };
+}
+
+pub fn yield_thread() {
+    unsafe {
+        let rt_ptr = RUNTIME as *mut Runtime;
+        (*rt_ptr).t_yield();
+    };
+}
+
+#[naked]
+#[inline(never)]
+unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
+    asm!(&quot;
+        mov     %rsp, 0x00($0)
+        mov     %r15, 0x08($0)
+        mov     %r14, 0x10($0)
+        mov     %r13, 0x18($0)
+        mov     %r12, 0x20($0)
+        mov     %rbx, 0x28($0)
+        mov     %rbp, 0x30($0)
+
+        mov     0x00($1), %rsp
+        mov     0x08($1), %r15
+        mov     0x10($1), %r14
+        mov     0x18($1), %r13
+        mov     0x20($1), %r12
+        mov     0x28($1), %rbx
+        mov     0x30($1), %rbp
+        mov     0x38($1), %rdi
+        ret
+        &quot;
+    :
+    : &quot;r&quot;(old), &quot;r&quot;(new)
+    :
+    : &quot;alignstack&quot;
+    );
+}
+# #[cfg(not(windows))]
+fn main() {
+    let mut runtime = Runtime::new();
+    runtime.init();
+    Runtime::spawn(|| {
+        println!(&quot;I haven't implemented a timer in this example.&quot;);
+        yield_thread();
+        println!(&quot;Finally, notice how the tasks are executed concurrently.&quot;);
+    });
+    Runtime::spawn(|| {
+        println!(&quot;But we can still nest tasks...&quot;);
+        Runtime::spawn(|| {
+            println!(&quot;...like this!&quot;);
+        })
+    });
+    runtime.run();
+}
+# #[cfg(windows)]
+# fn main() { }
+</code></pre></pre>
+<p>Still hanging in there? Good. Don't get frustrated if the code above is
+difficult to understand. If I hadn't written it myself I would probably feel
+the same. You can always go back and read the book which explains it later.</p>
+<h2><a class="header" href="#callback-based-approaches" id="callback-based-approaches">Callback based approaches</a></h2>
+<p>You probably already know what we're going to talk about in the next paragraphs
+from Javascript which I assume most know. </p>
+<blockquote>
+<p>If your exposure to Javascript has given you any sorts of PTSD earlier in life,
+close your eyes now and scroll down for 2-3 seconds. You'll find a link there
+that takes you to safety.</p>
+</blockquote>
+<p>The whole idea behind a callback based approach is to save a pointer to a set of
+instructions we want to run later. We can save that pointer on the stack before
+we yield control to the runtime, or in some sort of collection as we do below.</p>
+<p>The basic idea of not involving threads as a primary way to achieve concurrency
+is the common denominator for the rest of the approaches. Including the one
+Rust uses today which we'll soon get to.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Easy to implement in most languages</li>
+<li>No context switching</li>
+<li>Low memory overhead (in most cases)</li>
+</ul>
+<p><strong>Drawbacks:</strong></p>
+<ul>
+<li>Each task must save the state it needs for later, the memory usage will grow
+linearly with the number of callbacks in a chain of computations.</li>
+<li>Can be hard to reason about, many people already know this as as &quot;callback hell&quot;.</li>
+<li>It's a very different way of writing a program, and it can be difficult to
+get an understanding of the program flow.</li>
+<li>Sharing state between tasks is a hard problem in Rust using this approach due
+to it's ownership model.</li>
+</ul>
+<p>An extremely simplified example of a how a callback based approach could look
+like is:</p>
+<pre><pre class="playpen"><code class="language-rust">fn program_main() {
+    println!(&quot;So we start the program here!&quot;);
+    set_timeout(200, || {
+        println!(&quot;We create tasks which gets run when they're finished!&quot;);
+    });
+    set_timeout(100, || {
+        println!(&quot;We can even chain callbacks...&quot;);
+        set_timeout(50, || {
+            println!(&quot;...like this!&quot;);
+        })
+    });
+    println!(&quot;While our tasks are executing we can do other stuff here.&quot;);
+}
+
+fn main() {
+    RT.with(|rt| rt.run(program_main));
+}
+
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{cell::RefCell, collections::HashMap, thread};
+
+thread_local! {
+    static RT: Runtime = Runtime::new();
+}
+
+struct Runtime {
+    callbacks: RefCell&lt;HashMap&lt;usize, Box&lt;dyn FnOnce() -&gt; ()&gt;&gt;&gt;,
+    next_id: RefCell&lt;usize&gt;,
+    evt_sender: Sender&lt;usize&gt;,
+    evt_reciever: Receiver&lt;usize&gt;,
+}
+
+fn set_timeout(ms: u64, cb: impl FnOnce() + 'static) {
+    RT.with(|rt| {
+        let id = *rt.next_id.borrow();
+        *rt.next_id.borrow_mut() += 1;
+        rt.callbacks.borrow_mut().insert(id, Box::new(cb));
+        let evt_sender = rt.evt_sender.clone();
+        thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(ms));
+            evt_sender.send(id).unwrap();
+        });
+    });
+}
+
+impl Runtime {
+    fn new() -&gt; Self {
+        let (evt_sender, evt_reciever) = channel();
+        Runtime {
+            callbacks: RefCell::new(HashMap::new()),
+            next_id: RefCell::new(1),
+            evt_sender,
+            evt_reciever,
+        }
+    }
+
+    fn run(&amp;self, program: fn()) {
+        program();
+        for evt_id in &amp;self.evt_reciever {
+            let cb = self.callbacks.borrow_mut().remove(&amp;evt_id).unwrap();
+            cb();
+            if self.callbacks.borrow().is_empty() {
+                break;
+            }
+        }
+    }
+}
+</code></pre></pre>
+<p>We're keeping this super simple, and you might wonder what's the difference
+between this approach and the one using OS threads an passing in the callbacks
+to the OS threads directly. The difference is that the callbacks are run on the
+same thread using this example. The OS threads we create are basically just used
+as timers.</p>
+<h2><a class="header" href="#from-callbacks-to-promises" id="from-callbacks-to-promises">From callbacks to promises</a></h2>
+<p>You might start to wonder by now, when are we going to talk about Futures?</p>
+<p>Well, we're getting there. You see <code>promises</code>, <code>futures</code> and other names for
+deferred computations are often used interchangeably. There are formal
+differences between them but we'll not cover that here but it's worth
+explaining <code>promises</code> a bit since they're widely known due to beeing used in
+Javascript and will serve as segway to Rusts Futures.</p>
+<p>First of all, many languages has a concept of promises but I'll use the ones
+from Javascript in the examples below.</p>
+<p>Promises is one way to deal with the complexity which comes with a callback
+based approach.</p>
+<p>Instead of:</p>
+<pre><code class="language-js ignore">setTimer(200, () =&gt; {
+  setTimer(100, () =&gt; {
+    setTimer(50, () =&gt; {
+      console.log(&quot;I'm the last one&quot;);
+    });
+  });
+});
+</code></pre>
+<p>We can to this:</p>
+<pre><code class="language-js ignore">function timer(ms) {
+    return new Promise((resolve) =&gt; setTimeout(resolve, ms))
+}
+
+timer(200)
+.then(() =&gt; return timer(100))
+.then(() =&gt; return timer(50))
+.then(() =&gt; console.log(&quot;I'm the last one));
+</code></pre>
+<p>The change is even more substantial under the hood. You see, promises return
+a state machine which can be in one of three states: <code>pending</code>, <code>fulfilled</code> or 
+<code>rejected</code>. So when we call <code>timer(200)</code> in the sample above, we get back a 
+promise in the state <code>pending</code>.</p>
+<p>Since promises are re-written as state machines they also enable an even better
+syntax where we now can write our last example like this:</p>
+<pre><code class="language-js ignore">async function run() {
+    await timer(200);
+    await timer(100);
+    await timer(50);
+    console.log(&quot;I'm the last one&quot;);
+}
+</code></pre>
+<p>You can consider the <code>run</code> function a <em>pausable</em> task consisting of several
+sub-tasks. On each &quot;await&quot; point it yields control to the scheduler (in this
+case it's the well known Javascript event loop). Once one of the sub-tasks changes
+state to either <code>fulfilled</code> or <code>rejected</code> the task is scheduled to continue to
+the next step.</p>
+<p>Syntactically, Rusts Futures 1.0 was a lot like the promises example above and
+Rusts Futures 3.0 is a lot like async/await in our last example.</p>
+<p>Now this is also where the similarities with Rusts Futures stop. The reason we 
+go through all this is to get an introduction and get into the right mindset for
+exploring Rusts Futures.</p>
+<blockquote>
+<p>To avoid confusion later on: There is one difference you should know. Javascript
+promises are <em>eagerly</em> evaluated. That means that once it's created, it starts
+running a task. Rusts Futures on the other hand is <em>lazily</em> evaluated. They
+need to be polled once before they do any work. You'll see in a moment.</p>
+</blockquote>
+<br />
+<div style="text-align: center;  padding-top: 2em;"> 
+<a href="/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
+</div><h1><a class="header" href="#futures-in-rust" id="futures-in-rust">Futures in Rust</a></h1>
+<blockquote>
+<p><strong>Overview:</strong></p>
 <ul>
 <li>High level introduction to concurrency in Rust</li>
 <li>Knowing what Rust provides and not when working with async code</li>
-<li>Understanding why we need runtimes </li>
+<li>Understanding why we need a runtime-library in Rust</li>
 <li>Getting pointers to further reading on concurrency in general</li>
 </ul>
 </blockquote>
-<p>Before we start implementing our <code>Futures</code> , we'll go through some background
-information that will help demystify some of the concepts we encounter.</p>
-<p>Actually, after going through these concepts, implementing futures will seem
-pretty simple. I promise.</p>
 <h2><a class="header" href="#futures" id="futures">Futures</a></h2>
 <p>So what is a future?</p>
 <p>A future is a representation of some operation which will complete in the
@@ -275,7 +780,7 @@ learning one makes learning the next much easier.</p>
 <p>The difference between Rust and other languages is that you have to make an
 active choice when it comes to picking a runtime. Most often, in other languages
 you'll just use the one provided for you.</p>
-<p>An async runtime can be divided into two parts:</p>
+<p><strong>An async runtime can be divided into two parts:</strong></p>
 <ol>
 <li>The Executor</li>
 <li>The Reactor</li>
@@ -317,7 +822,7 @@ it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
 <p>However, if you feel that you have the basics covered, then let's get moving!</p>
 <h1><a class="header" href="#waker-and-context" id="waker-and-context">Waker and Context</a></h1>
 <blockquote>
-<p><strong>Relevant for:</strong></p>
+<p><strong>Overview:</strong></p>
 <ul>
 <li>Understanding how the Waker object is constructed</li>
 <li>Learning how the runtime know when a leaf-future can resume</li>
@@ -401,7 +906,7 @@ object from these parts:</p>
 and try to run it. If you want to go back, press the undo symbol. Keep an eye
 out for these as we go forward. Many examples will be editable.</p>
 </blockquote>
-<pre><pre class="playpen"><code class="language-rust editable">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+<pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&amp;self) -&gt; i32;
     fn sub(&amp;self) -&gt; i32;
@@ -459,7 +964,6 @@ fn main() {
     println!(&quot;Sub: 3 - 2 = {}&quot;, test.sub());
     println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
 }
-
 </code></pre></pre>
 <p>Now that you know this you also know why how we implement the <code>Waker</code> type
 in Rust.</p>
@@ -477,11 +981,11 @@ use purely global functions and state, or any other way you wish.</p>
 <p>This leaves a lot of options on the table for runtime implementors.</p>
 <h1><a class="header" href="#generators" id="generators">Generators</a></h1>
 <blockquote>
-<p><strong>Relevant for:</strong></p>
+<p><strong>Overview:</strong></p>
 <ul>
-<li>Understanding how the async/await syntax works since it's how <code>await</code> is implemented</li>
-<li>Knowing why we need <code>Pin</code></li>
-<li>Understanding why Rusts async model is very efficient</li>
+<li>Understandi how the async/await syntax works since it's how <code>await</code> is implemented</li>
+<li>Know why we need <code>Pin</code></li>
+<li>Understand why Rusts async model is very efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -498,17 +1002,9 @@ handle concurrency:</p>
 <li>Using combinators.</li>
 <li>Stackless coroutines, better known as generators.</li>
 </ol>
-<h3><a class="header" href="#stackful-coroutinesgreen-threads" id="stackful-coroutinesgreen-threads">Stackful coroutines/green threads</a></h3>
-<p>I've written about green threads before. Go check out 
-<a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust</a> if you're interested.</p>
-<p>Green threads uses the same mechanism as an OS does by creating a thread for
-each task, setting up a stack, save the CPU's state and jump from one
-task(thread) to another by doing a &quot;context switch&quot;.</p>
-<p>We yield control to the scheduler (which is a central part of the runtime in
-such a system) which then continues running a different task.</p>
-<p>Rust had green threads once, but they were removed before it hit 1.0. The state
-of execution is stored in each stack so in such a solution there would be no need
-for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation details for the library.</p>
+<p>We covered <a href="0_background_information.html#green-threads">green threads in the background information</a>
+so we won't repeat that here. We'll concentrate on the variants of stackless
+coroutines which Rust uses today.</p>
 <h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
 <p><code>Futures 1.0</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
 you already know combinators. In Rust they look like this:</p>
@@ -553,10 +1049,13 @@ async/await as keywords (it can even be done using a macro).</li>
     println!(&quot;{}&quot;, borrowed);
 }
 </code></pre>
-<p>Generators in Rust are implemented as state machines. The memory footprint of a
-chain of computations is only defined by the largest footprint of any single
-step require. That means that adding steps to a chain of computations might not
-require any increased memory at all.</p>
+<p>Async in Rust is implemented using Generators. So to understand how Async really
+works we need to understand generators first. Generators in Rust are implemented
+as state machines. The memory footprint of a chain of computations is only
+defined by the largest footprint of what the largest step require. </p>
+<p>That means that adding steps to a chain of computations might not require any
+increased memory at all and it's one of the reasons why Futures and Async in
+Rust has very little overhead.</p>
 <h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
 <p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this
 keyword in a closure, converts it to a generator. A closure could look like this
@@ -628,19 +1127,17 @@ impl Generator for GeneratorA {
         match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) =&gt; {
 
-          /*|---code before yield---|*/
-          /*|*/ println!(&quot;Hello&quot;); /*|*/ 
-          /*|*/ let a = a1 * 2;    /*|*/
-          /*|------------------------|*/
+          /*----code before yield----*/
+                println!(&quot;Hello&quot;);
+                let a = a1 * 2;
 
                 *self = GeneratorA::Yield1(a);
                 GeneratorState::Yielded(a)
             }
-            GeneratorA::Yield1(_) =&gt; {
 
-          /*|----code after yield----|*/
-          /*|*/ println!(&quot;world!&quot;); /*|*/ 
-          /*|-------------------------|*/
+            GeneratorA::Yield1(_) =&gt; {
+          /*-----code after yield-----*/
+                println!(&quot;world!&quot;);
 
                 *self = GeneratorA::Exit;
                 GeneratorState::Complete(())
@@ -666,23 +1163,34 @@ limitation just slip and call it a day yet.</p>
 <p>We'll use the optimized version of the state machines which is used in Rust today. For a more
 in depth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
 </blockquote>
-<pre><code class="language-rust noplaypen ignore">let mut gen = move || {
+<pre><code class="language-rust noplaypen ignore">let mut generator = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
         yield borrowed.len();
         println!(&quot;{} world!&quot;, borrowed);
     };
 </code></pre>
+<p>We'll be hand-coding some versions of a state-machines representing a state
+machine for the generator defined aboce.</p>
+<p>We step through each step &quot;manually&quot; in every example, so it looks pretty
+unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
+trait for our generators which would let us do this:</p>
+<pre><pre class="playpen"><code class="language-rust ingore">
+# #![allow(unused_variables)]
+#fn main() {
+for val in generator {
+    println!(&quot;{}&quot;, val);
+}
+#}</code></pre></pre>
+<p>It's a pretty trivial change to make, but this chapter is already getting long.
+Just keep this in the back of your head as we move forward.</p>
 <p>Now what does our rewritten state machine look like with this example?</p>
 <pre><pre class="playpen"><code class="language-rust compile_fail">
 # #![allow(unused_variables)]
 #fn main() {
-# // If you've ever wondered why the parameters are called Y and R the naming from
-# // the original rfc most likely holds the answer
 # enum GeneratorState&lt;Y, R&gt; {
-#     // originally called `CoResult`
-#     Yielded(Y),  // originally called `Yield(Y)`
-#     Complete(R), // originally called `Return(R)`
+#     Yielded(Y), 
+#     Complete(R),
 # }
 # 
 # trait Generator {
@@ -714,7 +1222,7 @@ impl Generator for GeneratorA {
         match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
-                let borrowed = &amp;to_borrow;
+                let borrowed = &amp;to_borrow; // &lt;--- NB!
                 let res = borrowed.len();
 
                 *self = GeneratorA::Yield1 {to_borrow, borrowed};
@@ -740,30 +1248,9 @@ to make this work, we'll have to let the compiler know that <em>we</em> control 
 see we end up in a <em>self referential struct</em>. A struct which holds references
 into itself.</p>
 <p>As you'll notice, this compiles just fine!</p>
-<pre><pre class="playpen"><code class="language-rust editable">pub fn main() {
-    let mut gen = GeneratorA::start();
-    let mut gen2 = GeneratorA::start();
-
-    if let GeneratorState::Yielded(n) = gen.resume() {
-        println!(&quot;Got value {}&quot;, n);
-    }
-    
-    // If you uncomment this, very bad things can happen. This is why we need `Pin`
-    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
-
-    if let GeneratorState::Yielded(n) = gen2.resume() {
-        println!(&quot;Got value {}&quot;, n);
-    }
-
-    // if you uncomment `mem::swap`.. this should now start gen2.
-    if let GeneratorState::Complete(()) = gen.resume() {
-        ()
-    };
-}
-
-enum GeneratorState&lt;Y, R&gt; {
-    Yielded(Y),  // originally called `Yield(Y)`
-    Complete(R), // originally called `Return(R)`
+<pre><code class="language-rust ignore">enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  
+    Complete(R), 
 }
 
 trait Generator {
@@ -776,7 +1263,7 @@ enum GeneratorA {
     Enter,
     Yield1 {
         to_borrow: String,
-        borrowed: *const String, // Normally you'll see `std::ptr::NonNull` used instead of *ptr
+        borrowed: *const String,
     },
     Exit,
 }
@@ -790,20 +1277,18 @@ impl Generator for GeneratorA {
     type Yield = usize;
     type Return = ();
     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-        // lets us get ownership over current state
             match self {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
                 let borrowed = &amp;to_borrow;
                 let res = borrowed.len();
-
-                // Trick to actually get a self reference
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                match self {
-                 GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; unreachable!(),  
-                };
-
+                
+                // We set the self-reference here
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                    *borrowed = to_borrow;
+                }
+               
                 GeneratorState::Yielded(res)
             }
 
@@ -817,137 +1302,172 @@ impl Generator for GeneratorA {
         }
     }
 }
-</code></pre></pre>
-<blockquote>
-<p>Try to uncomment the line with <code>mem::swap</code> and see the results.</p>
-</blockquote>
-<p>While the example above compiles just fine, we expose consumers of this this API 
-to both possible undefined behavior and other memory errors while using just safe
-Rust. This is a big problem!</p>
-<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
-<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
-reading the comments.</p>
-<pre><pre class="playpen"><code class="language-rust editable">#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
-use std::pin::Pin;
-
-pub fn main() {
-    let gen1 = GeneratorA::start();
-    let gen2 = GeneratorA::start();
-    // Before we pin the pointers, this is safe to do
-    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
-
-    // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
-    // However, as you'll see in the start of the next chapter value pinned to
-    // heap can be constructed while staying in safe Rust so we can use
-    // that to avoid unsafe. You can also use crates like `pin_utils` to do 
-    // this safely, just remember that they use unsafe under the hood so it's 
-    // like using an already-reviewed unsafe implementation.
-
-    let mut pinned1 = Box::pin(gen1);
-    let mut pinned2 = Box::pin(gen2);
-    // Uncomment these if you think it's safe to pin the values to the stack instead 
-    // (it is in this case). Remember to comment out the two previous lines first.
-    //let mut pinned1 = unsafe { Pin::new_unchecked(&amp;mut gen1) };
-    //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
-
-    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
-        println!(&quot;Gen1 got value {}&quot;, n);
-    }
-    
-    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
-        println!(&quot;Gen2 got value {}&quot;, n);
+</code></pre>
+<p>Remember that our example is the generator we crated which looked like this:</p>
+<pre><code class="language-rust noplaypen ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
     };
+</code></pre>
+<p>Below is an example of how we could run this state-machine. But there is still
+one huge problem with this:</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
 
-    // This won't work
-    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
-    // This will work but will just swap the pointers. Nothing inherently bad happens here.
-    // std::mem::swap(&amp;mut pinned1, &amp;mut pinned2);
-
-    let _ = pinned1.as_mut().resume();
-    let _ = pinned2.as_mut().resume();
-}
-
-enum GeneratorState&lt;Y, R&gt; {
-    // originally called `CoResult`
-    Yielded(Y),  // originally called `Yield(Y)`
-    Complete(R), // originally called `Return(R)`
-}
-
-trait Generator {
-    type Yield;
-    type Return;
-    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-}
-
-enum GeneratorA {
-    Enter,
-    Yield1 {
-        to_borrow: String,
-        borrowed: *const String, // Normally you'll see `std::ptr::NonNull` used instead of *ptr
-    },
-    Exit,
-}
-
-impl GeneratorA {
-    fn start() -&gt; Self {
-        GeneratorA::Enter
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
     }
-}
 
-// This tells us that the underlying pointer is not safe to move after pinning. In this case,
-// only we as implementors &quot;feel&quot; this, however, if someone is relying on our Pinned pointer
-// this will prevent them from moving it. You need to enable the feature flag 
-// `#![feature(optin_builtin_traits)]` and use the nightly compiler to implement `!Unpin`.
-// Normally, you would use `std::marker::PhantomPinned` to indicate that the
-// struct is `!Unpin`.
-impl !Unpin for GeneratorA { }
-
-impl Generator for GeneratorA {
-    type Yield = usize;
-    type Return = ();
-    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-        // lets us get ownership over current state
-        let this = unsafe { self.get_unchecked_mut() };
-            match this {
-            GeneratorA::Enter =&gt; {
-                let to_borrow = String::from(&quot;Hello&quot;);
-                let borrowed = &amp;to_borrow;
-                let res = borrowed.len();
-
-                // Trick to actually get a self reference. We can't reference
-                // the `String` earlier since these references will point to the
-                // location in this stack frame which will not be valid anymore
-                // when this function returns.
-                *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                match this {
-                 GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; unreachable!(),  
-                };
-
-                GeneratorState::Yielded(res)
-            }
-
-            GeneratorA::Yield1 {borrowed, ..} =&gt; {
-                let borrowed: &amp;String = unsafe {&amp;**borrowed};
-                println!(&quot;{} world&quot;, borrowed);
-                *this = GeneratorA::Exit;
-                GeneratorState::Complete(())
-            }
-            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
-        }
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!(&quot;Got value {}&quot;, n);
     }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
 }
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y),  
+#     Complete(R), 
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+# 
+# enum GeneratorA {
+#     Enter,
+#     Yield1 {
+#         to_borrow: String,
+#         borrowed: *const String,
+#     },
+#     Exit,
+# }
+# 
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+# impl Generator for GeneratorA {
+#     type Yield = usize;
+#     type Return = ();
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+#             match self {
+#             GeneratorA::Enter =&gt; {
+#                 let to_borrow = String::from(&quot;Hello&quot;);
+#                 let borrowed = &amp;to_borrow;
+#                 let res = borrowed.len();
+#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+#                 
+#                 // We set the self-reference here
+#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+#                     *borrowed = to_borrow;
+#                 }
+#                
+#                 GeneratorState::Yielded(res)
+#             }
+# 
+#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
+#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
+#                 println!(&quot;{} world&quot;, borrowed);
+#                 *self = GeneratorA::Exit;
+#                 GeneratorState::Complete(())
+#             }
+#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+#         }
+#     }
+# }
 </code></pre></pre>
-<p>Now, as you see, the consumer of this API must either:</p>
-<ol>
-<li>Box the value and thereby allocating it on the heap</li>
-<li>Use <code>unsafe</code> and pin the value to the stack. The user knows that if they move
-the value afterwards it will violate the guarantee they promise to uphold when
-they did their unsafe implementation.</li>
-</ol>
-<p>Hopefully, after this you'll have an idea of what happens when you use the
-<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if
-we want to be able to safely borrow across <code>yield/await</code> points.</p>
+<p>The problem however is that in safe Rust we can still do this:</p>
+<p><em>Run the code and compare the results. Do you see the problem?</em></p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    std::mem::swap(&amp;mut gen, &amp;mut gen2); // &lt;--- Big problem!
+
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    // This would now start gen2 since we swapped them.
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y),  
+#     Complete(R), 
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+# 
+# enum GeneratorA {
+#     Enter,
+#     Yield1 {
+#         to_borrow: String,
+#         borrowed: *const String,
+#     },
+#     Exit,
+# }
+# 
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+# impl Generator for GeneratorA {
+#     type Yield = usize;
+#     type Return = ();
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+#             match self {
+#             GeneratorA::Enter =&gt; {
+#                 let to_borrow = String::from(&quot;Hello&quot;);
+#                 let borrowed = &amp;to_borrow;
+#                 let res = borrowed.len();
+#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+#                 
+#                 // We set the self-reference here
+#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+#                     *borrowed = to_borrow;
+#                 }
+#                
+#                 GeneratorState::Yielded(res)
+#             }
+# 
+#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
+#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
+#                 println!(&quot;{} world&quot;, borrowed);
+#                 *self = GeneratorA::Exit;
+#                 GeneratorState::Complete(())
+#             }
+#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+#         }
+#     }
+# }
+</code></pre></pre>
+<p>Wait? What happened to &quot;Hello&quot;?</p>
+<p>Turns out that while the example above compiles
+just fine, we expose consumers of this this API to both possible undefined
+behavior and other memory errors while using just safe Rust. This is a big
+problem!</p>
+<p>We'll explain exactly what happened using a slightly simpler example in the next
+chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
+the last topic before we implement our main Futures example.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
 example in Rust today using the <code>static</code> keyword on nightly. Try it for
@@ -974,113 +1494,67 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
 
-    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!(&quot;Gen1 got value {}&quot;, n);
     }
     
-    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!(&quot;Gen2 got value {}&quot;, n);
     };
 
-    let _ = pinned1.as_mut().resume();
-    let _ = pinned2.as_mut().resume();
+    let _ = pinned1.as_mut().resume(());
+    let _ = pinned2.as_mut().resume(());
 }
 </code></pre></pre>
 <h1><a class="header" href="#pin" id="pin">Pin</a></h1>
 <blockquote>
-<p><strong>Relevant for</strong></p>
+<p><strong>Overview</strong></p>
 <ol>
-<li>Understanding <code>Generators</code> and <code>Futures</code></li>
-<li>Knowing how to use <code>Pin</code> is required when implementing your own <code>Future</code></li>
-<li>Understanding how to make self-referential types safe to use in Rust</li>
-<li>Learning how borrowing across <code>await</code> points is accomplished</li>
+<li>Learn how to use <code>Pin</code> and why it's required when implementing your own <code>Future</code></li>
+<li>Understand how to make self-referential types safe to use in Rust</li>
+<li>Learn how borrowing across <code>await</code> points is accomplished</li>
+<li>Get a set of practical rules to help you work with <code>Pin</code></li>
 </ol>
 <p><code>Pin</code> was suggested in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">RFC#2349</a></p>
 </blockquote>
-<p>We already got a brief introduction of <code>Pin</code> in the previous chapters, so we'll
-start off without any further introduction.</p>
-<p>Let's jump strait to some definitions and then create 10 rules to remember when
-we work with <code>Pin</code>.</p>
+<p>Let's jump strait to it. Pinning is one of those subjects which is hard to wrap
+your head around in the start, but once you unlock a mental model for it
+it gets significantly easier to reason about.</p>
 <h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
+<p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
 <p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
 to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
-<p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
 <p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
 &quot;not-un-pin&quot;.</p>
-<p><em>This naming scheme is Rust deliberately testing if you're too tired to safely implement a type with this marker. If you're starting to get confused by
-<code>!Unpin</code> it's a good sign that it's time to lay down the work and start over
-tomorrow with a fresh mind.</em></p>
 <blockquote>
-<p>On a more serious note, I feel obliged to mention that there are valid reasons for the names
-that were chosen. If you want to you can read a bit of the discussion from the
-<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my eyes
-is this quote from <code>tmandry</code>:</p>
-<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer looks. For Unpin types, this unpinning is directly supported by the type; you can do this implicitly. You can even swap out the object with another before you put the pin back. For other types, you must be much more careful.</em></p>
+<p><em>This naming scheme is one of Rusts safety features where it deliberately
+tests if you're too tired to safely implement a type with this marker. If
+you're starting to get confused, or even angry, by <code>!Unpin</code> it's a good sign
+that it's time to lay down the work and start over tomorrow with a fresh mind.</em></p>
 </blockquote>
-<p>For the next paragraph we'll rename these markers to:</p>
+<p>On a more serious note, I feel obliged to mention that there are valid reasons
+for the names that were chosen. Naming is not easy, and I considered renaming
+<code>Unpin</code> and <code>!Unpin</code> in this book to make them easier to reason about. </p>
+<p>However, an experienced member of the Rust community convinced me that that there
+is just too many nuances and edge-cases to consider which is easily overlooked when
+naively giving these markers different names, and I'm convinced that we'll
+just have to get used to them and use them as is.</p>
+<p>If you want to you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my
+eyes is this quote from <code>tmandry</code>:</p>
 <blockquote>
-<p><code>!Unpin</code> = <code>MustStay</code> and <code>Unpin</code> = <code>CanMove</code></p>
+<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer
+looks. For Unpin types, this unpinning is directly supported by the type; you
+can do this implicitly. You can even swap out the object with another before you
+put the pin back. For other types, you must be much more careful.</em></p>
 </blockquote>
-<p>It just makes it much easier to talk about them.</p>
-<h2><a class="header" href="#rules-to-remember" id="rules-to-remember">Rules to remember</a></h2>
-<ol>
-<li>
-<p>If <code>T: CanMove</code> (which is the default), then <code>Pin&lt;'a, T&gt;</code> is entirely equivalent to <code>&amp;'a mut T</code>. in other words: <code>CanMove</code> means it's OK for this type to be moved even when pinned, so <code>Pin</code> will have no effect on such a type.</p>
-</li>
-<li>
-<p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: MustStay</code>. In other words: requiring a pinned pointer to a type which is <code>MustStay</code> prevents the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code> code.</p>
-</li>
-<li>
-<p>Pinning does nothing special with memory allocation like putting it into some &quot;read only&quot; memory or anything fancy. It only tells the compiler that some operations on this value should be forbidden.</p>
-</li>
-<li>
-<p>Most standard library types implement <code>CanMove</code>. The same goes for most
-&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
-exceptions.</p>
-</li>
-<li>
-<p>The main use case for <code>Pin</code> is to allow self referential types, the whole
-justification for stabilizing them was to allow that. There are still corner
-cases in the API which are being explored.</p>
-</li>
-<li>
-<p>The implementation behind objects that are <code>MustStay</code> is most likely unsafe.
-Moving such a type can cause the universe to crash. As of the time of writing
-this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
-</li>
-<li>
-<p>You can add a <code>MustStay</code> bound on a type on nightly with a feature flag, or
-by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
-</li>
-<li>
-<p>You can either pin a value to memory on the stack or on the heap.</p>
-</li>
-<li>
-<p>Pinning a <code>MustStay</code> pointer to the stack requires <code>unsafe</code></p>
-</li>
-<li>
-<p>Pinning a <code>MustStay</code> pointer to the heap does not require <code>unsafe</code>. There is a shortcut for doing this using <code>Box::pin</code>.</p>
-</li>
-</ol>
-<blockquote>
-<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the 
-guarantees you normally get from the compiler. An <code>unsafe</code> implementation can 
-be perfectly safe to do, but you have no safety net.</p>
-</blockquote>
-<p>Let's take a look at an example:</p>
-<pre><pre class="playpen"><code class="language-rust editable">use std::pin::Pin;
-
-fn main() {
-    let mut test1 = Test::new(&quot;test1&quot;);
-    test1.init();
-    let mut test2 = Test::new(&quot;test2&quot;);
-    test2.init();
-
-    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
-    std::mem::swap(&amp;mut test1, &amp;mut test2); // try commenting out this line
-    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
-
-}
+<h2><a class="header" href="#pinning-and-self-referential-structs" id="pinning-and-self-referential-structs">Pinning and self-referential structs</a></h2>
+<p>Let's start where we left off in the last chapter by making the problem we
+saw using a self-referential struct in our generator a lot simpler by making
+some self-referential structs that are easier to reason about than our
+state machines:</p>
+<p>For now our example will look like this:</p>
+<pre><code class="language-rust ignore">use std::pin::Pin;
 
 #[derive(Debug)]
 struct Test {
@@ -1096,7 +1570,7 @@ impl Test {
             b: std::ptr::null(),
         }
     }
-    
+
     fn init(&amp;mut self) {
         let self_ref: *const String = &amp;self.a;
         self.b = self_ref;
@@ -1110,7 +1584,7 @@ impl Test {
         unsafe {&amp;*(self.b)}
     }
 }
-</code></pre></pre>
+</code></pre>
 <p>Let's walk through this example since we'll be using it the rest of this chapter.</p>
 <p>We have a self-referential struct <code>Test</code>. <code>Test</code> needs an <code>init</code> method to be
 created which is strange but we'll need that to keep this example as short as
@@ -1118,25 +1592,165 @@ possible.</p>
 <p><code>Test</code> provides two methods to get a reference to the value of the fields
 <code>a</code> and <code>b</code>. Since <code>b</code> is a reference to <code>a</code> we store it as a pointer since
 the borrowing rules of Rust doesn't allow us to define this lifetime.</p>
+<p>Now, let's use this example to explain the problem we encounter in detail. As
+you see, this works as expected:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     // We need an `init` method to actually set our self-reference
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
 <p>In our main method we first instantiate two instances of <code>Test</code> and print out
-the value of the fields on <code>test1</code>. We get:</p>
+the value of the fields on <code>test1</code>. We get what we'd expect:</p>
 <pre><code class="language-rust ignore">a: test1, b: test1
+a: test2, b: test2
 </code></pre>
-<p>Next we swap the data stored at the memory location which <code>test1</code> is pointing to
-with the data stored at the memory location <code>test2</code> is pointing to and vice a versa.</p>
-<p>We should expect that printing the fields of <code>test2</code> should display the same as
-<code>test1</code> (since the object we printed before the swap has moved there now).</p>
-<pre><code class="language-rust ignore">a: test1, b: test2
+<p>Let's see what happens if we swap the data stored at the memory location
+which <code>test1</code> is pointing to with the data stored at the memory location
+<code>test2</code> is pointing to and vice a versa.</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    std::mem::swap(&amp;mut test1, &amp;mut test2);
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
+<p>Naively, we could think that what we should get a debug print of <code>test1</code> two
+times like this</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test1, b: test1
 </code></pre>
-<p>The pointer to <code>b</code> still points to the old location. That location is now
-occupied with the string &quot;test2&quot;. This can be a bit hard to visualize so I made
-a figure that i hope can help.</p>
+<p>But instead we get:</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test1, b: test2
+</code></pre>
+<p>The pointer to <code>test2.b</code> still points to the old location which is inside <code>test1</code>
+now. The struct is not self-referential anymore, it holds a pointer to a field
+in a different object. That means we can't rely on the lifetime of <code>test2.b</code> to
+be tied to the lifetime of <code>test2</code> anymore.</p>
+<p>If your still not convinced, this should at least convince you:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    std::mem::swap(&amp;mut test1, &amp;mut test2);
+    test1.a = &quot;I've totally changed now!&quot;.to_string();
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+# use std::pin::Pin;
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+# }
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#         }
+#     }
+# 
+#     fn init(&amp;mut self) {
+#         let self_ref: *const String = &amp;self.a;
+#         self.b = self_ref;
+#     }
+#     
+#     fn a(&amp;self) -&gt; &amp;str {
+#         &amp;self.a
+#     } 
+#     
+#     fn b(&amp;self) -&gt; &amp;String {
+#         unsafe {&amp;*(self.b)}
+#     }
+# }
+</code></pre></pre>
+<p>That shouldn't happen. There is no serious error yet, but as you can imagine
+it's easy to create serious bugs using this code.</p>
+<p>I created a diagram to help visualize what's going on:</p>
 <p><strong>Fig 1: Before and after swap</strong>
 <img src="./assets/swap_problem.jpg" alt="swap_problem" /></p>
 <p>As you can see this results in unwanted behavior. It's easy to get this to 
 segfault, show UB and fail in other spectacular ways as well.</p>
-<p>If we change the example to using <code>Pin</code> instead:</p>
-<pre><pre class="playpen"><code class="language-rust editable">use std::pin::Pin;
+<h2><a class="header" href="#pinning-to-the-stack" id="pinning-to-the-stack">Pinning to the stack</a></h2>
+<p>Now, we can solve this problem by using <code>Pin</code> instead. Let's take a look at what
+our example would look like then:</p>
+<pre><code class="language-rust ignore">use std::pin::Pin;
 use std::marker::PhantomPinned;
 
 #[derive(Debug)]
@@ -1170,8 +1784,14 @@ impl Test {
         unsafe { &amp;*(self.b) }
     }
 }
-
-pub fn main() {
+</code></pre>
+<p>Now, what we've done here is pinning a stack address. That will always be
+<code>unsafe</code> if our type implements <code>!Unpin</code>.</p>
+<p>We use the same tricks here, including requiring an <code>init</code>. If we want to fix that
+and let users avoid <code>unsafe</code> we need to pin our data on the heap instead which
+we'll show in a second.</p>
+<p>Let's see what happens if we run our example now:</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
     let mut test1 = Test::new(&quot;test1&quot;);
     test1.init();
     let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
@@ -1179,33 +1799,103 @@ pub fn main() {
     test2.init();
     let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
 
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test1_pin.as_ref()),
-        Test::b(test1_pin.as_ref())
-    );
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
-    println!(
-        &quot;a: {}, b: {}&quot;,
-        Test::a(test2_pin.as_ref()),
-        Test::b(test2_pin.as_ref())
-    );
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
 }
-
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init(&amp;mut self) {
+#         let self_ptr: *const String = &amp;self.a;
+#         self.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
 </code></pre></pre>
-<p>Now, what we've done here is pinning a stack address. That will always be
-<code>unsafe</code> if our type implements <code>!Unpin</code> (aka <code>MustStay</code>).</p>
-<p>We use some tricks here, including requiring an <code>init</code>. If we want to fix that
-and let users avoid <code>unsafe</code> we need to pin our data on the heap instead.</p>
+<p>Now, if we try to pull the same trick which got us in to trouble the last time
+you'll get a compilation error. So t</p>
+<pre><pre class="playpen"><code class="language-rust compile_fail">pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) }; 
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+    let mut test2_pin = unsafe { Pin::new_unchecked(&amp;mut test2) };
+
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1_pin.as_ref()), Test::b(test1_pin.as_ref()));
+    std::mem::swap(test1_pin.as_mut(), test2_pin.as_mut());
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2_pin.as_ref()), Test::b(test2_pin.as_ref()));
+}
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init(&amp;mut self) {
+#         let self_ptr: *const String = &amp;self.a;
+#         self.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
+</code></pre></pre>
 <blockquote>
-<p>Stack pinning will always depend on the current stack frame we're in, so we
-can't create a self referential object in one stack frame and return it since
-any pointers we take to &quot;self&quot; is invalidated.</p>
+<p>It's important to note that stack pinning will always depend on the current
+stack frame we're in, so we can't create a self referential object in one
+stack frame and return it since any pointers we take to &quot;self&quot; is invalidated.</p>
 </blockquote>
-<p>The next example solves some of our friction at the cost of a heap allocation.</p>
-<pre><pre class="playpen"><code class="language-rust editbable">use std::pin::Pin;
+<h2><a class="header" href="#pinning-to-the-heap" id="pinning-to-the-heap">Pinning to the heap</a></h2>
+<p>For completeness let's remove some unsafe and the need for an <code>init</code> method
+at the cost of a heap allocation. Pinning to the heap is safe so the user
+doesn't need to implement any unsafe code:</p>
+<pre><pre class="playpen"><code class="language-rust">use std::pin::Pin;
 use std::marker::PhantomPinned;
 
 #[derive(Debug)]
@@ -1244,9 +1934,6 @@ pub fn main() {
     let mut test2 = Test::new(&quot;test2&quot;);
 
     println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
-
-    // Try to uncomment this and see what happens
-    // std::mem::swap(&amp;mut test1, &amp;mut test2);
     println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
 }
 </code></pre></pre>
@@ -1256,6 +1943,58 @@ makes sense. Once the data is allocated on the heap it will have a stable addres
 that the self-referential pointer stays valid.</p>
 <p>There are ways to safely give some guarantees on stack pinning as well, but right
 now you need to use a crate like <a href="https://docs.rs/pin-project/">pin_project</a> to do that.</p>
+<h2><a class="header" href="#practical-rules-for-pinning" id="practical-rules-for-pinning">Practical rules for Pinning</a></h2>
+<ol>
+<li>
+<p>If <code>T: Unpin</code> (which is the default), then <code>Pin&lt;'a, T&gt;</code> is entirely
+equivalent to <code>&amp;'a mut T</code>. in other words: <code>Unpin</code> means it's OK for this type
+to be moved even when pinned, so <code>Pin</code> will have no effect on such a type.</p>
+</li>
+<li>
+<p>Getting a <code>&amp;mut T</code> to a pinned pointer requires unsafe if <code>T: !Unpin</code>. In
+other words: requiring a pinned pointer to a type which is <code>!Unpin</code> prevents
+the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code>
+code.</p>
+</li>
+<li>
+<p>Pinning does nothing special with memory allocation like putting it into some
+&quot;read only&quot; memory or anything fancy. It only tells the compiler that some
+operations on this value should be forbidden.</p>
+</li>
+<li>
+<p>Most standard library types implement <code>Unpin</code>. The same goes for most
+&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
+exceptions.</p>
+</li>
+<li>
+<p>The main use case for <code>Pin</code> is to allow self referential types, the whole
+justification for stabilizing them was to allow that. There are still corner
+cases in the API which are being explored.</p>
+</li>
+<li>
+<p>The implementation behind objects that are <code>!Unpin</code> is most likely unsafe.
+Moving such a type can cause the universe to crash. As of the time of writing
+this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>.</p>
+</li>
+<li>
+<p>You can add a <code>!Unpin</code> bound on a type on nightly with a feature flag, or
+by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
+</li>
+<li>
+<p>You can either pin a value to memory on the stack or on the heap.</p>
+</li>
+<li>
+<p>Pinning a <code>!Unpin</code> pointer to the stack requires <code>unsafe</code></p>
+</li>
+<li>
+<p>Pinning a <code>!Unpin</code> pointer to the heap does not require <code>unsafe</code>. There is a shortcut for doing this using <code>Box::pin</code>.</p>
+</li>
+</ol>
+<blockquote>
+<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the 
+guarantees you normally get from the compiler. An <code>unsafe</code> implementation can 
+be perfectly safe to do, but you have no safety net.</p>
+</blockquote>
 <h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
 <p>In short, projection is a programming language term. <code>mystruct.field1</code> is a
 projection. Structural pinning is using <code>Pin</code> on fields. This has several
@@ -1268,7 +2007,131 @@ extra care must be taken when implementing <code>Drop</code> for pinned types.</
 <h2><a class="header" href="#putting-it-all-together" id="putting-it-all-together">Putting it all together</a></h2>
 <p>This is exactly what we'll do when we implement our own <code>Futures</code> stay tuned, 
 we're soon finished.</p>
-<h1><a class="header" href="#futures-in-rust" id="futures-in-rust">Futures in Rust</a></h1>
+<h2><a class="header" href="#bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin" id="bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin">Bonus section: Fixing our self-referential generator and learning more about Pin</a></h2>
+<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
+<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
+reading the comments.</p>
+<pre><pre class="playpen"><code class="language-rust">#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
+use std::pin::Pin;
+
+pub fn main() {
+    let gen1 = GeneratorA::start();
+    let gen2 = GeneratorA::start();
+    // Before we pin the pointers, this is safe to do
+    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
+
+    // constructing a `Pin::new()` on a type which does not implement `Unpin` is
+    // unsafe. A value pinned to heap can be constructed while staying in safe
+    // Rust so we can use that to avoid unsafe. You can also use crates like
+    // `pin_utils` to pin to the stack safely, just remember that they use
+    // unsafe under the hood so it's like using an already-reviewed unsafe
+    // implementation.
+
+    let mut pinned1 = Box::pin(gen1);
+    let mut pinned2 = Box::pin(gen2);
+
+    // Uncomment these if you think it's safe to pin the values to the stack instead 
+    // (it is in this case). Remember to comment out the two previous lines first.
+    //let mut pinned1 = unsafe { Pin::new_unchecked(&amp;mut gen1) };
+    //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
+
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+        println!(&quot;Gen1 got value {}&quot;, n);
+    }
+    
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+        println!(&quot;Gen2 got value {}&quot;, n);
+    };
+
+    // This won't work:
+    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
+    // This will work but will just swap the pointers so nothing bad happens here:
+    // std::mem::swap(&amp;mut pinned1, &amp;mut pinned2);
+
+    let _ = pinned1.as_mut().resume();
+    let _ = pinned2.as_mut().resume();
+}
+
+enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  
+    Complete(R), 
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+}
+
+enum GeneratorA {
+    Enter,
+    Yield1 {
+        to_borrow: String,
+        borrowed: *const String,
+    },
+    Exit,
+}
+
+impl GeneratorA {
+    fn start() -&gt; Self {
+        GeneratorA::Enter
+    }
+}
+
+// This tells us that the underlying pointer is not safe to move after pinning.
+// In this case, only we as implementors &quot;feel&quot; this, however, if someone is
+// relying on our Pinned pointer this will prevent them from moving it. You need
+// to enable the feature flag `#![feature(optin_builtin_traits)]` and use the
+// nightly compiler to implement `!Unpin`. Normally, you would use
+// `std::marker::PhantomPinned` to indicate that the struct is `!Unpin`.
+impl !Unpin for GeneratorA { }
+
+impl Generator for GeneratorA {
+    type Yield = usize;
+    type Return = ();
+    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+        // lets us get ownership over current state
+        let this = unsafe { self.get_unchecked_mut() };
+            match this {
+            GeneratorA::Enter =&gt; {
+                let to_borrow = String::from(&quot;Hello&quot;);
+                let borrowed = &amp;to_borrow;
+                let res = borrowed.len();
+                *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+
+                // Trick to actually get a self reference. We can't reference
+                // the `String` earlier since these references will point to the
+                // location in this stack frame which will not be valid anymore
+                // when this function returns.
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                    *borrowed = to_borrow;
+                }
+
+                GeneratorState::Yielded(res)
+            }
+
+            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+                println!(&quot;{} world&quot;, borrowed);
+                *this = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+</code></pre></pre>
+<p>Now, as you see, the consumer of this API must either:</p>
+<ol>
+<li>Box the value and thereby allocating it on the heap</li>
+<li>Use <code>unsafe</code> and pin the value to the stack. The user knows that if they move
+the value afterwards it will violate the guarantee they promise to uphold when
+they did their unsafe implementation.</li>
+</ol>
+<p>Hopefully, after this you'll have an idea of what happens when you use the
+<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if
+we want to be able to safely borrow across <code>yield/await</code> points.</p>
+<h1><a class="header" href="#futures-in-rust-1" id="futures-in-rust-1">Futures in Rust</a></h1>
 <p>We'll create our own <code>Futures</code> together with a fake reactor and a simple
 executor which allows you to edit, run an play around with the code right here
 in your browser.</p>

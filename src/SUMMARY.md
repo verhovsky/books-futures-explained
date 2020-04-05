@@ -2,7 +2,8 @@
 
 [Introduction](./introduction.md)
 
-- [Some background information](./1_background_information.md)
+- [Background information](./0_background_information.md)
+- [Futures in Rust](./1_futures_in_rust.md)
 - [Waker and Context](./2_waker_context.md)
 - [Generators](./3_generators_pin.md)
 - [Pin](./4_pin.md)

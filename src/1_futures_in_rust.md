@@ -1,17 +1,11 @@
-# Some background information
+# Futures in Rust
 
-> **Relevant for:**
+> **Overview:**
 >
 > - High level introduction to concurrency in Rust
 > - Knowing what Rust provides and not when working with async code
-> - Understanding why we need runtimes 
+> - Understanding why we need a runtime-library in Rust
 > - Getting pointers to further reading on concurrency in general
-
-Before we start implementing our `Futures` , we'll go through some background
-information that will help demystify some of the concepts we encounter.
-
-Actually, after going through these concepts, implementing futures will seem
-pretty simple. I promise.
 
 ## Futures
 
@@ -107,7 +101,7 @@ The difference between Rust and other languages is that you have to make an
 active choice when it comes to picking a runtime. Most often, in other languages
 you'll just use the one provided for you.
 
-An async runtime can be divided into two parts:
+**An async runtime can be divided into two parts:**
 
 1. The Executor
 2. The Reactor

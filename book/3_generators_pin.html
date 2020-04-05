@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="1_background_information.html"><strong aria-hidden="true">1.</strong> Some background information</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">2.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">3.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">4.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">5.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">6.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -151,11 +151,11 @@
                     <main>
                         <h1><a class="header" href="#generators" id="generators">Generators</a></h1>
 <blockquote>
-<p><strong>Relevant for:</strong></p>
+<p><strong>Overview:</strong></p>
 <ul>
-<li>Understanding how the async/await syntax works since it's how <code>await</code> is implemented</li>
-<li>Knowing why we need <code>Pin</code></li>
-<li>Understanding why Rusts async model is very efficient</li>
+<li>Understandi how the async/await syntax works since it's how <code>await</code> is implemented</li>
+<li>Know why we need <code>Pin</code></li>
+<li>Understand why Rusts async model is very efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -172,17 +172,9 @@ handle concurrency:</p>
 <li>Using combinators.</li>
 <li>Stackless coroutines, better known as generators.</li>
 </ol>
-<h3><a class="header" href="#stackful-coroutinesgreen-threads" id="stackful-coroutinesgreen-threads">Stackful coroutines/green threads</a></h3>
-<p>I've written about green threads before. Go check out 
-<a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust</a> if you're interested.</p>
-<p>Green threads uses the same mechanism as an OS does by creating a thread for
-each task, setting up a stack, save the CPU's state and jump from one
-task(thread) to another by doing a &quot;context switch&quot;.</p>
-<p>We yield control to the scheduler (which is a central part of the runtime in
-such a system) which then continues running a different task.</p>
-<p>Rust had green threads once, but they were removed before it hit 1.0. The state
-of execution is stored in each stack so in such a solution there would be no need
-for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. All this would be implementation details for the library.</p>
+<p>We covered <a href="0_background_information.html#green-threads">green threads in the background information</a>
+so we won't repeat that here. We'll concentrate on the variants of stackless
+coroutines which Rust uses today.</p>
 <h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
 <p><code>Futures 1.0</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
 you already know combinators. In Rust they look like this:</p>
@@ -227,10 +219,13 @@ async/await as keywords (it can even be done using a macro).</li>
     println!(&quot;{}&quot;, borrowed);
 }
 </code></pre>
-<p>Generators in Rust are implemented as state machines. The memory footprint of a
-chain of computations is only defined by the largest footprint of any single
-step require. That means that adding steps to a chain of computations might not
-require any increased memory at all.</p>
+<p>Async in Rust is implemented using Generators. So to understand how Async really
+works we need to understand generators first. Generators in Rust are implemented
+as state machines. The memory footprint of a chain of computations is only
+defined by the largest footprint of what the largest step require. </p>
+<p>That means that adding steps to a chain of computations might not require any
+increased memory at all and it's one of the reasons why Futures and Async in
+Rust has very little overhead.</p>
 <h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
 <p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this
 keyword in a closure, converts it to a generator. A closure could look like this
@@ -302,19 +297,17 @@ impl Generator for GeneratorA {
         match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
             GeneratorA::Enter(a1) =&gt; {
 
-          /*|---code before yield---|*/
-          /*|*/ println!(&quot;Hello&quot;); /*|*/ 
-          /*|*/ let a = a1 * 2;    /*|*/
-          /*|------------------------|*/
+          /*----code before yield----*/
+                println!(&quot;Hello&quot;);
+                let a = a1 * 2;
 
                 *self = GeneratorA::Yield1(a);
                 GeneratorState::Yielded(a)
             }
-            GeneratorA::Yield1(_) =&gt; {
 
-          /*|----code after yield----|*/
-          /*|*/ println!(&quot;world!&quot;); /*|*/ 
-          /*|-------------------------|*/
+            GeneratorA::Yield1(_) =&gt; {
+          /*-----code after yield-----*/
+                println!(&quot;world!&quot;);
 
                 *self = GeneratorA::Exit;
                 GeneratorState::Complete(())
@@ -340,23 +333,34 @@ limitation just slip and call it a day yet.</p>
 <p>We'll use the optimized version of the state machines which is used in Rust today. For a more
 in depth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
 </blockquote>
-<pre><code class="language-rust noplaypen ignore">let mut gen = move || {
+<pre><code class="language-rust noplaypen ignore">let mut generator = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
         yield borrowed.len();
         println!(&quot;{} world!&quot;, borrowed);
     };
 </code></pre>
+<p>We'll be hand-coding some versions of a state-machines representing a state
+machine for the generator defined aboce.</p>
+<p>We step through each step &quot;manually&quot; in every example, so it looks pretty
+unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
+trait for our generators which would let us do this:</p>
+<pre><pre class="playpen"><code class="language-rust ingore">
+# #![allow(unused_variables)]
+#fn main() {
+for val in generator {
+    println!(&quot;{}&quot;, val);
+}
+#}</code></pre></pre>
+<p>It's a pretty trivial change to make, but this chapter is already getting long.
+Just keep this in the back of your head as we move forward.</p>
 <p>Now what does our rewritten state machine look like with this example?</p>
 <pre><pre class="playpen"><code class="language-rust compile_fail">
 # #![allow(unused_variables)]
 #fn main() {
-# // If you've ever wondered why the parameters are called Y and R the naming from
-# // the original rfc most likely holds the answer
 # enum GeneratorState&lt;Y, R&gt; {
-#     // originally called `CoResult`
-#     Yielded(Y),  // originally called `Yield(Y)`
-#     Complete(R), // originally called `Return(R)`
+#     Yielded(Y), 
+#     Complete(R),
 # }
 # 
 # trait Generator {
@@ -388,7 +392,7 @@ impl Generator for GeneratorA {
         match std::mem::replace(&amp;mut *self, GeneratorA::Exit) {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
-                let borrowed = &amp;to_borrow;
+                let borrowed = &amp;to_borrow; // &lt;--- NB!
                 let res = borrowed.len();
 
                 *self = GeneratorA::Yield1 {to_borrow, borrowed};
@@ -414,30 +418,9 @@ to make this work, we'll have to let the compiler know that <em>we</em> control 
 see we end up in a <em>self referential struct</em>. A struct which holds references
 into itself.</p>
 <p>As you'll notice, this compiles just fine!</p>
-<pre><pre class="playpen"><code class="language-rust editable">pub fn main() {
-    let mut gen = GeneratorA::start();
-    let mut gen2 = GeneratorA::start();
-
-    if let GeneratorState::Yielded(n) = gen.resume() {
-        println!(&quot;Got value {}&quot;, n);
-    }
-    
-    // If you uncomment this, very bad things can happen. This is why we need `Pin`
-    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
-
-    if let GeneratorState::Yielded(n) = gen2.resume() {
-        println!(&quot;Got value {}&quot;, n);
-    }
-
-    // if you uncomment `mem::swap`.. this should now start gen2.
-    if let GeneratorState::Complete(()) = gen.resume() {
-        ()
-    };
-}
-
-enum GeneratorState&lt;Y, R&gt; {
-    Yielded(Y),  // originally called `Yield(Y)`
-    Complete(R), // originally called `Return(R)`
+<pre><code class="language-rust ignore">enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  
+    Complete(R), 
 }
 
 trait Generator {
@@ -450,7 +433,7 @@ enum GeneratorA {
     Enter,
     Yield1 {
         to_borrow: String,
-        borrowed: *const String, // Normally you'll see `std::ptr::NonNull` used instead of *ptr
+        borrowed: *const String,
     },
     Exit,
 }
@@ -464,20 +447,18 @@ impl Generator for GeneratorA {
     type Yield = usize;
     type Return = ();
     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-        // lets us get ownership over current state
             match self {
             GeneratorA::Enter =&gt; {
                 let to_borrow = String::from(&quot;Hello&quot;);
                 let borrowed = &amp;to_borrow;
                 let res = borrowed.len();
-
-                // Trick to actually get a self reference
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                match self {
-                 GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; unreachable!(),  
-                };
-
+                
+                // We set the self-reference here
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                    *borrowed = to_borrow;
+                }
+               
                 GeneratorState::Yielded(res)
             }
 
@@ -491,137 +472,172 @@ impl Generator for GeneratorA {
         }
     }
 }
-</code></pre></pre>
-<blockquote>
-<p>Try to uncomment the line with <code>mem::swap</code> and see the results.</p>
-</blockquote>
-<p>While the example above compiles just fine, we expose consumers of this this API 
-to both possible undefined behavior and other memory errors while using just safe
-Rust. This is a big problem!</p>
-<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
-<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
-reading the comments.</p>
-<pre><pre class="playpen"><code class="language-rust editable">#![feature(optin_builtin_traits)] // needed to implement `!Unpin`
-use std::pin::Pin;
-
-pub fn main() {
-    let gen1 = GeneratorA::start();
-    let gen2 = GeneratorA::start();
-    // Before we pin the pointers, this is safe to do
-    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
-
-    // constructing a `Pin::new()` on a type which does not implement `Unpin` is unsafe.
-    // However, as you'll see in the start of the next chapter value pinned to
-    // heap can be constructed while staying in safe Rust so we can use
-    // that to avoid unsafe. You can also use crates like `pin_utils` to do 
-    // this safely, just remember that they use unsafe under the hood so it's 
-    // like using an already-reviewed unsafe implementation.
-
-    let mut pinned1 = Box::pin(gen1);
-    let mut pinned2 = Box::pin(gen2);
-    // Uncomment these if you think it's safe to pin the values to the stack instead 
-    // (it is in this case). Remember to comment out the two previous lines first.
-    //let mut pinned1 = unsafe { Pin::new_unchecked(&amp;mut gen1) };
-    //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
-
-    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
-        println!(&quot;Gen1 got value {}&quot;, n);
-    }
-    
-    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
-        println!(&quot;Gen2 got value {}&quot;, n);
+</code></pre>
+<p>Remember that our example is the generator we crated which looked like this:</p>
+<pre><code class="language-rust noplaypen ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
     };
+</code></pre>
+<p>Below is an example of how we could run this state-machine. But there is still
+one huge problem with this:</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
 
-    // This won't work
-    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
-    // This will work but will just swap the pointers. Nothing inherently bad happens here.
-    // std::mem::swap(&amp;mut pinned1, &amp;mut pinned2);
-
-    let _ = pinned1.as_mut().resume();
-    let _ = pinned2.as_mut().resume();
-}
-
-enum GeneratorState&lt;Y, R&gt; {
-    // originally called `CoResult`
-    Yielded(Y),  // originally called `Yield(Y)`
-    Complete(R), // originally called `Return(R)`
-}
-
-trait Generator {
-    type Yield;
-    type Return;
-    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
-}
-
-enum GeneratorA {
-    Enter,
-    Yield1 {
-        to_borrow: String,
-        borrowed: *const String, // Normally you'll see `std::ptr::NonNull` used instead of *ptr
-    },
-    Exit,
-}
-
-impl GeneratorA {
-    fn start() -&gt; Self {
-        GeneratorA::Enter
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
     }
-}
 
-// This tells us that the underlying pointer is not safe to move after pinning. In this case,
-// only we as implementors &quot;feel&quot; this, however, if someone is relying on our Pinned pointer
-// this will prevent them from moving it. You need to enable the feature flag 
-// `#![feature(optin_builtin_traits)]` and use the nightly compiler to implement `!Unpin`.
-// Normally, you would use `std::marker::PhantomPinned` to indicate that the
-// struct is `!Unpin`.
-impl !Unpin for GeneratorA { }
-
-impl Generator for GeneratorA {
-    type Yield = usize;
-    type Return = ();
-    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
-        // lets us get ownership over current state
-        let this = unsafe { self.get_unchecked_mut() };
-            match this {
-            GeneratorA::Enter =&gt; {
-                let to_borrow = String::from(&quot;Hello&quot;);
-                let borrowed = &amp;to_borrow;
-                let res = borrowed.len();
-
-                // Trick to actually get a self reference. We can't reference
-                // the `String` earlier since these references will point to the
-                // location in this stack frame which will not be valid anymore
-                // when this function returns.
-                *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
-                match this {
-                 GeneratorA::Yield1{to_borrow, borrowed} =&gt; *borrowed = to_borrow,
-                 _ =&gt; unreachable!(),  
-                };
-
-                GeneratorState::Yielded(res)
-            }
-
-            GeneratorA::Yield1 {borrowed, ..} =&gt; {
-                let borrowed: &amp;String = unsafe {&amp;**borrowed};
-                println!(&quot;{} world&quot;, borrowed);
-                *this = GeneratorA::Exit;
-                GeneratorState::Complete(())
-            }
-            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
-        }
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!(&quot;Got value {}&quot;, n);
     }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
 }
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y),  
+#     Complete(R), 
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+# 
+# enum GeneratorA {
+#     Enter,
+#     Yield1 {
+#         to_borrow: String,
+#         borrowed: *const String,
+#     },
+#     Exit,
+# }
+# 
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+# impl Generator for GeneratorA {
+#     type Yield = usize;
+#     type Return = ();
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+#             match self {
+#             GeneratorA::Enter =&gt; {
+#                 let to_borrow = String::from(&quot;Hello&quot;);
+#                 let borrowed = &amp;to_borrow;
+#                 let res = borrowed.len();
+#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+#                 
+#                 // We set the self-reference here
+#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+#                     *borrowed = to_borrow;
+#                 }
+#                
+#                 GeneratorState::Yielded(res)
+#             }
+# 
+#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
+#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
+#                 println!(&quot;{} world&quot;, borrowed);
+#                 *self = GeneratorA::Exit;
+#                 GeneratorState::Complete(())
+#             }
+#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+#         }
+#     }
+# }
 </code></pre></pre>
-<p>Now, as you see, the consumer of this API must either:</p>
-<ol>
-<li>Box the value and thereby allocating it on the heap</li>
-<li>Use <code>unsafe</code> and pin the value to the stack. The user knows that if they move
-the value afterwards it will violate the guarantee they promise to uphold when
-they did their unsafe implementation.</li>
-</ol>
-<p>Hopefully, after this you'll have an idea of what happens when you use the
-<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if
-we want to be able to safely borrow across <code>yield/await</code> points.</p>
+<p>The problem however is that in safe Rust we can still do this:</p>
+<p><em>Run the code and compare the results. Do you see the problem?</em></p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    std::mem::swap(&amp;mut gen, &amp;mut gen2); // &lt;--- Big problem!
+
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    // This would now start gen2 since we swapped them.
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+# enum GeneratorState&lt;Y, R&gt; {
+#     Yielded(Y),  
+#     Complete(R), 
+# }
+# 
+# trait Generator {
+#     type Yield;
+#     type Return;
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+# }
+# 
+# enum GeneratorA {
+#     Enter,
+#     Yield1 {
+#         to_borrow: String,
+#         borrowed: *const String,
+#     },
+#     Exit,
+# }
+# 
+# impl GeneratorA {
+#     fn start() -&gt; Self {
+#         GeneratorA::Enter
+#     }
+# }
+# impl Generator for GeneratorA {
+#     type Yield = usize;
+#     type Return = ();
+#     fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+#             match self {
+#             GeneratorA::Enter =&gt; {
+#                 let to_borrow = String::from(&quot;Hello&quot;);
+#                 let borrowed = &amp;to_borrow;
+#                 let res = borrowed.len();
+#                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+#                 
+#                 // We set the self-reference here
+#                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+#                     *borrowed = to_borrow;
+#                 }
+#                
+#                 GeneratorState::Yielded(res)
+#             }
+# 
+#             GeneratorA::Yield1 {borrowed, ..} =&gt; {
+#                 let borrowed: &amp;String = unsafe {&amp;**borrowed};
+#                 println!(&quot;{} world&quot;, borrowed);
+#                 *self = GeneratorA::Exit;
+#                 GeneratorState::Complete(())
+#             }
+#             GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+#         }
+#     }
+# }
+</code></pre></pre>
+<p>Wait? What happened to &quot;Hello&quot;?</p>
+<p>Turns out that while the example above compiles
+just fine, we expose consumers of this this API to both possible undefined
+behavior and other memory errors while using just safe Rust. This is a big
+problem!</p>
+<p>We'll explain exactly what happened using a slightly simpler example in the next
+chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
+the last topic before we implement our main Futures example.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
 example in Rust today using the <code>static</code> keyword on nightly. Try it for
@@ -648,16 +664,16 @@ pub fn main() {
     let mut pinned1 = Box::pin(gen1);
     let mut pinned2 = Box::pin(gen2);
 
-    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
         println!(&quot;Gen1 got value {}&quot;, n);
     }
     
-    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
         println!(&quot;Gen2 got value {}&quot;, n);
     };
 
-    let _ = pinned1.as_mut().resume();
-    let _ = pinned2.as_mut().resume();
+    let _ = pinned1.as_mut().resume(());
+    let _ = pinned2.as_mut().resume(());
 }
 </code></pre></pre>
 
