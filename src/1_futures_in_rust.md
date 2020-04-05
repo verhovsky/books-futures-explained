@@ -101,7 +101,7 @@ The difference between Rust and other languages is that you have to make an
 active choice when it comes to picking a runtime. Most often, in other languages
 you'll just use the one provided for you.
 
-An async runtime can be divided into two parts:
+**An async runtime can be divided into two parts:**
 
 1. The Executor
 2. The Reactor

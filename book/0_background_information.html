@@ -227,11 +227,15 @@ async library.</p>
 that they implement a way to do multitasking by having a &quot;userland&quot;
 runtime:</p>
 <h2><a class="header" href="#green-threads" id="green-threads">Green threads</a></h2>
-<p>Green threads has been popularized by GO in the recent years. Green threads
-uses the same basic technique as operating systems does to handle concurrency.</p>
-<p>Green threads are implemented by setting up a stack for each task you want to
-execute and make the CPU &quot;jump&quot; from one stack to another to switch between
-tasks.</p>
+<p>Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a &quot;context switch&quot;.</p>
+<p>We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.</p>
+<p>Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no
+need for async, await, Futures or Pin. All this would be implementation details
+for the library.</p>
 <p>The typical flow will be like this:</p>
 <ol>
 <li>Run som non-blocking code</li>
@@ -240,7 +244,7 @@ tasks.</p>
 &quot;jumps&quot; to that stack</li>
 <li>Run some non-blocking code on the new thread until a new blocking call or the
 task is finished</li>
-<li>&quot;jumps&quot; back to the &quot;main&quot; thread and so on</li>
+<li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread to run and jump to that</li>
 </ol>
 <p>These &quot;jumps&quot; are know as context switches. Your OS is doing it many times each
 second as you read this.</p>
@@ -638,7 +642,7 @@ syntax where we now can write our last example like this:</p>
 <p>You can consider the <code>run</code> function a <em>pausable</em> task consisting of several
 sub-tasks. On each &quot;await&quot; point it yields control to the scheduler (in this
 case it's the well known Javascript event loop). Once one of the sub-tasks changes
-state to either <code>fulfilled</code> or <code>rejected</code> the task is sheduled to continue to
+state to either <code>fulfilled</code> or <code>rejected</code> the task is scheduled to continue to
 the next step.</p>
 <p>Syntactically, Rusts Futures 1.0 was a lot like the promises example above and
 Rusts Futures 3.0 is a lot like async/await in our last example.</p>

@@ -90,12 +90,17 @@ runtime:
 
 ## Green threads
 
-Green threads has been popularized by GO in the recent years. Green threads
-uses the same basic technique as operating systems does to handle concurrency.
+Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a "context switch".
 
-Green threads are implemented by setting up a stack for each task you want to
-execute and make the CPU "jump" from one stack to another to switch between
-tasks.
+We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.
+
+Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no
+need for async, await, Futures or Pin. All this would be implementation details
+for the library.
 
 The typical flow will be like this:
 
@@ -105,7 +110,7 @@ The typical flow will be like this:
    "jumps" to that stack
 4. Run some non-blocking code on the new thread until a new blocking call or the
    task is finished
-5. "jumps" back to the "main" thread and so on
+5. "jumps" back to the "main" thread, schedule a new thread to run and jump to that
 
 These "jumps" are know as context switches. Your OS is doing it many times each
 second as you read this.
@@ -529,7 +534,7 @@ async function run() {
 You can consider the `run` function a _pausable_ task consisting of several
 sub-tasks. On each "await" point it yields control to the scheduler (in this
 case it's the well known Javascript event loop). Once one of the sub-tasks changes
-state to either `fulfilled` or `rejected` the task is sheduled to continue to
+state to either `fulfilled` or `rejected` the task is scheduled to continue to
 the next step.
 
 Syntactically, Rusts Futures 1.0 was a lot like the promises example above and

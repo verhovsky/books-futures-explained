@@ -151,7 +151,7 @@
                     <main>
                         <h1><a class="header" href="#waker-and-context" id="waker-and-context">Waker and Context</a></h1>
 <blockquote>
-<p><strong>Relevant for:</strong></p>
+<p><strong>Overview:</strong></p>
 <ul>
 <li>Understanding how the Waker object is constructed</li>
 <li>Learning how the runtime know when a leaf-future can resume</li>
@@ -235,7 +235,7 @@ object from these parts:</p>
 and try to run it. If you want to go back, press the undo symbol. Keep an eye
 out for these as we go forward. Many examples will be editable.</p>
 </blockquote>
-<pre><pre class="playpen"><code class="language-rust editable">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+<pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&amp;self) -&gt; i32;
     fn sub(&amp;self) -&gt; i32;
@@ -293,7 +293,6 @@ fn main() {
     println!(&quot;Sub: 3 - 2 = {}&quot;, test.sub());
     println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
 }
-
 </code></pre></pre>
 <p>Now that you know this you also know why how we implement the <code>Waker</code> type
 in Rust.</p>

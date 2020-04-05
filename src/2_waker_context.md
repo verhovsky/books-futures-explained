@@ -1,6 +1,6 @@
 # Waker and Context
 
-> **Relevant for:**
+> **Overview:**
 >
 > - Understanding how the Waker object is constructed
 > - Learning how the runtime know when a leaf-future can resume
@@ -101,7 +101,7 @@ object from these parts:
 and try to run it. If you want to go back, press the undo symbol. Keep an eye
 out for these as we go forward. Many examples will be editable.
 
-```rust, editable
+```rust
 // A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&self) -> i32;
@@ -160,7 +160,6 @@ fn main() {
     println!("Sub: 3 - 2 = {}", test.sub());
     println!("Mul: 3 * 2 = {}", test.mul());
 }
-
 ```
 
 Now that you know this you also know why how we implement the `Waker` type
