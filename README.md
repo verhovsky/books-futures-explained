@@ -2,6 +2,8 @@
 
 # Futures Explained in 200 Lines of Rust
 
+The rendered version is found at: [https://cfsamson.github.io/books-futures-explained/](https://cfsamson.github.io/books-futures-explained/)
+
 This book aims to explain `Futures` in Rust using an example driven approach,
 exploring why they're designed the way they are, and how they work. We'll also
 take a look at some of the alternatives we have when dealing with concurrency
