@@ -57,8 +57,8 @@ in Rust. If you like it, you might want to check out the others as well:
 ## Credits and thanks
 
 I'll like to take the chance of thanking the people behind `mio`, `tokio`, 
-`async_std`, `Futures`, `libc`, `crossbeam` and many other libraries which so
-much is built upon.
+`async_std`, `Futures`, `libc`, `crossbeam` which so underpins so much of the
+async ecosystem and and rarely gets enough praise.
 
 A special thanks to [jonhoo](https://github.com/jonhoo) who was kind enough to
 give me some valuable feedback on a very early draft of this book. He has not
