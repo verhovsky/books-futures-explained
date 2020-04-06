@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html" class="active">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html" class="active">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -152,69 +152,43 @@
                         <h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
 <p>Congratulations. Good job! If you got this far you must have stayed with me
 all the way. I hope you enjoyed the ride!</p>
-<p>I'll leave you with some predictions and a set of exercises I'm suggesting for
-those interested.</p>
-<p>Futures will be more ergonomic to use with time. For example, instead of having
-to create a <code>RawWaker</code> and so on, the <code>Waker</code> will also be possible to implement
-as a normal <code>Trait</code>. It's probably going to be pretty similar to
-<a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">ArcWake</a>.</p>
-<p>There will probably be several more improvements like this, but since relatively
-few people will actually need implement leaf Futures compared to those that use
-them, focus will first and foremost be on how ergonomic it's to work with
-futures inside async/await functions and blocks.</p>
-<p>It will still take some time for the ecosystem to migrate over to <code>Futures 3.0</code>
-but since the advantages are so huge, it will not be a split between libraries
-using <code>Futures 1.0</code> and libraries using <code>Futures 3.0</code> for long.</p>
-<h1><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h1>
-<p>So our implementation has taken some obvious shortcuts and could use some improvement. Actually digging into the code and try things yourself is a good
-way to learn. Here are some good exercises if you want to explore more:</p>
-<h2><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h2>
-<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these same methods from their own code. Try to use another method to
-suspend our thread and wake it up again on our command. Some hints:</p>
+<p>Remember that you call always leave feedback, suggest improvements or ask questions
+in the <a href="https://github.com/cfsamson/books-futures-explained/issues">issue_tracker</a> for this book.
+I'll try my best to respond to each one of them.</p>
+<p>I'll leave you with some suggestions for exercises if you want to explore a little further below.</p>
+<p>Until next time!</p>
+<h2><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h2>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. 
+Actually digging into the code and try things yourself is a good way to learn. Here are
+some good exercises if you want to explore more:</p>
+<h3><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h3>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these
+same methods from their own code. Try to use another method to suspend our thread and wake
+it up again on our command. Some hints:</p>
 <ul>
 <li>Check out <code>CondVars</code>, here are two sources <a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Wikipedia</a> and the
 docs for <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html"><code>CondVar</code></a></li>
 <li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
 </ul>
-<h2><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h2>
-<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only interested in synchronizing some parts of the information it contains. Try to refactor that out and only synchronize access to what's really needed.</p>
+<h3><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h3>
+<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only
+interested in synchronizing some parts of the information it contains. Try to refactor that
+out and only synchronize access to what's really needed.</p>
+<p>I'd encourage you to have a look at how <a href="https://github.com/async-rs/async-std/blob/master/src/net/driver/mod.rs">the async_std driver is implemented</a>
+and <a href="https://github.com/tokio-rs/tokio/blob/master/tokio/src/runtime/basic_scheduler.rs">how tokios scheduler is implemented</a> to get some inspiration.</p>
 <ul>
 <li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
 <li>Do you want to make a global <code>Reactor</code> so it can be accessed from anywhere?</li>
 </ul>
-<p>Next , using a <code>Mutex</code> as a synchronization mechanism might be overkill since many methods only reads data. </p>
-<ul>
-<li>Could an <a href="https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html"><code>RwLock</code></a> be more efficient some places?</li>
-<li>Could you use any of the synchronization mechanisms in <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam</a>?</li>
-<li>Do you want to dig into <a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/appendix-1/atomics-in-rust">atomics in Rust and implement a synchronization mechanism</a> of your own?</li>
-</ul>
-<h2><a class="header" href="#avoid-creating-a-new-waker-for-every-event" id="avoid-creating-a-new-waker-for-every-event">Avoid creating a new Waker for every event</a></h2>
-<p>Right now we create a new instance of a Waker for every event we create. Is this really needed? </p>
-<ul>
-<li>Could we create one instance and then cache it (see <a href="https://stjepang.github.io/2020/01/25/build-your-own-block-on.html">this article from <code>u/sjepang</code></a>)?
-<ul>
-<li>Should we cache it in <code>thread_local!</code> storage?</li>
-<li>Or should be cache it using a global constant?</li>
-</ul>
-</li>
-</ul>
-<h2><a class="header" href="#could-we-implement-more-methods-on-our-executor" id="could-we-implement-more-methods-on-our-executor">Could we implement more methods on our executor?</a></h2>
-<p>What about CPU intensive tasks? Right now they'll prevent our executor thread from progressing an handling events. Could you create a thread pool and create a method to send such tasks to the thread pool instead together with a Waker which will wake up the executor thread once the CPU intensive task is done?</p>
-<p>In both <code>async_std</code> and <code>tokio</code> this method is called <code>spawn_blocking</code>, a good place to start is to read the documentation and the code thy use to implement that.</p>
-<h2><a class="header" href="#building-a-better-exectuor" id="building-a-better-exectuor">Building a better exectuor</a></h2>
+<h3><a class="header" href="#building-a-better-exectuor" id="building-a-better-exectuor">Building a better exectuor</a></h3>
 <p>Right now, we can only run one and one future. Most runtimes has a <code>spawn</code> 
 function which let's you start off a future and <code>await</code> it later so you
 can run multiple futures concurrently.</p>
-<p>As I'm writing this <a href="https://github.com/stjepang">@stjepan</a> is writing a blog
-series about implementing your own executors, and he just released a post
-on how to accomplish just this you can visit <a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">here</a>.
-He knows what he's talking about so I recommend following that.</p>
-<p>In the <a href="https://github.com/cfsamson/examples-futures/tree/bonus_spawn">bonus_spawn</a> 
-branch of the example repository you can also find an extremely simplified 
-(and worse) way of accomplishing the same in only a few lines of code.</p>
+<p>As I suggested in the start of this book, visiting <a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">@stjepan'sblog series about implementing your own executors</a>
+is the place I would start and take it from there.</p>
 <h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
-<p>There are many great resources for further study. In addition to the RFCs and
-articles I've already linked to in the book, here are some of my suggestions:</p>
+<p>There are many great resources. In addition to the RFCs and articles I've already
+linked to in the book, here are some of my suggestions:</p>
 <p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a></p>
 <p><a href="https://book.async.rs/">The async_std book</a></p>
 <p><a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a></p>

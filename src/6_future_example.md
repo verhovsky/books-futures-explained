@@ -672,8 +672,7 @@ until some "leaf future" in the end either returns `Ready` or `Pending`.
 
 The way our example is right now, it's not much better than regular synchronous
 code. For us to actually await multiple futures at the same time we somehow need
-to `spawn` them so they're polled once, but does not cause our thread to sleep
-and wait for them one after one.
+to `spawn` them so the executor starts running them concurrently.
 
 Our example as it stands now returns this:
 
@@ -696,13 +695,13 @@ concept of Futures by now.
 The next step should be getting to know how more advanced runtimes work and
 how they implement different ways of running Futures to completion.
 
-I [challenge you to create a better version](./conclusion.md#building-a-better-exectuor).
+[If I were you I would read this next, and try to implement it for our example.](./conclusion.md#building-a-better-exectuor).
 
 That's actually it for now. There are probably much more to learn, but I think it
 will be easier once the fundamental concepts are there and that further
-exploration will get a lot easier. 
+exploration will get a lot easier.
 
-Don't forget the exercises in the last chapter 😊. Have fun until the next time! 
+Don't forget the exercises in the last chapter 😊.
 
 [mio]: https://github.com/tokio-rs/mio
 [arc_wake]: https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html

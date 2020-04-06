@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Futures - our main example - Futures Explained in 200 Lines of Rust</title>
+        <title>Implementing Futures - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html" class="active"><strong aria-hidden="true">6.</strong> Futures - our main example</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html" class="active"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -773,8 +773,7 @@ which it awaits, and all that happens is that these state machines are polled
 until some &quot;leaf future&quot; in the end either returns <code>Ready</code> or <code>Pending</code>.</p>
 <p>The way our example is right now, it's not much better than regular synchronous
 code. For us to actually await multiple futures at the same time we somehow need
-to <code>spawn</code> them so they're polled once, but does not cause our thread to sleep
-and wait for them one after one.</p>
+to <code>spawn</code> them so the executor starts running them concurrently.</p>
 <p>Our example as it stands now returns this:</p>
 <pre><code class="language-ignore">Future got 1 at time: 1.00.
 Future got 2 at time: 3.00.
@@ -788,11 +787,11 @@ implementing just that. You should have a pretty good understanding of the
 concept of Futures by now.</p>
 <p>The next step should be getting to know how more advanced runtimes work and
 how they implement different ways of running Futures to completion.</p>
-<p>I <a href="./conclusion.html#building-a-better-exectuor">challenge you to create a better version</a>.</p>
+<p><a href="./conclusion.html#building-a-better-exectuor">If I were you I would read this next, and try to implement it for our example.</a>.</p>
 <p>That's actually it for now. There are probably much more to learn, but I think it
 will be easier once the fundamental concepts are there and that further
-exploration will get a lot easier. </p>
-<p>Don't forget the exercises in the last chapter 😊. Have fun until the next time! </p>
+exploration will get a lot easier.</p>
+<p>Don't forget the exercises in the last chapter 😊.</p>
 
                     </main>
 
