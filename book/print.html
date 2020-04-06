@@ -153,8 +153,9 @@
                     <main>
                         <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
 <p>This book aims to explain <code>Futures</code> in Rust using an example driven approach,
-exploring why they're designed the way they are, the alternatives and how
-they work.</p>
+exploring why they're designed the way they are, and how they work. We'll also
+take a look at some of the alternatives we have when dealing with concurrency
+in programming.</p>
 <p>Going into the level of detail I do in this book is not needed to use futures
 or async/await in Rust. It's for the curious out there that want to know <em>how</em>
 it all works.</p>
@@ -164,9 +165,8 @@ topic of different types of executors and runtimes. We'll just implement a very
 simple runtime in this book introducing some concepts but it's enough to get
 started.</p>
 <p><a href="https://github.com/stjepang">Stjepan Glavina</a> has made an excellent series of
-articles about async runtimes and executors, and if the rumors are right he's
-even working on a new async runtime that should be easy enough to use as
-learning material.</p>
+articles about async runtimes and executors, and if the rumors are right there
+is more to come from him in the near future.</p>
 <p>The way you should go about it is to read this book first, then continue
 reading the <a href="https://stjepang.github.io/">articles from stejpang</a> to learn more
 about runtimes and how they work, especially:</p>
@@ -184,6 +184,7 @@ take everything step by step so get a cup of tea and relax. </p>
 <a href="https://github.com/cfsamson/books-futures-explained">the repository for the book itself here</a>. The final example which
 you can clone, fork or copy <a href="https://github.com/cfsamson/examples-futures">can be found here</a>. Any suggestions
 or improvements can be filed as a PR or in the issue tracker for the book.</p>
+<p>As always, all kinds of feedback is welcome.</p>
 </blockquote>
 <h2><a class="header" href="#reader-exercises-and-further-reading" id="reader-exercises-and-further-reading">Reader exercises and further reading</a></h2>
 <p>In the last <a href="conclusion.html">chapter</a> I've taken the liberty to suggest some
@@ -206,8 +207,8 @@ finished product and has in no way endorsed it, but a thanks is definitely due.<
 <p>Before we go into the details about Futures in Rust, let's take a quick look
 at the alternatives for handling concurrent programming in general and some
 pros and cons for each of them.</p>
-<p>While we do that we'll get some information on concurrency which will make it
-easier for us when we dive in to Futures specifically.</p>
+<p>While we do that we'll also explain some aspects when it comes to concurrency which
+will make it easier for us when we dive in to Futures specifically.</p>
 <blockquote>
 <p>For fun, I've added a small snipped of runnable code with most of the examples.
 If you're like me, things get way more interesting then and maybe you'll se some
@@ -263,7 +264,7 @@ fn main() {
 </code></pre></pre>
 <p>OS threads sure has some pretty big advantages. So why all this talk about
 &quot;async&quot; and concurrency in the first place?</p>
-<p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> it needs to multitask. Once you
+<p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> they needs to multitask. Once you
 start to look under the covers (like <a href="https://os.phil-opp.com/async-await/">how an operating system works</a>)
 you'll see concurrency everywhere. It's very fundamental in everything we do.</p>
 <p>Secondly, we have the web. </p>
@@ -271,10 +272,9 @@ you'll see concurrency everywhere. It's very fundamental in everything we do.</p
 (requests). When the number of small tasks is large it's not a good fit for OS
 threads as of today because of the memory they require and the overhead involved
 when creating new threads. </p>
-<p>This gets even more relevant when the load is variable
-which means the current number of tasks a program has at any point in time is
-unpredictable. That's why you'll see so many async web frameworks and database
-drivers today.</p>
+<p>This gets even more problematic when the load is variable which means the current number of tasks a
+program has at any point in time is unpredictable. That's why you'll see so many async web
+frameworks and database drivers today.</p>
 <p>However, for a huge number of problems, the standard OS threads will often be the
 right solution. So, just think twice about your problem before you reach for an
 async library.</p>
@@ -290,15 +290,16 @@ such a system) which then continues running a different task.</p>
 <p>Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no
 need for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. </p>
-<p>The typical flow will be like this:</p>
+<p><strong>The typical flow looks like this:</strong></p>
 <ol>
-<li>Run som non-blocking code</li>
+<li>Run some non-blocking code</li>
 <li>Make a blocking call to some external resource</li>
 <li>CPU jumps to the &quot;main&quot; thread which schedules a different thread to run and
 &quot;jumps&quot; to that stack</li>
 <li>Run some non-blocking code on the new thread until a new blocking call or the
 task is finished</li>
-<li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread to run and jump to that</li>
+<li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread which is ready to make
+progress and jump to that.</li>
 </ol>
 <p>These &quot;jumps&quot; are know as <strong>context switches</strong>. Your OS is doing it many times each
 second as you read this.</p>
@@ -554,16 +555,17 @@ in life, close your eyes now and scroll down for 2-3 seconds. You'll find a link
 there that takes you to safety.</p>
 </blockquote>
 <p>The whole idea behind a callback based approach is to save a pointer to a set of
-instructions we want to run later. We can save that pointer on the stack before
-we yield control to the runtime, or in some sort of collection as we do below.</p>
-<p>The basic idea of not involving threads as a primary way to achieve concurrency
+instructions we want to run later together with whatever state is needed. In rust this
+would be a <code>closure</code>. In the example below, we save this information in a <code>HashMap</code>
+but it's not the only option.</p>
+<p>The basic idea of <em>not</em> involving threads as a primary way to achieve concurrency
 is the common denominator for the rest of the approaches. Including the one
 Rust uses today which we'll soon get to.</p>
 <p><strong>Advantages:</strong></p>
 <ul>
 <li>Easy to implement in most languages</li>
 <li>No context switching</li>
-<li>Low memory overhead (in most cases)</li>
+<li>Relatively low memory overhead (in most cases)</li>
 </ul>
 <p><strong>Drawbacks:</strong></p>
 <ul>
@@ -647,10 +649,10 @@ impl Runtime {
 </code></pre></pre>
 <p>We're keeping this super simple, and you might wonder what's the difference
 between this approach and the one using OS threads an passing in the callbacks
-to the OS threads directly. </p>
+to the OS threads directly.</p>
 <p>The difference is that the callbacks are run on the
 same thread using this example. The OS threads we create are basically just used
-as timers.</p>
+as timers but could represent any kind of resource that we'll have to wait for.</p>
 <h2><a class="header" href="#from-callbacks-to-promises" id="from-callbacks-to-promises">From callbacks to promises</a></h2>
 <p>You might start to wonder by now, when are we going to talk about Futures?</p>
 <p>Well, we're getting there. You see <code>promises</code>, <code>futures</code> and other names for
@@ -705,7 +707,7 @@ Rusts Futures 3.0 is a lot like async/await in our last example.</p>
 go through all this is to get an introduction and get into the right mindset for
 exploring Rusts Futures.</p>
 <blockquote>
-<p>To avoid confusion later on: There is one difference you should know. Javascript
+<p>To avoid confusion later on: There's one difference you should know. Javascript
 promises are <em>eagerly</em> evaluated. That means that once it's created, it starts
 running a task. Rusts Futures on the other hand is <em>lazily</em> evaluated. They
 need to be polled once before they do any work.</p>

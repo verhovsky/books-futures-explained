@@ -4,8 +4,8 @@ Before we go into the details about Futures in Rust, let's take a quick look
 at the alternatives for handling concurrent programming in general and some
 pros and cons for each of them.
 
-While we do that we'll get some information on concurrency which will make it
-easier for us when we dive in to Futures specifically.
+While we do that we'll also explain some aspects when it comes to concurrency which
+will make it easier for us when we dive in to Futures specifically.
 
 > For fun, I've added a small snipped of runnable code with most of the examples.
 > If you're like me, things get way more interesting then and maybe you'll se some
@@ -68,7 +68,7 @@ fn main() {
 OS threads sure has some pretty big advantages. So why all this talk about
 "async" and concurrency in the first place?
 
-First of all. For computers to be [_efficient_](https://en.wikipedia.org/wiki/Efficiency) it needs to multitask. Once you
+First of all. For computers to be [_efficient_](https://en.wikipedia.org/wiki/Efficiency) they needs to multitask. Once you
 start to look under the covers (like [how an operating system works](https://os.phil-opp.com/async-await/))
 you'll see concurrency everywhere. It's very fundamental in everything we do.
 
@@ -79,10 +79,9 @@ Webservers is all about I/O and handling small tasks
 threads as of today because of the memory they require and the overhead involved
 when creating new threads. 
 
-This gets even more relevant when the load is variable
-which means the current number of tasks a program has at any point in time is
-unpredictable. That's why you'll see so many async web frameworks and database
-drivers today.
+This gets even more problematic when the load is variable which means the current number of tasks a
+program has at any point in time is unpredictable. That's why you'll see so many async web
+frameworks and database drivers today.
 
 However, for a huge number of problems, the standard OS threads will often be the
 right solution. So, just think twice about your problem before you reach for an
@@ -105,15 +104,16 @@ Rust had green threads once, but they were removed before it hit 1.0. The state
 of execution is stored in each stack so in such a solution there would be no
 need for `async`, `await`, `Futures` or `Pin`. 
 
-The typical flow will be like this:
+**The typical flow looks like this:**
 
-1. Run som non-blocking code
+1. Run some non-blocking code
 2. Make a blocking call to some external resource
 3. CPU jumps to the "main" thread which schedules a different thread to run and
    "jumps" to that stack
 4. Run some non-blocking code on the new thread until a new blocking call or the
    task is finished
-5. "jumps" back to the "main" thread, schedule a new thread to run and jump to that
+5. "jumps" back to the "main" thread, schedule a new thread which is ready to make
+progress and jump to that.
 
 These "jumps" are know as **context switches**. Your OS is doing it many times each
 second as you read this.
@@ -374,10 +374,11 @@ in life, close your eyes now and scroll down for 2-3 seconds. You'll find a link
 there that takes you to safety.
 
 The whole idea behind a callback based approach is to save a pointer to a set of
-instructions we want to run later. We can save that pointer on the stack before
-we yield control to the runtime, or in some sort of collection as we do below.
+instructions we want to run later together with whatever state is needed. In rust this
+would be a `closure`. In the example below, we save this information in a `HashMap`
+but it's not the only option.
 
-The basic idea of not involving threads as a primary way to achieve concurrency
+The basic idea of _not_ involving threads as a primary way to achieve concurrency
 is the common denominator for the rest of the approaches. Including the one
 Rust uses today which we'll soon get to.
 
@@ -385,7 +386,7 @@ Rust uses today which we'll soon get to.
 
 - Easy to implement in most languages
 - No context switching
-- Low memory overhead (in most cases)
+- Relatively low memory overhead (in most cases)
 
 **Drawbacks:**
 
@@ -472,11 +473,11 @@ impl Runtime {
 
 We're keeping this super simple, and you might wonder what's the difference
 between this approach and the one using OS threads an passing in the callbacks
-to the OS threads directly. 
+to the OS threads directly.
 
 The difference is that the callbacks are run on the
 same thread using this example. The OS threads we create are basically just used
-as timers.
+as timers but could represent any kind of resource that we'll have to wait for.
 
 ## From callbacks to promises
 
@@ -552,7 +553,7 @@ Now this is also where the similarities with Rusts Futures stop. The reason we
 go through all this is to get an introduction and get into the right mindset for
 exploring Rusts Futures.
 
-> To avoid confusion later on: There is one difference you should know. Javascript
+> To avoid confusion later on: There's one difference you should know. Javascript
 > promises are _eagerly_ evaluated. That means that once it's created, it starts
 > running a task. Rusts Futures on the other hand is _lazily_ evaluated. They
 > need to be polled once before they do any work.

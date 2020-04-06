@@ -1,8 +1,9 @@
 # Futures Explained in 200 Lines of Rust
 
 This book aims to explain `Futures` in Rust using an example driven approach,
-exploring why they're designed the way they are, the alternatives and how
-they work.
+exploring why they're designed the way they are, and how they work. We'll also
+take a look at some of the alternatives we have when dealing with concurrency
+in programming.
 
 Going into the level of detail I do in this book is not needed to use futures
 or async/await in Rust. It's for the curious out there that want to know _how_
@@ -16,9 +17,8 @@ simple runtime in this book introducing some concepts but it's enough to get
 started.
 
 [Stjepan Glavina](https://github.com/stjepang) has made an excellent series of
-articles about async runtimes and executors, and if the rumors are right he's
-even working on a new async runtime that should be easy enough to use as
-learning material.
+articles about async runtimes and executors, and if the rumors are right there
+is more to come from him in the near future.
 
 The way you should go about it is to read this book first, then continue
 reading the [articles from stejpang](https://stjepang.github.io/) to learn more
@@ -39,6 +39,8 @@ I hope you enjoy the ride.
 > [the repository for the book itself here][book_repo]. The final example which
 > you can clone, fork or copy [can be found here][example_repo]. Any suggestions
 > or improvements can be filed as a PR or in the issue tracker for the book.
+>
+> As always, all kinds of feedback is welcome.
 
 ## Reader exercises and further reading
 
