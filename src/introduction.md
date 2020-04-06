@@ -60,7 +60,7 @@ I'd like to take this chance to thank the people behind `mio`, `tokio`,
 `async_std`, `Futures`, `libc`, `crossbeam` which underpins so much of the
 async ecosystem and and rarely gets enough praise in my eyes.
 
-A special thanks to [jonhoo](https://github.com/jonhoo) who was kind enough to
+A special thanks to [jonhoo](https://twitter.com/jonhoo) who was kind enough to
 give me some valuable feedback on a very early draft of this book. He has not
 read the finished product, but a thanks is definitely due.
 
