@@ -31,8 +31,8 @@ fn main() {
     };
 
     let mainfut = async {
-        handle1.await;
-        handle2.await;
+        fut1.await;
+        fut2.await;
     };
 
     block_on(mainfut);
