@@ -60,9 +60,9 @@ I'll like to take the chance of thanking the people behind `mio`, `tokio`,
 `async_std`, `Futures`, `libc`, `crossbeam` and many other libraries which so
 much is built upon.
 
-A special thanks to [Johnhoo](https://github.com/jonhoo) who was kind enough to
-give me some feedback on an early draft of this book. He has not read the
-finished product and has in no way endorsed it, but a thanks is definitely due.
+A special thanks to [jonhoo](https://github.com/jonhoo) who was kind enough to
+give me some valuable feedback on a very early draft of this book. He has not
+read the finished product, but a thanks is definitely due.
 
 [mdbook]: https://github.com/rust-lang/mdBook
 [book_repo]: https://github.com/cfsamson/books-futures-explained
