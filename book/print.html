@@ -1651,14 +1651,7 @@ is just too many nuances and edge-cases to consider which is easily overlooked w
 naively giving these markers different names, and I'm convinced that we'll
 just have to get used to them and use them as is.</p>
 <p>If you want to you can read a bit of the discussion from the
-<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>. One of the best takeaways from there in my
-eyes is this quote from <code>tmandry</code>:</p>
-<blockquote>
-<p><em>Think of taking a thumbtack out of a cork board so you can tweak how a flyer
-looks. For Unpin types, this unpinning is directly supported by the type; you
-can do this implicitly. You can even swap out the object with another before you
-put the pin back. For other types, you must be much more careful.</em></p>
-</blockquote>
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>.</p>
 <h2><a class="header" href="#pinning-and-self-referential-structs" id="pinning-and-self-referential-structs">Pinning and self-referential structs</a></h2>
 <p>Let's start where we left off in the last chapter by making the problem we
 saw using a self-referential struct in our generator a lot simpler by making
@@ -2014,12 +2007,53 @@ stack frame and return it since any pointers we take to &quot;self&quot; is inva
 stack. A mistake that is easy to make is, forgetting to shadow the original variable 
 since you could drop the pinned pointer and access the old value
 after it's initialized like this:</p>
-<pre><code class="language-rust ignore">   let mut test1 = Test::new(&quot;test1&quot;);
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+   let mut test1 = Test::new(&quot;test1&quot;);
    let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) };
    Test::init(test1_pin.as_mut());
    drop(test1_pin);
-   println!(&quot;{:?}&quot;, test1.b);
-</code></pre>
+   
+   let mut test2 = Test::new(&quot;test2&quot;);
+   mem::swap(&amp;mut test1, &amp;mut test2);
+   println!(&quot;Not self referential anymore: {:?}&quot;, test1.b);
+}
+# use std::pin::Pin;
+# use std::marker::PhantomPinned;
+# use std::mem;
+# 
+# #[derive(Debug)]
+# struct Test {
+#     a: String,
+#     b: *const String,
+#     _marker: PhantomPinned,
+# }
+# 
+# 
+# impl Test {
+#     fn new(txt: &amp;str) -&gt; Self {
+#         let a = String::from(txt);
+#         Test {
+#             a,
+#             b: std::ptr::null(),
+#             // This makes our type `!Unpin`
+#             _marker: PhantomPinned,
+#         }
+#     }
+#     fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+#         let self_ptr: *const String = &amp;self.a;
+#         let this = unsafe { self.get_unchecked_mut() };
+#         this.b = self_ptr;
+#     }
+# 
+#     fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+#         &amp;self.get_ref().a
+#     }
+# 
+#     fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+#         unsafe { &amp;*(self.b) }
+#     }
+# }
+</code></pre></pre>
 </blockquote>
 <h2><a class="header" href="#pinning-to-the-heap" id="pinning-to-the-heap">Pinning to the heap</a></h2>
 <p>For completeness let's remove some unsafe and the need for an <code>init</code> method
@@ -2067,7 +2101,7 @@ pub fn main() {
     println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
 }
 </code></pre></pre>
-<p>The fact that pinning a heap allocated value that implements <code>!Unpin</code> is safe
+<p>The fact that it's safe to pin a heap allocated value even if it is <code>!Unpin</code>
 makes sense. Once the data is allocated on the heap it will have a stable address.</p>
 <p>There is no need for us as users of the API to take special care and ensure
 that the self-referential pointer stays valid.</p>

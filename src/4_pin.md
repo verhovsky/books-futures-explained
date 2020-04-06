@@ -38,13 +38,7 @@ naively giving these markers different names, and I'm convinced that we'll
 just have to get used to them and use them as is.
 
 If you want to you can read a bit of the discussion from the
-[internals thread][internals_unpin]. One of the best takeaways from there in my
-eyes is this quote from `tmandry`:
-
->_Think of taking a thumbtack out of a cork board so you can tweak how a flyer
-looks. For Unpin types, this unpinning is directly supported by the type; you
-can do this implicitly. You can even swap out the object with another before you
-put the pin back. For other types, you must be much more careful._
+[internals thread][internals_unpin].
 
 ## Pinning and self-referential structs
 
@@ -446,12 +440,53 @@ us from swapping the pinned pointers.
 > since you could drop the pinned pointer and access the old value
 > after it's initialized like this:
 >
-> ```rust, ignore
+> ```rust
+> fn main() {
 >    let mut test1 = Test::new("test1");
 >    let mut test1_pin = unsafe { Pin::new_unchecked(&mut test1) };
 >    Test::init(test1_pin.as_mut());
 >    drop(test1_pin);
->    println!("{:?}", test1.b);
+>    
+>    let mut test2 = Test::new("test2");
+>    mem::swap(&mut test1, &mut test2);
+>    println!("Not self referential anymore: {:?}", test1.b);
+> }
+> # use std::pin::Pin;
+> # use std::marker::PhantomPinned;
+> # use std::mem;
+> # 
+> # #[derive(Debug)]
+> # struct Test {
+> #     a: String,
+> #     b: *const String,
+> #     _marker: PhantomPinned,
+> # }
+> # 
+> # 
+> # impl Test {
+> #     fn new(txt: &str) -> Self {
+> #         let a = String::from(txt);
+> #         Test {
+> #             a,
+> #             b: std::ptr::null(),
+> #             // This makes our type `!Unpin`
+> #             _marker: PhantomPinned,
+> #         }
+> #     }
+> #     fn init<'a>(self: Pin<&'a mut Self>) {
+> #         let self_ptr: *const String = &self.a;
+> #         let this = unsafe { self.get_unchecked_mut() };
+> #         this.b = self_ptr;
+> #     }
+> # 
+> #     fn a<'a>(self: Pin<&'a Self>) -> &'a str {
+> #         &self.get_ref().a
+> #     }
+> # 
+> #     fn b<'a>(self: Pin<&'a Self>) -> &'a String {
+> #         unsafe { &*(self.b) }
+> #     }
+> # }
 > ```
 
 ## Pinning to the heap
@@ -504,7 +539,7 @@ pub fn main() {
 }
 ```
 
-The fact that pinning a heap allocated value that implements `!Unpin` is safe
+The fact that it's safe to pin a heap allocated value even if it is `!Unpin`
 makes sense. Once the data is allocated on the heap it will have a stable address.
 
 There is no need for us as users of the API to take special care and ensure
