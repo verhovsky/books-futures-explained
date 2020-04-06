@@ -56,7 +56,7 @@ in Rust. If you like it, you might want to check out the others as well:
 
 ## Credits and thanks
 
-I'll like to take this chance to thank the people behind `mio`, `tokio`,
+I'd like to take this chance to thank the people behind `mio`, `tokio`,
 `async_std`, `Futures`, `libc`, `crossbeam` which underpins so much of the
 async ecosystem and and rarely gets enough praise in my eyes.
 
