@@ -2,10 +2,11 @@
 
 > **Overview:**
 >
-> - High level introduction to concurrency in Rust
-> - Knowing what Rust provides and not when working with async code
-> - Understanding why we need a runtime-library in Rust
-> - Getting pointers to further reading on concurrency in general
+> - Get a high level introduction to concurrency in Rust
+> - Know what Rust provides and not when working with async code
+> - Get to know why we need a runtime-library in Rust
+> - Understand the difference between  "leaf-future" and a "non-leaf-future"
+> - Get insight on how to handle CPU intensive tasks
 
 ## Futures
 
@@ -90,7 +91,7 @@ Rust is different from these languages in the sense that Rust doesn't come with
 a runtime for handling concurrency, so you need to use a library which provide
 this for you.
 
-Quite a bit of complexity attributed to `Futures` are actually complexity rooted
+Quite a bit of complexity attributed to `Futures` is actually complexity rooted
 in runtimes. Creating an efficient runtime is hard.
 
 Learning how to use one correctly requires quite a bit of effort as well, but
@@ -136,14 +137,14 @@ take a look at this async block using pseudo-rust as example:
 
 ```rust, ignore
 let non_leaf = async {
-    let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap(); <-- yield
+    let mut stream = TcpStream::connect("127.0.0.1:3000").await.unwrap(); // <-- yield
     
     // request a large dataset
-    let result = stream.write(get_dataset_request).await.unwrap(); <-- yield
+    let result = stream.write(get_dataset_request).await.unwrap(); // <-- yield
     
     // wait for the dataset
     let mut response = vec![];
-    stream.read(&mut response).await.unwrap(); <-- yield
+    stream.read(&mut response).await.unwrap(); // <-- yield
 
     // do some CPU-intensive analysis on the dataset
     let report = analyzer::analyze_data(response).unwrap();
@@ -167,12 +168,13 @@ resolves when the task is finished. We could `await` this leaf-future like any
 other future.
 
 2. The runtime could have some kind of supervisor that monitors how much time
-different tasks take, and move the executor itself to a different thread.
+different tasks take, and move the executor itself to a different thread so it can
+continue to run even though our `analyzer` task is blocking the original executor thread.
 
 3. You can create a reactor yourself which is compatible with the runtime which
 does the analysis any way you see fit, and returns a Future which can be awaited.
 
-Now #1 is the usual way of handling this, but some executors implement #2 as well.
+Now, #1 is the usual way of handling this, but some executors implement #2 as well.
 The problem with #2 is that if you switch runtime you need to make sure that it
 supports this kind of supervision as well or else you will end up blocking the
 executor.
@@ -187,8 +189,9 @@ can either perform CPU-intensive tasks or "blocking" tasks which is not supporte
 by the runtime.
 
 Now, armed with this knowledge you are already on a good way for understanding
-Futures, but we're not gonna stop yet, there is lots of details to cover. Take a
-break or a cup of coffe and get ready as we go for a deep dive in the next chapters.
+Futures, but we're not gonna stop yet, there is lots of details to cover. 
+
+Take a break or a cup of coffe and get ready as we go for a deep dive in the next chapters.
 
 ## Bonus section
 

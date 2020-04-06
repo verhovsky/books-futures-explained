@@ -153,9 +153,9 @@
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
-<li>Understandi how the async/await syntax works since it's how <code>await</code> is implemented</li>
-<li>Know why we need <code>Pin</code></li>
-<li>Understand why Rusts async model is very efficient</li>
+<li>Understand how the async/await syntax works under the hood</li>
+<li>See first hand why we need <code>Pin</code></li>
+<li>Understand what makes Rusts async model very memory efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -188,10 +188,10 @@ you already know combinators. In Rust they look like this:</p>
     }).collect::&lt;Vec&lt;SomeStruct&gt;&gt;()
 });
 
-let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(future).unwrap();
+let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(future);
 
 </code></pre>
-<p>While an effective solution there are mainly three downsides I'll focus on:</p>
+<p><strong>There are mainly three downsides I'll focus on using this technique:</strong></p>
 <ol>
 <li>The error messages produced could be extremely long and arcane</li>
 <li>Not optimal memory usage</li>
@@ -223,10 +223,11 @@ async/await as keywords (it can even be done using a macro).</li>
     println!(&quot;{}&quot;, borrowed);
 }
 </code></pre>
-<p>Async in Rust is implemented using Generators. So to understand how Async really
+<p>Async in Rust is implemented using Generators. So to understand how async really
 works we need to understand generators first. Generators in Rust are implemented
-as state machines. The memory footprint of a chain of computations is only
-defined by the largest footprint of what the largest step require.</p>
+as state machines. </p>
+<p>The memory footprint of a chain of computations is defined by <em>the largest footprint
+that a single step requires</em>.</p>
 <p>That means that adding steps to a chain of computations might not require any
 increased memory at all and it's one of the reasons why Futures and Async in
 Rust has very little overhead.</p>
@@ -349,7 +350,7 @@ machine for the generator defined aboce.</p>
 <p>We step through each step &quot;manually&quot; in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
 trait for our generators which would let us do this:</p>
-<pre><code class="language-rust ignore">for val in generator {
+<pre><code class="language-rust ignore">while let Some(val) = generator.next() {
     println!(&quot;{}&quot;, val);
 }
 </code></pre>
@@ -419,7 +420,10 @@ to make this work, we'll have to let the compiler know that <em>we</em> control 
 see we end up in a <em>self referential struct</em>. A struct which holds references
 into itself.</p>
 <p>As you'll notice, this compiles just fine!</p>
-<pre><code class="language-rust ignore">enum GeneratorState&lt;Y, R&gt; {
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+enum GeneratorState&lt;Y, R&gt; {
     Yielded(Y),  
     Complete(R), 
 }
@@ -434,7 +438,7 @@ enum GeneratorA {
     Enter,
     Yield1 {
         to_borrow: String,
-        borrowed: *const String,
+        borrowed: *const String, // NB! This is now a raw pointer!
     },
     Exit,
 }
@@ -455,7 +459,7 @@ impl Generator for GeneratorA {
                 let res = borrowed.len();
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 
-                // We set the self-reference here
+                // NB! And we set the pointer to reference the to_borrow string here
                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
                     *borrowed = to_borrow;
                 }
@@ -473,7 +477,7 @@ impl Generator for GeneratorA {
         }
     }
 }
-</code></pre>
+#}</code></pre></pre>
 <p>Remember that our example is the generator we crated which looked like this:</p>
 <pre><code class="language-rust noplaypen ignore">let mut gen = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
@@ -482,8 +486,8 @@ impl Generator for GeneratorA {
         println!(&quot;{} world!&quot;, borrowed);
     };
 </code></pre>
-<p>Below is an example of how we could run this state-machine. But there is still
-one huge problem with this:</p>
+<p>Below is an example of how we could run this state-machine and as you see it
+does what we'd expect. But there is still one huge problem with this:</p>
 <pre><pre class="playpen"><code class="language-rust">pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
@@ -555,7 +559,7 @@ one huge problem with this:</p>
 #     }
 # }
 </code></pre></pre>
-<p>The problem however is that in safe Rust we can still do this:</p>
+<p>The problem is that in safe Rust we can still do this:</p>
 <p><em>Run the code and compare the results. Do you see the problem?</em></p>
 <pre><pre class="playpen"><code class="language-rust should_panic"># #![feature(never_type)] // Force nightly compiler to be used in playground
 # // by betting on it's true that this type is named after it's stabilization date...
@@ -633,16 +637,22 @@ pub fn main() {
 #     }
 # }
 </code></pre></pre>
-<p>Wait? What happened to &quot;Hello&quot;?</p>
+<p>Wait? What happened to &quot;Hello&quot;? And why did our code segfault?</p>
 <p>Turns out that while the example above compiles just fine, we expose consumers
 of this this API to both possible undefined behavior and other memory errors
 while using just safe Rust. This is a big problem!</p>
 <blockquote>
 <p>I've actually forced the code above to use the nightly version of the compiler.
 If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=5cbe9897c0e23a502afd2740c7e78b98">the example above on the playground</a>,
-you'll see that it runs without panic on the current stable (1.42.0) but
+you'll see that it runs without panicing on the current stable (1.42.0) but
 panics on the current nightly (1.44.0). Scary!</p>
 </blockquote>
+<p>We'll explain exactly what happened here using a slightly simpler example in the next
+chapter and we'll fix our generator using <code>Pin</code> so don't worry, you'll see exactly
+what goes wrong and see how <code>Pin</code> can help us deal with self-referential types safely in a
+second.</p>
+<p>Before we go and explain the problem in detail, let's finish off this chapter
+by looking at how generators and the async keyword is related.</p>
 <h2><a class="header" href="#async-blocks-and-generators" id="async-blocks-and-generators">Async blocks and generators</a></h2>
 <p>Futures in Rust are implemented as state machines much the same way Generators
 are state machines.</p>
@@ -656,7 +666,7 @@ the syntax used in generators:</p>
     };
 </code></pre>
 <p>Compare that with a similar example using async blocks:</p>
-<pre><code class="language-rust ignore">let mut fut = async || {
+<pre><code class="language-rust ignore">let mut fut = async {
         let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
         SomeResource::some_task().await;
@@ -667,10 +677,7 @@ the syntax used in generators:</p>
 have. The states of a Rust Futures is either: <code>Pending</code> or <code>Ready</code>.</p>
 <p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
 a Future works and the way a Generator work internally is similar. </p>
-<p>The same goes for the challenges of borrowin across yield/await points.</p>
-<p>We'll explain exactly what happened using a slightly simpler example in the next
-chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
-the last topic before we implement our main Futures example.</p>
+<p>The same goes for the challenges of borrowing across yield/await points.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
 example in Rust today using the <code>static</code> keyword on nightly. Try it for

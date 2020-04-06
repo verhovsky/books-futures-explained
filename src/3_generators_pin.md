@@ -2,9 +2,9 @@
 
 >**Overview:**
 >
->- Understandi how the async/await syntax works since it's how `await` is implemented
->- Know why we need `Pin`
->- Understand why Rusts async model is very efficient
+>- Understand how the async/await syntax works under the hood
+>- See first hand why we need `Pin`
+>- Understand what makes Rusts async model very memory efficient
 >
 >The motivation for `Generators` can be found in [RFC#2033][rfc2033]. It's very
 >well written and I can recommend reading through it (it talks as much about
@@ -45,11 +45,11 @@ let future = Connection::connect(conn_str).and_then(|conn| {
     }).collect::<Vec<SomeStruct>>()
 });
 
-let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future).unwrap();
+let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future);
 
 ```
 
-While an effective solution there are mainly three downsides I'll focus on:
+**There are mainly three downsides I'll focus on using this technique:**
 
 1. The error messages produced could be extremely long and arcane
 2. Not optimal memory usage
@@ -88,10 +88,12 @@ async fn myfn() {
 }
 ```
 
-Async in Rust is implemented using Generators. So to understand how Async really
+Async in Rust is implemented using Generators. So to understand how async really
 works we need to understand generators first. Generators in Rust are implemented
-as state machines. The memory footprint of a chain of computations is only
-defined by the largest footprint of what the largest step require.
+as state machines. 
+
+The memory footprint of a chain of computations is defined by _the largest footprint
+that a single step requires_.
 
 That means that adding steps to a chain of computations might not require any
 increased memory at all and it's one of the reasons why Futures and Async in
@@ -230,7 +232,7 @@ unfamiliar. We could add some syntactic sugar like implementing the `Iterator`
 trait for our generators which would let us do this:
 
 ```rust, ignore
-for val in generator {
+while let Some(val) = generator.next() {
     println!("{}", val);
 }
 ```
@@ -307,7 +309,7 @@ into itself.
 
 As you'll notice, this compiles just fine!
 
-```rust, ignore
+```rust
 enum GeneratorState<Y, R> {
     Yielded(Y),  
     Complete(R), 
@@ -323,7 +325,7 @@ enum GeneratorA {
     Enter,
     Yield1 {
         to_borrow: String,
-        borrowed: *const String,
+        borrowed: *const String, // NB! This is now a raw pointer!
     },
     Exit,
 }
@@ -344,7 +346,7 @@ impl Generator for GeneratorA {
                 let res = borrowed.len();
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 
-                // We set the self-reference here
+                // NB! And we set the pointer to reference the to_borrow string here
                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
                     *borrowed = to_borrow;
                 }
@@ -375,8 +377,8 @@ let mut gen = move || {
     };
 ```
 
-Below is an example of how we could run this state-machine. But there is still
-one huge problem with this:
+Below is an example of how we could run this state-machine and as you see it
+does what we'd expect. But there is still one huge problem with this:
 
 ```rust
 pub fn main() {
@@ -451,7 +453,7 @@ pub fn main() {
 # }
 ```
 
-The problem however is that in safe Rust we can still do this:
+The problem is that in safe Rust we can still do this:
 
 _Run the code and compare the results. Do you see the problem?_
 ```rust, should_panic
@@ -532,7 +534,7 @@ pub fn main() {
 # }
 ```
 
-Wait? What happened to "Hello"?
+Wait? What happened to "Hello"? And why did our code segfault?
 
 Turns out that while the example above compiles just fine, we expose consumers
 of this this API to both possible undefined behavior and other memory errors
@@ -540,8 +542,16 @@ while using just safe Rust. This is a big problem!
 
 > I've actually forced the code above to use the nightly version of the compiler.
 > If you run [the example above on the playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=5cbe9897c0e23a502afd2740c7e78b98),
-> you'll see that it runs without panic on the current stable (1.42.0) but
+> you'll see that it runs without panicing on the current stable (1.42.0) but
 > panics on the current nightly (1.44.0). Scary!
+
+We'll explain exactly what happened here using a slightly simpler example in the next
+chapter and we'll fix our generator using `Pin` so don't worry, you'll see exactly
+what goes wrong and see how `Pin` can help us deal with self-referential types safely in a
+second.
+
+Before we go and explain the problem in detail, let's finish off this chapter
+by looking at how generators and the async keyword is related.
 
 ## Async blocks and generators
 
@@ -563,7 +573,7 @@ let mut gen = move || {
 Compare that with a similar example using async blocks:
 
 ```rust, ignore
-let mut fut = async || {
+let mut fut = async {
         let to_borrow = String::from("Hello");
         let borrowed = &to_borrow;
         SomeResource::some_task().await;
@@ -577,11 +587,7 @@ have. The states of a Rust Futures is either: `Pending` or `Ready`.
 An async block will return a `Future` instead of a `Generator`, however, the way
 a Future works and the way a Generator work internally is similar. 
 
-The same goes for the challenges of borrowin across yield/await points.
-
-We'll explain exactly what happened using a slightly simpler example in the next
-chapter and we'll fix our generator using `Pin` so join me as we explore
-the last topic before we implement our main Futures example.
+The same goes for the challenges of borrowing across yield/await points.
 
 ## Bonus section - self referential generators in Rust today
 

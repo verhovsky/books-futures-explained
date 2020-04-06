@@ -153,9 +153,9 @@
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
-<li>Understanding how the Waker object is constructed</li>
-<li>Learning how the runtime know when a leaf-future can resume</li>
-<li>Learning the basics of dynamic dispatch and trait objects</li>
+<li>Understand how the Waker object is constructed</li>
+<li>Learn how the runtime know when a leaf-future can resume</li>
+<li>Learn the basics of dynamic dispatch and trait objects</li>
 </ul>
 <p>The <code>Waker</code> type is described as part of <a href="https://github.com/rust-lang/rfcs/blob/master/text/2592-futures.md#waking-up">RFC#2592</a>.</p>
 </blockquote>
@@ -174,7 +174,7 @@ recommend <a href="https://boats.gitlab.io/blog/post/wakers-i/">Withoutboats art
 </blockquote>
 <h2><a class="header" href="#the-context-type" id="the-context-type">The Context type</a></h2>
 <p>As the docs state as of now this type only wrapps a <code>Waker</code>, but it gives some
-flexibility for future evolutions of the API in Rust. The context can hold
+flexibility for future evolutions of the API in Rust. The context can for example hold
 task-local storage and provide space for debugging hooks in later iterations.</p>
 <h2><a class="header" href="#understanding-the-waker" id="understanding-the-waker">Understanding the <code>Waker</code></a></h2>
 <p>One of the most confusing things we encounter when implementing our own <code>Futures</code>
@@ -230,11 +230,6 @@ except that it implements the methods defined by our trait. To accomplish this
 we use <em>dynamic dispatch</em>.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
-<blockquote>
-<p>This is an example of <em>editable</em> code. You can change everything in the example
-and try to run it. If you want to go back, press the undo symbol. Keep an eye
-out for these as we go forward. Many examples will be editable.</p>
-</blockquote>
 <pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&amp;self) -&gt; i32;
@@ -294,11 +289,10 @@ fn main() {
     println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
 }
 </code></pre></pre>
-<p>Now that you know this you also know why how we implement the <code>Waker</code> type
-in Rust.</p>
 <p>Later on, when we implement our own <code>Waker</code> we'll actually set up a <code>vtable</code>
-like we do here to and knowing why we do that and how it works will make this
-much less mysterious.</p>
+like we do here. The way we create it is slightly different, but now that you know
+how regular trait objects work you will probably recognize what we're doing which
+makes it much less mysterious.</p>
 <h2><a class="header" href="#bonus-section" id="bonus-section">Bonus section</a></h2>
 <p>You might wonder why the <code>Waker</code> was implemented like this and not just as a
 normal trait?</p>

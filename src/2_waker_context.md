@@ -2,9 +2,9 @@
 
 > **Overview:**
 >
-> - Understanding how the Waker object is constructed
-> - Learning how the runtime know when a leaf-future can resume
-> - Learning the basics of dynamic dispatch and trait objects
+> - Understand how the Waker object is constructed
+> - Learn how the runtime know when a leaf-future can resume
+> - Learn the basics of dynamic dispatch and trait objects
 >
 > The `Waker` type is described as part of [RFC#2592][rfc2592].
 
@@ -27,7 +27,7 @@ extend the ecosystem with new leaf-level tasks.
 ## The Context type
 
 As the docs state as of now this type only wrapps a `Waker`, but it gives some
-flexibility for future evolutions of the API in Rust. The context can hold
+flexibility for future evolutions of the API in Rust. The context can for example hold
 task-local storage and provide space for debugging hooks in later iterations.
 
 ## Understanding the `Waker`
@@ -97,10 +97,6 @@ we use _dynamic dispatch_.
 Let's explain this in code instead of words by implementing our own trait
 object from these parts:
 
->This is an example of _editable_ code. You can change everything in the example
-and try to run it. If you want to go back, press the undo symbol. Keep an eye
-out for these as we go forward. Many examples will be editable.
-
 ```rust
 // A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
@@ -162,12 +158,10 @@ fn main() {
 }
 ```
 
-Now that you know this you also know why how we implement the `Waker` type
-in Rust.
-
 Later on, when we implement our own `Waker` we'll actually set up a `vtable`
-like we do here to and knowing why we do that and how it works will make this
-much less mysterious.
+like we do here. The way we create it is slightly different, but now that you know
+how regular trait objects work you will probably recognize what we're doing which
+makes it much less mysterious.
 
 ## Bonus section
 

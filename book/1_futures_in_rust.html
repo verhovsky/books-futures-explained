@@ -153,10 +153,11 @@
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
-<li>High level introduction to concurrency in Rust</li>
-<li>Knowing what Rust provides and not when working with async code</li>
-<li>Understanding why we need a runtime-library in Rust</li>
-<li>Getting pointers to further reading on concurrency in general</li>
+<li>Get a high level introduction to concurrency in Rust</li>
+<li>Know what Rust provides and not when working with async code</li>
+<li>Get to know why we need a runtime-library in Rust</li>
+<li>Understand the difference between  &quot;leaf-future&quot; and a &quot;non-leaf-future&quot;</li>
+<li>Get insight on how to handle CPU intensive tasks</li>
 </ul>
 </blockquote>
 <h2><a class="header" href="#futures" id="futures">Futures</a></h2>
@@ -221,7 +222,7 @@ seem a bit strange to you.</p>
 <p>Rust is different from these languages in the sense that Rust doesn't come with
 a runtime for handling concurrency, so you need to use a library which provide
 this for you.</p>
-<p>Quite a bit of complexity attributed to <code>Futures</code> are actually complexity rooted
+<p>Quite a bit of complexity attributed to <code>Futures</code> is actually complexity rooted
 in runtimes. Creating an efficient runtime is hard.</p>
 <p>Learning how to use one correctly requires quite a bit of effort as well, but
 you'll see that there are several similarities between these kind of runtimes so
@@ -258,14 +259,14 @@ of non-blocking I/O, how these tasks are created or how they're run.</p>
 <p>As you know now, what you normally write are called non-leaf futures. Let's
 take a look at this async block using pseudo-rust as example:</p>
 <pre><code class="language-rust ignore">let non_leaf = async {
-    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap(); &lt;-- yield
+    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap(); // &lt;-- yield
     
     // request a large dataset
-    let result = stream.write(get_dataset_request).await.unwrap(); &lt;-- yield
+    let result = stream.write(get_dataset_request).await.unwrap(); // &lt;-- yield
     
     // wait for the dataset
     let mut response = vec![];
-    stream.read(&amp;mut response).await.unwrap(); &lt;-- yield
+    stream.read(&amp;mut response).await.unwrap(); // &lt;-- yield
 
     // do some CPU-intensive analysis on the dataset
     let report = analyzer::analyze_data(response).unwrap();
@@ -288,14 +289,15 @@ other future.</p>
 </li>
 <li>
 <p>The runtime could have some kind of supervisor that monitors how much time
-different tasks take, and move the executor itself to a different thread.</p>
+different tasks take, and move the executor itself to a different thread so it can
+continue to run even though our <code>analyzer</code> task is blocking the original executor thread.</p>
 </li>
 <li>
 <p>You can create a reactor yourself which is compatible with the runtime which
 does the analysis any way you see fit, and returns a Future which can be awaited.</p>
 </li>
 </ol>
-<p>Now #1 is the usual way of handling this, but some executors implement #2 as well.
+<p>Now, #1 is the usual way of handling this, but some executors implement #2 as well.
 The problem with #2 is that if you switch runtime you need to make sure that it
 supports this kind of supervision as well or else you will end up blocking the
 executor.</p>
@@ -306,8 +308,8 @@ to the thread-pool most runtimes provide.</p>
 can either perform CPU-intensive tasks or &quot;blocking&quot; tasks which is not supported
 by the runtime.</p>
 <p>Now, armed with this knowledge you are already on a good way for understanding
-Futures, but we're not gonna stop yet, there is lots of details to cover. Take a
-break or a cup of coffe and get ready as we go for a deep dive in the next chapters.</p>
+Futures, but we're not gonna stop yet, there is lots of details to cover. </p>
+<p>Take a break or a cup of coffe and get ready as we go for a deep dive in the next chapters.</p>
 <h2><a class="header" href="#bonus-section" id="bonus-section">Bonus section</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 

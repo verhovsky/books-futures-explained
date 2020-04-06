@@ -719,10 +719,11 @@ need to be polled once before they do any work.</p>
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
-<li>High level introduction to concurrency in Rust</li>
-<li>Knowing what Rust provides and not when working with async code</li>
-<li>Understanding why we need a runtime-library in Rust</li>
-<li>Getting pointers to further reading on concurrency in general</li>
+<li>Get a high level introduction to concurrency in Rust</li>
+<li>Know what Rust provides and not when working with async code</li>
+<li>Get to know why we need a runtime-library in Rust</li>
+<li>Understand the difference between  &quot;leaf-future&quot; and a &quot;non-leaf-future&quot;</li>
+<li>Get insight on how to handle CPU intensive tasks</li>
 </ul>
 </blockquote>
 <h2><a class="header" href="#futures" id="futures">Futures</a></h2>
@@ -787,7 +788,7 @@ seem a bit strange to you.</p>
 <p>Rust is different from these languages in the sense that Rust doesn't come with
 a runtime for handling concurrency, so you need to use a library which provide
 this for you.</p>
-<p>Quite a bit of complexity attributed to <code>Futures</code> are actually complexity rooted
+<p>Quite a bit of complexity attributed to <code>Futures</code> is actually complexity rooted
 in runtimes. Creating an efficient runtime is hard.</p>
 <p>Learning how to use one correctly requires quite a bit of effort as well, but
 you'll see that there are several similarities between these kind of runtimes so
@@ -824,14 +825,14 @@ of non-blocking I/O, how these tasks are created or how they're run.</p>
 <p>As you know now, what you normally write are called non-leaf futures. Let's
 take a look at this async block using pseudo-rust as example:</p>
 <pre><code class="language-rust ignore">let non_leaf = async {
-    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap(); &lt;-- yield
+    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap(); // &lt;-- yield
     
     // request a large dataset
-    let result = stream.write(get_dataset_request).await.unwrap(); &lt;-- yield
+    let result = stream.write(get_dataset_request).await.unwrap(); // &lt;-- yield
     
     // wait for the dataset
     let mut response = vec![];
-    stream.read(&amp;mut response).await.unwrap(); &lt;-- yield
+    stream.read(&amp;mut response).await.unwrap(); // &lt;-- yield
 
     // do some CPU-intensive analysis on the dataset
     let report = analyzer::analyze_data(response).unwrap();
@@ -854,14 +855,15 @@ other future.</p>
 </li>
 <li>
 <p>The runtime could have some kind of supervisor that monitors how much time
-different tasks take, and move the executor itself to a different thread.</p>
+different tasks take, and move the executor itself to a different thread so it can
+continue to run even though our <code>analyzer</code> task is blocking the original executor thread.</p>
 </li>
 <li>
 <p>You can create a reactor yourself which is compatible with the runtime which
 does the analysis any way you see fit, and returns a Future which can be awaited.</p>
 </li>
 </ol>
-<p>Now #1 is the usual way of handling this, but some executors implement #2 as well.
+<p>Now, #1 is the usual way of handling this, but some executors implement #2 as well.
 The problem with #2 is that if you switch runtime you need to make sure that it
 supports this kind of supervision as well or else you will end up blocking the
 executor.</p>
@@ -872,8 +874,8 @@ to the thread-pool most runtimes provide.</p>
 can either perform CPU-intensive tasks or &quot;blocking&quot; tasks which is not supported
 by the runtime.</p>
 <p>Now, armed with this knowledge you are already on a good way for understanding
-Futures, but we're not gonna stop yet, there is lots of details to cover. Take a
-break or a cup of coffe and get ready as we go for a deep dive in the next chapters.</p>
+Futures, but we're not gonna stop yet, there is lots of details to cover. </p>
+<p>Take a break or a cup of coffe and get ready as we go for a deep dive in the next chapters.</p>
 <h2><a class="header" href="#bonus-section" id="bonus-section">Bonus section</a></h2>
 <p>If you find the concepts of concurrency and async programming confusing in
 general, I know where you're coming from and I have written some resources to 
@@ -893,9 +895,9 @@ it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
-<li>Understanding how the Waker object is constructed</li>
-<li>Learning how the runtime know when a leaf-future can resume</li>
-<li>Learning the basics of dynamic dispatch and trait objects</li>
+<li>Understand how the Waker object is constructed</li>
+<li>Learn how the runtime know when a leaf-future can resume</li>
+<li>Learn the basics of dynamic dispatch and trait objects</li>
 </ul>
 <p>The <code>Waker</code> type is described as part of <a href="https://github.com/rust-lang/rfcs/blob/master/text/2592-futures.md#waking-up">RFC#2592</a>.</p>
 </blockquote>
@@ -914,7 +916,7 @@ recommend <a href="https://boats.gitlab.io/blog/post/wakers-i/">Withoutboats art
 </blockquote>
 <h2><a class="header" href="#the-context-type" id="the-context-type">The Context type</a></h2>
 <p>As the docs state as of now this type only wrapps a <code>Waker</code>, but it gives some
-flexibility for future evolutions of the API in Rust. The context can hold
+flexibility for future evolutions of the API in Rust. The context can for example hold
 task-local storage and provide space for debugging hooks in later iterations.</p>
 <h2><a class="header" href="#understanding-the-waker" id="understanding-the-waker">Understanding the <code>Waker</code></a></h2>
 <p>One of the most confusing things we encounter when implementing our own <code>Futures</code>
@@ -970,11 +972,6 @@ except that it implements the methods defined by our trait. To accomplish this
 we use <em>dynamic dispatch</em>.</p>
 <p>Let's explain this in code instead of words by implementing our own trait
 object from these parts:</p>
-<blockquote>
-<p>This is an example of <em>editable</em> code. You can change everything in the example
-and try to run it. If you want to go back, press the undo symbol. Keep an eye
-out for these as we go forward. Many examples will be editable.</p>
-</blockquote>
 <pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
 trait Test {
     fn add(&amp;self) -&gt; i32;
@@ -1034,11 +1031,10 @@ fn main() {
     println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
 }
 </code></pre></pre>
-<p>Now that you know this you also know why how we implement the <code>Waker</code> type
-in Rust.</p>
 <p>Later on, when we implement our own <code>Waker</code> we'll actually set up a <code>vtable</code>
-like we do here to and knowing why we do that and how it works will make this
-much less mysterious.</p>
+like we do here. The way we create it is slightly different, but now that you know
+how regular trait objects work you will probably recognize what we're doing which
+makes it much less mysterious.</p>
 <h2><a class="header" href="#bonus-section-1" id="bonus-section-1">Bonus section</a></h2>
 <p>You might wonder why the <code>Waker</code> was implemented like this and not just as a
 normal trait?</p>
@@ -1052,9 +1048,9 @@ use purely global functions and state, or any other way you wish.</p>
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
-<li>Understandi how the async/await syntax works since it's how <code>await</code> is implemented</li>
-<li>Know why we need <code>Pin</code></li>
-<li>Understand why Rusts async model is very efficient</li>
+<li>Understand how the async/await syntax works under the hood</li>
+<li>See first hand why we need <code>Pin</code></li>
+<li>Understand what makes Rusts async model very memory efficient</li>
 </ul>
 <p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
 well written and I can recommend reading through it (it talks as much about
@@ -1087,10 +1083,10 @@ you already know combinators. In Rust they look like this:</p>
     }).collect::&lt;Vec&lt;SomeStruct&gt;&gt;()
 });
 
-let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(future).unwrap();
+let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(future);
 
 </code></pre>
-<p>While an effective solution there are mainly three downsides I'll focus on:</p>
+<p><strong>There are mainly three downsides I'll focus on using this technique:</strong></p>
 <ol>
 <li>The error messages produced could be extremely long and arcane</li>
 <li>Not optimal memory usage</li>
@@ -1122,10 +1118,11 @@ async/await as keywords (it can even be done using a macro).</li>
     println!(&quot;{}&quot;, borrowed);
 }
 </code></pre>
-<p>Async in Rust is implemented using Generators. So to understand how Async really
+<p>Async in Rust is implemented using Generators. So to understand how async really
 works we need to understand generators first. Generators in Rust are implemented
-as state machines. The memory footprint of a chain of computations is only
-defined by the largest footprint of what the largest step require.</p>
+as state machines. </p>
+<p>The memory footprint of a chain of computations is defined by <em>the largest footprint
+that a single step requires</em>.</p>
 <p>That means that adding steps to a chain of computations might not require any
 increased memory at all and it's one of the reasons why Futures and Async in
 Rust has very little overhead.</p>
@@ -1248,7 +1245,7 @@ machine for the generator defined aboce.</p>
 <p>We step through each step &quot;manually&quot; in every example, so it looks pretty
 unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
 trait for our generators which would let us do this:</p>
-<pre><code class="language-rust ignore">for val in generator {
+<pre><code class="language-rust ignore">while let Some(val) = generator.next() {
     println!(&quot;{}&quot;, val);
 }
 </code></pre>
@@ -1318,7 +1315,10 @@ to make this work, we'll have to let the compiler know that <em>we</em> control 
 see we end up in a <em>self referential struct</em>. A struct which holds references
 into itself.</p>
 <p>As you'll notice, this compiles just fine!</p>
-<pre><code class="language-rust ignore">enum GeneratorState&lt;Y, R&gt; {
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+enum GeneratorState&lt;Y, R&gt; {
     Yielded(Y),  
     Complete(R), 
 }
@@ -1333,7 +1333,7 @@ enum GeneratorA {
     Enter,
     Yield1 {
         to_borrow: String,
-        borrowed: *const String,
+        borrowed: *const String, // NB! This is now a raw pointer!
     },
     Exit,
 }
@@ -1354,7 +1354,7 @@ impl Generator for GeneratorA {
                 let res = borrowed.len();
                 *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
                 
-                // We set the self-reference here
+                // NB! And we set the pointer to reference the to_borrow string here
                 if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
                     *borrowed = to_borrow;
                 }
@@ -1372,7 +1372,7 @@ impl Generator for GeneratorA {
         }
     }
 }
-</code></pre>
+#}</code></pre></pre>
 <p>Remember that our example is the generator we crated which looked like this:</p>
 <pre><code class="language-rust noplaypen ignore">let mut gen = move || {
         let to_borrow = String::from(&quot;Hello&quot;);
@@ -1381,8 +1381,8 @@ impl Generator for GeneratorA {
         println!(&quot;{} world!&quot;, borrowed);
     };
 </code></pre>
-<p>Below is an example of how we could run this state-machine. But there is still
-one huge problem with this:</p>
+<p>Below is an example of how we could run this state-machine and as you see it
+does what we'd expect. But there is still one huge problem with this:</p>
 <pre><pre class="playpen"><code class="language-rust">pub fn main() {
     let mut gen = GeneratorA::start();
     let mut gen2 = GeneratorA::start();
@@ -1454,7 +1454,7 @@ one huge problem with this:</p>
 #     }
 # }
 </code></pre></pre>
-<p>The problem however is that in safe Rust we can still do this:</p>
+<p>The problem is that in safe Rust we can still do this:</p>
 <p><em>Run the code and compare the results. Do you see the problem?</em></p>
 <pre><pre class="playpen"><code class="language-rust should_panic"># #![feature(never_type)] // Force nightly compiler to be used in playground
 # // by betting on it's true that this type is named after it's stabilization date...
@@ -1532,16 +1532,22 @@ pub fn main() {
 #     }
 # }
 </code></pre></pre>
-<p>Wait? What happened to &quot;Hello&quot;?</p>
+<p>Wait? What happened to &quot;Hello&quot;? And why did our code segfault?</p>
 <p>Turns out that while the example above compiles just fine, we expose consumers
 of this this API to both possible undefined behavior and other memory errors
 while using just safe Rust. This is a big problem!</p>
 <blockquote>
 <p>I've actually forced the code above to use the nightly version of the compiler.
 If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=5cbe9897c0e23a502afd2740c7e78b98">the example above on the playground</a>,
-you'll see that it runs without panic on the current stable (1.42.0) but
+you'll see that it runs without panicing on the current stable (1.42.0) but
 panics on the current nightly (1.44.0). Scary!</p>
 </blockquote>
+<p>We'll explain exactly what happened here using a slightly simpler example in the next
+chapter and we'll fix our generator using <code>Pin</code> so don't worry, you'll see exactly
+what goes wrong and see how <code>Pin</code> can help us deal with self-referential types safely in a
+second.</p>
+<p>Before we go and explain the problem in detail, let's finish off this chapter
+by looking at how generators and the async keyword is related.</p>
 <h2><a class="header" href="#async-blocks-and-generators" id="async-blocks-and-generators">Async blocks and generators</a></h2>
 <p>Futures in Rust are implemented as state machines much the same way Generators
 are state machines.</p>
@@ -1555,7 +1561,7 @@ the syntax used in generators:</p>
     };
 </code></pre>
 <p>Compare that with a similar example using async blocks:</p>
-<pre><code class="language-rust ignore">let mut fut = async || {
+<pre><code class="language-rust ignore">let mut fut = async {
         let to_borrow = String::from(&quot;Hello&quot;);
         let borrowed = &amp;to_borrow;
         SomeResource::some_task().await;
@@ -1566,10 +1572,7 @@ the syntax used in generators:</p>
 have. The states of a Rust Futures is either: <code>Pending</code> or <code>Ready</code>.</p>
 <p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
 a Future works and the way a Generator work internally is similar. </p>
-<p>The same goes for the challenges of borrowin across yield/await points.</p>
-<p>We'll explain exactly what happened using a slightly simpler example in the next
-chapter and we'll fix our generator using <code>Pin</code> so join me as we explore
-the last topic before we implement our main Futures example.</p>
+<p>The same goes for the challenges of borrowing across yield/await points.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
 example in Rust today using the <code>static</code> keyword on nightly. Try it for
