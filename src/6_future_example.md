@@ -5,7 +5,8 @@ executor which allows you to edit, run an play around with the code right here
 in your browser.
 
 I'll walk you through the example, but if you want to check it out closer, you
-can always [clone the repository][example_repo] and play around with the code yourself.
+can always [clone the repository][example_repo] and play around with the code
+yourself or just copy it from the next chapter.
 
 There are several branches explained in the readme, but two are
 relevant for this chapter. The `main` branch is the example we go through here,
@@ -83,35 +84,33 @@ fn block_on<F: Future>(mut future: F) -> F::Output {
 }
 ```
 
-Inn all the examples here I've chose to comment the code extensively. I find it
-easier to follow that way than dividing if up into many paragraphs.
-
-We'll see more about the `Waker` in the next paragraph, but just look at it like
-a _trait object_ similar to the one we constructed  in the first chapter.
-
-> `Context` is just a wrapper around the `Waker`. At the time of writing this
-book it's nothing more. In the future it might be possible that the `Context`
-object will do more than just wrapping a `Future` so having this extra 
-abstraction gives some flexibility.
-
-You'll notice how we use `Pin` here to pin the future when we poll it.
+In all the examples you'll see in this chapter I've chosen to comment the code
+extensively. I find it easier to follow along that way so I'll not repeat myself
+here and focus only on some important aspects that might need further explanation.
 
 Now that you've read so much about `Generators` and `Pin` already this should
 be rather easy to understand. `Future` is a state machine, every `await` point
 is a `yield` point. We could borrow data across `await` points and we meet the
 exact same challenges as we do when borrowing across `yield` points.
 
-As we explained in the [chapter about generators](./3_generators_pin.md), we use
+> `Context` is just a wrapper around the `Waker`. At the time of writing this
+book it's nothing more. In the future it might be possible that the `Context`
+object will do more than just wrapping a `Future` so having this extra 
+abstraction gives some flexibility.
+
+As explained in the [chapter about generators](./3_generators_pin.md), we use
 `Pin` and the guarantees that give us to allow `Futures` to have self
 references.
 
 ## The `Future` implementation
 
-In Rust we call an interruptible task a `Future`. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
-these `Futures` so that once a "leaf future" is ready we'll perform a set of
-operations.
+Futures has a well defined interface, which means they can be used across the
+entire ecosystem. 
 
-These chained operations can spawn new leaf futures themselves.
+We can chain these `Futures` so that once a **leaf-future** is
+ready we'll perform a set of operations until either the task is finished or we
+reach yet another **leaf-future** which we'll wait for and yield control to the
+scheduler.
 
 **Our Future implementation looks like this:**
 
@@ -266,8 +265,8 @@ without passing around a reference.
 
 There are several better solutions, here are some:
 
-  - Use [std::sync::CondVar][condvar]
-  - Use [crossbeam::sync::Parker][crossbeam_parker]
+  - [std::sync::CondVar][condvar]
+  - [crossbeam::sync::Parker][crossbeam_parker]
 
 ## The Reactor
 
@@ -276,32 +275,30 @@ to have an example to run.
 
 Since concurrency mostly makes sense when interacting with the outside world (or
 at least some peripheral), we need something to actually abstract over this
-interaction in an asynchronous way. 
+interaction in an asynchronous way.
 
-This is the `Reactors` job. Most often you'll see reactors in Rust use a library called [Mio][mio], which provides non 
-blocking APIs and event notification for several platforms.
+This is the `Reactors` job. Most often you'll see reactors in Rust use a library
+called [Mio][mio], which provides non blocking APIs and event notification for
+several platforms.
 
-The reactor will typically give you something like a `TcpStream` (or any other resource) which you'll use to create an I/O request. What you get in return
-is a `Future`. 
+The reactor will typically give you something like a `TcpStream` (or any other
+resource) which you'll use to create an I/O request. What you get in return is a
+`Future`. 
 
->If the `Reactor` is registered as a global resource (which
->is pretty normal), our `Task` in would instead be a special `TcpStream` which
->registers interest with the global `Reactor` and no reference is needed.
+>If our reactor did some real I/O work our `Task` in would instead be represent
+>a non-blocking `TcpStream` which registers interest with the global `Reactor`.
+>Passing around a reference to the Reactor itself is pretty uncommon but I find
+>it makes reasoning about what's happening easier.
 
-We can call this kind of `Future` a "leaf Future", since it's some operation 
-we'll actually wait on and which we can chain operations on which are performed
-once the leaf future is ready.
-
-The reactor we create here will also create **leaf-futures**, accept a waker and
-call it once the task is finished.
-
-The task we're implementing is the simplest I could find. It's a timer that
-only spawns a thread and puts it to sleep for a number of seconds we specify
-when acquiring the leaf-future.
+Our example task is a timer that only spawns a thread and puts it to sleep for
+the number of seconds we specify. The reactor we create here will create a
+**leaf-future** representing each timer. In return the Reactor receives a waker
+which it will call once the task is finished.
 
 To be able to run the code here in the browser there is not much real I/O we
 can do so just pretend that this is actually represents some useful I/O operation
 for the sake of this example.
+
 
 **Our Reactor will look like this:**
 
@@ -336,7 +333,7 @@ impl Reactor {
         let readylist = Arc::new(Mutex::new(vec![]));
         let rl_clone = readylist.clone();
 
-        // This `Vec` will hold handles to all threads we spawn so we can
+        // This `Vec` will hold handles to all the threads we spawn so we can
         // join them later on and finish our programm in a good manner
         let mut handles = vec![];
 
@@ -425,12 +422,11 @@ impl Drop for Reactor {
 It's a lot of code though, but essentially we just spawn off a new thread
 and make it sleep for some time which we specify when we create a `Task`.
 
-Now, let's test our code and see if it works. This code is actually runnable
-if you press the "play" button. Since we're sleeping for a couple of seconds
-here, just give it some time to run.
+Now, let's test our code and see if it works. Since we're sleeping for a couple
+of seconds here, just give it some time to run.
 
-In the last chapter we have the [whole 200 lines in an editable window](./8_finished_example.md). You can
-also copy that or edit it right in this book.
+In the last chapter we have the [whole 200 lines in an editable window](./8_finished_example.md)
+which you can edit and change the way you like.
 
 ```rust, edition2018
 # use std::{
@@ -663,12 +659,11 @@ back. Every `await` point is like a `yield` point.
 
 Instead of `yielding` a value we pass in, it yields the `Future` we're awaiting,
 so when we poll a future the first time we run the code up until the first
-`await` point where it yields a new Future we poll and so on until we reach
-a **leaf-future**.
+`await` point where it yields a new Future we can poll.
 
-Now, as is the case in our code, our `mainfut` contains two non-leaf futures
-which it awaits, and all that happens is that these state machines are polled
-until some "leaf future" in the end either returns `Ready` or `Pending`.
+Our `mainfut` contains two non-leaf futures which it awaits, and all that
+happens is that these state machines are polled until some "leaf future" in the
+end either returns `Ready` or `Pending`.
 
 The way our example is right now, it's not much better than regular synchronous
 code. For us to actually await multiple futures at the same time we somehow need
@@ -688,18 +683,25 @@ Future got 1 at time: 1.00.
 Future got 2 at time: 2.00.
 ```
 
+> Note that this doesn't mean they need to run in parallel. They _can_ run in
+parallel but there is no requirement. Remember that we're waiting for some
+external resource so we can fire off many such calls on a single thread and
+handle each event as it resolves.
+
 Now, this is the point where I'll refer you to some better resources for
-implementing just that. You should have a pretty good understanding of the
-concept of Futures by now.
+implementing a better executor. You should have a pretty good understanding of
+the concept of Futures by now helping you along the way.
 
 The next step should be getting to know how more advanced runtimes work and
 how they implement different ways of running Futures to completion.
 
 [If I were you I would read this next, and try to implement it for our example.](./conclusion.md#building-a-better-exectuor).
 
-That's actually it for now. There are probably much more to learn, but I think it
-will be easier once the fundamental concepts are there and that further
-exploration will get a lot easier.
+That's actually it for now. There as probably much more to learn, this is enough
+for today. 
+
+I hope exploring Futures and async in general gets easier after this read and I
+do really hope that you do continue to explore further.
 
 Don't forget the exercises in the last chapter 😊.
 
