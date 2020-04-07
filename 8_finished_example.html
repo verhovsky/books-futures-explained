@@ -1,0 +1,444 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Finished example (editable) - Futures Explained in 200 Lines of Rust</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="This book aims to explain Futures in Rust using an example driven approach.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="chapter-item expanded "><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="chapter-item expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="chapter-item expanded "><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="chapter-item expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="chapter-item expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="chapter-item expanded "><a href="8_finished_example.html" class="active"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="chapter-item expanded affix "><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Futures Explained in 200 Lines of Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        <a href="https://github.com/cfsamson/books-futures-explained" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
+<p>Here is the whole example. You can edit it right here in your browser and
+run it yourself. Have fun!</p>
+<pre><pre class="playpen"><code class="language-rust editable edition2018">use std::{
+    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    thread::{self, JoinHandle}, time::{Duration, Instant}
+};
+
+fn main() {
+    let start = Instant::now();
+    let reactor = Reactor::new();
+    let reactor = Arc::new(Mutex::new(reactor));
+    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future2 = Task::new(reactor.clone(), 2, 2);
+
+    let fut1 = async {
+        let val = future1.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let fut2 = async {
+        let val = future2.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let mainfut = async {
+        fut1.await;
+        fut2.await;
+    };
+
+    block_on(mainfut);
+    reactor.lock().map(|mut r| r.close()).unwrap();
+}
+
+// ============================= EXECUTOR ====================================
+fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let waker = waker_into_waker(Arc::into_raw(mywaker));
+    let mut cx = Context::from_waker(&amp;waker);
+
+    // SAFETY: we shadow `future` so it can't be accessed again.
+    let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
+    let val = loop {
+        match Future::poll(future.as_mut(), &amp;mut cx) {
+            Poll::Ready(val) =&gt; break val,
+            Poll::Pending =&gt; thread::park(),
+        };
+    };
+    val
+}
+
+// ====================== FUTURE IMPLEMENTATION ==============================
+#[derive(Clone)]
+struct MyWaker {
+    thread: thread::Thread,
+}
+
+#[derive(Clone)]
+pub struct Task {
+    id: usize,
+    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    data: u64,
+    is_registered: bool,
+}
+
+fn mywaker_wake(s: &amp;MyWaker) {
+    let waker_ptr: *const MyWaker = s;
+    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+    waker_arc.thread.unpark();
+}
+
+fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+    let arc = unsafe { Arc::from_raw(s) };
+    std::mem::forget(arc.clone()); // increase ref count
+    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+}
+
+const VTABLE: RawWakerVTable = unsafe {
+    RawWakerVTable::new(
+        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
+        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
+        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
+        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+    )
+};
+
+fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+    unsafe { Waker::from_raw(raw_waker) }
+}
+
+impl Task {
+    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task {
+            id,
+            reactor,
+            data,
+            is_registered: false,
+        }
+    }
+}
+
+impl Future for Task {
+    type Output = usize;
+    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+        let mut r = self.reactor.lock().unwrap();
+        if r.is_ready(self.id) {
+            Poll::Ready(self.id)
+        } else if self.is_registered {
+            Poll::Pending
+        } else {
+            r.register(self.data, cx.waker().clone(), self.id);
+            drop(r);
+            self.is_registered = true;
+            Poll::Pending
+        }
+    }
+}
+
+// =============================== REACTOR ===================================
+struct Reactor {
+    dispatcher: Sender&lt;Event&gt;,
+    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+}
+#[derive(Debug)]
+enum Event {
+    Close,
+    Timeout(Waker, u64, usize),
+}
+
+impl Reactor {
+    fn new() -&gt; Self {
+        let (tx, rx) = channel::&lt;Event&gt;();
+        let readylist = Arc::new(Mutex::new(vec![]));
+        let rl_clone = readylist.clone();
+        let mut handles = vec![];
+        let handle = thread::spawn(move || {
+            // This simulates some I/O resource
+            for event in rx {
+                println!(&quot;REACTOR: {:?}&quot;, event);
+                let rl_clone = rl_clone.clone();
+                match event {
+                    Event::Close =&gt; break,
+                    Event::Timeout(waker, duration, id) =&gt; {
+                        let event_handle = thread::spawn(move || {
+                            thread::sleep(Duration::from_secs(duration));
+                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
+                            waker.wake();
+                        });
+
+                        handles.push(event_handle);
+                    }
+                }
+            }
+
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+
+        Reactor {
+            readylist,
+            dispatcher: tx,
+            handle: Some(handle),
+        }
+    }
+
+    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
+        self.dispatcher
+            .send(Event::Timeout(waker, duration, data))
+            .unwrap();
+    }
+
+    fn close(&amp;mut self) {
+        self.dispatcher.send(Event::Close).unwrap();
+    }
+
+    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
+        self.readylist
+            .lock()
+            .map(|rl| rl.iter().any(|id| *id == id_to_check))
+            .unwrap()
+    }
+}
+
+impl Drop for Reactor {
+    fn drop(&amp;mut self) {
+        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+    }
+}
+</code></pre></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="6_future_example.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="conclusion.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="6_future_example.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="conclusion.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-157536992-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playpen_line_numbers = true;
+        </script>
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

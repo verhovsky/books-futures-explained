@@ -1,0 +1,3287 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Futures Explained in 200 Lines of Rust</title>
+        
+        <meta name="robots" content="noindex" />
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="This book aims to explain Futures in Rust using an example driven approach.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="chapter-item expanded "><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="chapter-item expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="chapter-item expanded "><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="chapter-item expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="chapter-item expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="chapter-item expanded "><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="chapter-item expanded affix "><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Futures Explained in 200 Lines of Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        <a href="https://github.com/cfsamson/books-futures-explained" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#futures-explained-in-200-lines-of-rust" id="futures-explained-in-200-lines-of-rust">Futures Explained in 200 Lines of Rust</a></h1>
+<p>This book aims to explain <code>Futures</code> in Rust using an example driven approach,
+exploring why they're designed the way they are, and how they work. We'll also
+take a look at some of the alternatives we have when dealing with concurrency
+in programming.</p>
+<p>Going into the level of detail I do in this book is not needed to use futures
+or async/await in Rust. It's for the curious out there that want to know <em>how</em>
+it all works.</p>
+<h2><a class="header" href="#what-this-book-covers" id="what-this-book-covers">What this book covers</a></h2>
+<p>This book will try to explain everything you might wonder about up until the
+topic of different types of executors and runtimes. We'll just implement a very
+simple runtime in this book introducing some concepts but it's enough to get
+started.</p>
+<p><a href="https://github.com/stjepang">Stjepan Glavina</a> has made an excellent series of
+articles about async runtimes and executors, and if the rumors are right there
+is more to come from him in the near future.</p>
+<p>The way you should go about it is to read this book first, then continue
+reading the <a href="https://stjepang.github.io/">articles from stejpang</a> to learn more
+about runtimes and how they work, especially:</p>
+<ol>
+<li><a href="https://stjepang.github.io/2020/01/25/build-your-own-block-on.html">Build your own block_on()</a></li>
+<li><a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">Build your own executor</a></li>
+</ol>
+<p>I've limited myself to a 200 line main example (hence the title) to limit the
+scope and introduce an example that can easily be explored further.</p>
+<p>However, there is a lot to digest and it's not what I would call easy, but we'll
+take everything step by step so get a cup of tea and relax. </p>
+<p>I hope you enjoy the ride.</p>
+<blockquote>
+<p>This book is developed in the open, and contributions are welcome. You'll find
+<a href="https://github.com/cfsamson/books-futures-explained">the repository for the book itself here</a>. The final example which
+you can clone, fork or copy <a href="https://github.com/cfsamson/examples-futures">can be found here</a>. Any suggestions
+or improvements can be filed as a PR or in the issue tracker for the book.</p>
+<p>As always, all kinds of feedback is welcome.</p>
+</blockquote>
+<h2><a class="header" href="#reader-exercises-and-further-reading" id="reader-exercises-and-further-reading">Reader exercises and further reading</a></h2>
+<p>In the last <a href="conclusion.html">chapter</a> I've taken the liberty to suggest some
+small exercises if you want to explore a little further.</p>
+<p>This book is also the fourth book I have written about concurrent programming
+in Rust. If you like it, you might want to check out the others as well:</p>
+<ul>
+<li><a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of rust</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/">The Node Experiment - Exploring Async Basics with Rust</a></li>
+<li><a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/">Epoll, Kqueue and IOCP Explained with Rust</a></li>
+</ul>
+<h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
+<p>I'd like to take this chance to thank the people behind <code>mio</code>, <code>tokio</code>,
+<code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> which underpins so much of the
+async ecosystem and and rarely gets enough praise in my eyes.</p>
+<p>A special thanks to <a href="https://twitter.com/jonhoo">jonhoo</a> who was kind enough to
+give me some valuable feedback on a very early draft of this book. He has not
+read the finished product, but a big thanks is definitely due.</p>
+<h1><a class="header" href="#some-background-information" id="some-background-information">Some Background Information</a></h1>
+<p>Before we go into the details about Futures in Rust, let's take a quick look
+at the alternatives for handling concurrent programming in general and some
+pros and cons for each of them.</p>
+<p>While we do that we'll also explain some aspects when it comes to concurrency which
+will make it easier for us when we dive in to Futures specifically.</p>
+<blockquote>
+<p>For fun, I've added a small snipped of runnable code with most of the examples.
+If you're like me, things get way more interesting then and maybe you'll se some
+things you haven't seen before along the way.</p>
+</blockquote>
+<h2><a class="header" href="#threads-provided-by-the-operating-system" id="threads-provided-by-the-operating-system">Threads provided by the operating system</a></h2>
+<p>Now, one way of accomplishing this is letting the OS take care of everything for
+us. We do this by simply spawning a new OS thread for each task we want to
+accomplish and write code like we normally would.</p>
+<p>The runtime we use to handle concurrency for us is the operating system itself.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Simple</li>
+<li>Easy to use</li>
+<li>Switching between tasks is reasonably fast</li>
+<li>You get parallelism for free</li>
+</ul>
+<p><strong>Drawbacks:</strong></p>
+<ul>
+<li>OS level threads come with a rather large stack. If you have many tasks
+waiting simultaneously (like you would in a web-server under heavy load) you'll
+run out of memory pretty fast.</li>
+<li>There are a lot of syscalls involved. This can be pretty costly when the number
+of tasks is high.</li>
+<li>The OS has many things it needs to handle. It might not switch back to your
+thread as fast as you'd wish.</li>
+<li>Might not be an option on some systems</li>
+</ul>
+<p><strong>Using OS threads in Rust looks like this:</strong></p>
+<pre><pre class="playpen"><code class="language-rust">use std::thread;
+
+fn main() {
+    println!(&quot;So we start the program here!&quot;);
+    let t1 = thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(200));
+        println!(&quot;We create tasks which gets run when they're finished!&quot;);
+    });
+
+    let t2 = thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(100));
+        println!(&quot;We can even chain callbacks...&quot;);
+        let t3 = thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(50));
+            println!(&quot;...like this!&quot;);
+        });
+        t3.join().unwrap();
+    });
+    println!(&quot;While our tasks are executing we can do other stuff here.&quot;);
+
+    t1.join().unwrap();
+    t2.join().unwrap();
+}
+</code></pre></pre>
+<p>OS threads sure has some pretty big advantages. So why all this talk about
+&quot;async&quot; and concurrency in the first place?</p>
+<p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> they needs to multitask. Once you
+start to look under the covers (like <a href="https://os.phil-opp.com/async-await/">how an operating system works</a>)
+you'll see concurrency everywhere. It's very fundamental in everything we do.</p>
+<p>Secondly, we have the web. </p>
+<p>Webservers is all about I/O and handling small tasks
+(requests). When the number of small tasks is large it's not a good fit for OS
+threads as of today because of the memory they require and the overhead involved
+when creating new threads. </p>
+<p>This gets even more problematic when the load is variable which means the current number of tasks a
+program has at any point in time is unpredictable. That's why you'll see so many async web
+frameworks and database drivers today.</p>
+<p>However, for a huge number of problems, the standard OS threads will often be the
+right solution. So, just think twice about your problem before you reach for an
+async library.</p>
+<p>Now, let's look at some other options for multitasking. They all have in common
+that they implement a way to do multitasking by having a &quot;userland&quot;
+runtime:</p>
+<h2><a class="header" href="#green-threads" id="green-threads">Green threads</a></h2>
+<p>Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a &quot;context switch&quot;.</p>
+<p>We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.</p>
+<p>Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no
+need for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. </p>
+<p><strong>The typical flow looks like this:</strong></p>
+<ol>
+<li>Run some non-blocking code</li>
+<li>Make a blocking call to some external resource</li>
+<li>CPU jumps to the &quot;main&quot; thread which schedules a different thread to run and
+&quot;jumps&quot; to that stack</li>
+<li>Run some non-blocking code on the new thread until a new blocking call or the
+task is finished</li>
+<li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread which is ready to make
+progress and jump to that.</li>
+</ol>
+<p>These &quot;jumps&quot; are know as <strong>context switches</strong>. Your OS is doing it many times each
+second as you read this.</p>
+<p><strong>Advantages:</strong></p>
+<ol>
+<li>Simple to use. The code will look like it does when using OS threads.</li>
+<li>A &quot;context switch&quot; is reasonably fast</li>
+<li>Each stack only gets a little memory to start with so you can have hundred of
+thousands of green threads running.</li>
+<li>It's easy to incorporate <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/green-threads#preemptive-multitasking"><em>preemtion</em></a>
+which puts a lot of control in the hands of the runtime implementors.</li>
+</ol>
+<p><strong>Drawbacks:</strong></p>
+<ol>
+<li>The stacks might need to grow. Solving this is not easy and will have a cost.</li>
+<li>You need to save all the CPU state on every switch</li>
+<li>It's not a <em>zero cost abstraction</em> (Rust had green threads early on and this
+was one of the reasons they were removed).</li>
+<li>Complicated to implement correctly if you want to support many different
+platforms.</li>
+</ol>
+<p>A green threads example could look something like this:</p>
+<blockquote>
+<p>The example presented below is an adapted example from an earlier gitbook I
+wrote about green threads called <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust.</a>
+If you want to know what's going on you'll find everything explained in detail
+in that book. The code below is wildly unsafe and it's just to show a real example.
+It's not in any way meant to showcase &quot;best practice&quot;. Just so we're on
+the same page.</p>
+</blockquote>
+<p><em><strong>Press the expand icon in the top right corner to show the example code.</strong></em> </p>
+<pre><pre class="playpen"><code class="language-rust edition2018"><span class="boring">#![feature(asm, naked_functions)]
+</span><span class="boring">use std::ptr;
+</span><span class="boring">
+</span><span class="boring">const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
+</span><span class="boring">const MAX_THREADS: usize = 4;
+</span><span class="boring">static mut RUNTIME: usize = 0;
+</span><span class="boring">
+</span><span class="boring">pub struct Runtime {
+</span><span class="boring">    threads: Vec&lt;Thread&gt;,
+</span><span class="boring">    current: usize,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(PartialEq, Eq, Debug)]
+</span><span class="boring">enum State {
+</span><span class="boring">    Available,
+</span><span class="boring">    Running,
+</span><span class="boring">    Ready,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct Thread {
+</span><span class="boring">    id: usize,
+</span><span class="boring">    stack: Vec&lt;u8&gt;,
+</span><span class="boring">    ctx: ThreadContext,
+</span><span class="boring">    state: State,
+</span><span class="boring">    task: Option&lt;Box&lt;dyn Fn()&gt;&gt;,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, Default)]
+</span><span class="boring">#[repr(C)]
+</span><span class="boring">struct ThreadContext {
+</span><span class="boring">    rsp: u64,
+</span><span class="boring">    r15: u64,
+</span><span class="boring">    r14: u64,
+</span><span class="boring">    r13: u64,
+</span><span class="boring">    r12: u64,
+</span><span class="boring">    rbx: u64,
+</span><span class="boring">    rbp: u64,
+</span><span class="boring">    thread_ptr: u64,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Thread {
+</span><span class="boring">    fn new(id: usize) -&gt; Self {
+</span><span class="boring">        Thread {
+</span><span class="boring">            id,
+</span><span class="boring">            stack: vec![0_u8; DEFAULT_STACK_SIZE],
+</span><span class="boring">            ctx: ThreadContext::default(),
+</span><span class="boring">            state: State::Available,
+</span><span class="boring">            task: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Runtime {
+</span><span class="boring">    pub fn new() -&gt; Self {
+</span><span class="boring">        let base_thread = Thread {
+</span><span class="boring">            id: 0,
+</span><span class="boring">            stack: vec![0_u8; DEFAULT_STACK_SIZE],
+</span><span class="boring">            ctx: ThreadContext::default(),
+</span><span class="boring">            state: State::Running,
+</span><span class="boring">            task: None,
+</span><span class="boring">        };
+</span><span class="boring">
+</span><span class="boring">        let mut threads = vec![base_thread];
+</span><span class="boring">        threads[0].ctx.thread_ptr = &amp;threads[0] as *const Thread as u64;
+</span><span class="boring">        let mut available_threads: Vec&lt;Thread&gt; = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
+</span><span class="boring">        threads.append(&amp;mut available_threads);
+</span><span class="boring">
+</span><span class="boring">        Runtime {
+</span><span class="boring">            threads,
+</span><span class="boring">            current: 0,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    pub fn init(&amp;self) {
+</span><span class="boring">        unsafe {
+</span><span class="boring">            let r_ptr: *const Runtime = self;
+</span><span class="boring">            RUNTIME = r_ptr as usize;
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    pub fn run(&amp;mut self) -&gt; ! {
+</span><span class="boring">        while self.t_yield() {}
+</span><span class="boring">        std::process::exit(0);
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn t_return(&amp;mut self) {
+</span><span class="boring">        if self.current != 0 {
+</span><span class="boring">            self.threads[self.current].state = State::Available;
+</span><span class="boring">            self.t_yield();
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn t_yield(&amp;mut self) -&gt; bool {
+</span><span class="boring">        let mut pos = self.current;
+</span><span class="boring">        while self.threads[pos].state != State::Ready {
+</span><span class="boring">            pos += 1;
+</span><span class="boring">            if pos == self.threads.len() {
+</span><span class="boring">                pos = 0;
+</span><span class="boring">            }
+</span><span class="boring">            if pos == self.current {
+</span><span class="boring">                return false;
+</span><span class="boring">            }
+</span><span class="boring">        }
+</span><span class="boring">        
+</span><span class="boring">        if self.threads[self.current].state != State::Available {
+</span><span class="boring">            self.threads[self.current].state = State::Ready;
+</span><span class="boring">        }
+</span><span class="boring">
+</span><span class="boring">        self.threads[pos].state = State::Running;
+</span><span class="boring">        let old_pos = self.current;
+</span><span class="boring">        self.current = pos;
+</span><span class="boring">
+</span><span class="boring">        unsafe {
+</span><span class="boring">            switch(&amp;mut self.threads[old_pos].ctx, &amp;self.threads[pos].ctx);
+</span><span class="boring">        }
+</span><span class="boring">        true
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    pub fn spawn&lt;F: Fn() + 'static&gt;(f: F){
+</span><span class="boring">        unsafe {
+</span><span class="boring">            let rt_ptr = RUNTIME as *mut Runtime;
+</span><span class="boring">            let available = (*rt_ptr)
+</span><span class="boring">                .threads
+</span><span class="boring">                .iter_mut()
+</span><span class="boring">                .find(|t| t.state == State::Available)
+</span><span class="boring">                .expect(&quot;no available thread.&quot;);
+</span><span class="boring">                
+</span><span class="boring">            let size = available.stack.len();
+</span><span class="boring">            let s_ptr = available.stack.as_mut_ptr();
+</span><span class="boring">            available.task = Some(Box::new(f));
+</span><span class="boring">            available.ctx.thread_ptr = available as *const Thread as u64;
+</span><span class="boring">            ptr::write(s_ptr.offset((size - 8) as isize) as *mut u64, guard as u64);
+</span><span class="boring">            ptr::write(s_ptr.offset((size - 16) as isize) as *mut u64, call as u64);
+</span><span class="boring">            available.ctx.rsp = s_ptr.offset((size - 16) as isize) as u64;
+</span><span class="boring">            available.state = State::Ready;
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn call(thread: u64) {
+</span><span class="boring">    let thread = unsafe { &amp;*(thread as *const Thread) };
+</span><span class="boring">    if let Some(f) = &amp;thread.task {
+</span><span class="boring">        f();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[naked]
+</span><span class="boring">fn guard() {
+</span><span class="boring">    unsafe {
+</span><span class="boring">        let rt_ptr = RUNTIME as *mut Runtime;
+</span><span class="boring">        let rt = &amp;mut *rt_ptr;
+</span><span class="boring">        println!(&quot;THREAD {} FINISHED.&quot;, rt.threads[rt.current].id);
+</span><span class="boring">        rt.t_return();
+</span><span class="boring">    };
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">pub fn yield_thread() {
+</span><span class="boring">    unsafe {
+</span><span class="boring">        let rt_ptr = RUNTIME as *mut Runtime;
+</span><span class="boring">        (*rt_ptr).t_yield();
+</span><span class="boring">    };
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[naked]
+</span><span class="boring">#[inline(never)]
+</span><span class="boring">unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
+</span><span class="boring">    asm!(&quot;
+</span><span class="boring">        mov     %rsp, 0x00($0)
+</span><span class="boring">        mov     %r15, 0x08($0)
+</span><span class="boring">        mov     %r14, 0x10($0)
+</span><span class="boring">        mov     %r13, 0x18($0)
+</span><span class="boring">        mov     %r12, 0x20($0)
+</span><span class="boring">        mov     %rbx, 0x28($0)
+</span><span class="boring">        mov     %rbp, 0x30($0)
+</span><span class="boring">
+</span><span class="boring">        mov     0x00($1), %rsp
+</span><span class="boring">        mov     0x08($1), %r15
+</span><span class="boring">        mov     0x10($1), %r14
+</span><span class="boring">        mov     0x18($1), %r13
+</span><span class="boring">        mov     0x20($1), %r12
+</span><span class="boring">        mov     0x28($1), %rbx
+</span><span class="boring">        mov     0x30($1), %rbp
+</span><span class="boring">        mov     0x38($1), %rdi
+</span><span class="boring">        ret
+</span><span class="boring">        &quot;
+</span><span class="boring">    :
+</span><span class="boring">    : &quot;r&quot;(old), &quot;r&quot;(new)
+</span><span class="boring">    :
+</span><span class="boring">    : &quot;alignstack&quot;
+</span><span class="boring">    );
+</span><span class="boring">}
+</span><span class="boring">#[cfg(not(windows))]
+</span>fn main() {
+    let mut runtime = Runtime::new();
+    runtime.init();
+    Runtime::spawn(|| {
+        println!(&quot;I haven't implemented a timer in this example.&quot;);
+        yield_thread();
+        println!(&quot;Finally, notice how the tasks are executed concurrently.&quot;);
+    });
+    Runtime::spawn(|| {
+        println!(&quot;But we can still nest tasks...&quot;);
+        Runtime::spawn(|| {
+            println!(&quot;...like this!&quot;);
+        })
+    });
+    runtime.run();
+}
+<span class="boring">#[cfg(windows)]
+</span><span class="boring">fn main() { }
+</span></code></pre></pre>
+<p>Still hanging in there? Good. Don't get frustrated if the code above is
+difficult to understand. If I hadn't written it myself I would probably feel
+the same. You can always go back and read the book which explains it later.</p>
+<h2><a class="header" href="#callback-based-approaches" id="callback-based-approaches">Callback based approaches</a></h2>
+<p>You probably already know what we're going to talk about in the next paragraphs
+from Javascript which I assume most know. </p>
+<blockquote>
+<p>If your exposure to Javascript callbacks has given you any sorts of PTSD earlier
+in life, close your eyes now and scroll down for 2-3 seconds. You'll find a link
+there that takes you to safety.</p>
+</blockquote>
+<p>The whole idea behind a callback based approach is to save a pointer to a set of
+instructions we want to run later together with whatever state is needed. In rust this
+would be a <code>closure</code>. In the example below, we save this information in a <code>HashMap</code>
+but it's not the only option.</p>
+<p>The basic idea of <em>not</em> involving threads as a primary way to achieve concurrency
+is the common denominator for the rest of the approaches. Including the one
+Rust uses today which we'll soon get to.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Easy to implement in most languages</li>
+<li>No context switching</li>
+<li>Relatively low memory overhead (in most cases)</li>
+</ul>
+<p><strong>Drawbacks:</strong></p>
+<ul>
+<li>Each task must save the state it needs for later, the memory usage will grow
+linearly with the number of callbacks in a chain of computations.</li>
+<li>Can be hard to reason about, many people already know this as as &quot;callback hell&quot;.</li>
+<li>It's a very different way of writing a program, and will require a substantial
+rewrite to go from a &quot;normal&quot; program flow to one that uses a &quot;callback based&quot; flow.</li>
+<li>Sharing state between tasks is a hard problem in Rust using this approach due
+to it's ownership model.</li>
+</ul>
+<p>An extremely simplified example of a how a callback based approach could look
+like is:</p>
+<pre><pre class="playpen"><code class="language-rust">fn program_main() {
+    println!(&quot;So we start the program here!&quot;);
+    set_timeout(200, || {
+        println!(&quot;We create tasks with a callback that runs once the task finished!&quot;);
+    });
+    set_timeout(100, || {
+        println!(&quot;We can even chain sub-tasks...&quot;);
+        set_timeout(50, || {
+            println!(&quot;...like this!&quot;);
+        })
+    });
+    println!(&quot;While our tasks are executing we can do other stuff instead of waiting.&quot;);
+}
+
+fn main() {
+    RT.with(|rt| rt.run(program_main));
+}
+
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{cell::RefCell, collections::HashMap, thread};
+
+thread_local! {
+    static RT: Runtime = Runtime::new();
+}
+
+struct Runtime {
+    callbacks: RefCell&lt;HashMap&lt;usize, Box&lt;dyn FnOnce() -&gt; ()&gt;&gt;&gt;,
+    next_id: RefCell&lt;usize&gt;,
+    evt_sender: Sender&lt;usize&gt;,
+    evt_reciever: Receiver&lt;usize&gt;,
+}
+
+fn set_timeout(ms: u64, cb: impl FnOnce() + 'static) {
+    RT.with(|rt| {
+        let id = *rt.next_id.borrow();
+        *rt.next_id.borrow_mut() += 1;
+        rt.callbacks.borrow_mut().insert(id, Box::new(cb));
+        let evt_sender = rt.evt_sender.clone();
+        thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(ms));
+            evt_sender.send(id).unwrap();
+        });
+    });
+}
+
+impl Runtime {
+    fn new() -&gt; Self {
+        let (evt_sender, evt_reciever) = channel();
+        Runtime {
+            callbacks: RefCell::new(HashMap::new()),
+            next_id: RefCell::new(1),
+            evt_sender,
+            evt_reciever,
+        }
+    }
+
+    fn run(&amp;self, program: fn()) {
+        program();
+        for evt_id in &amp;self.evt_reciever {
+            let cb = self.callbacks.borrow_mut().remove(&amp;evt_id).unwrap();
+            cb();
+            if self.callbacks.borrow().is_empty() {
+                break;
+            }
+        }
+    }
+}
+</code></pre></pre>
+<p>We're keeping this super simple, and you might wonder what's the difference
+between this approach and the one using OS threads an passing in the callbacks
+to the OS threads directly.</p>
+<p>The difference is that the callbacks are run on the
+same thread using this example. The OS threads we create are basically just used
+as timers but could represent any kind of resource that we'll have to wait for.</p>
+<h2><a class="header" href="#from-callbacks-to-promises" id="from-callbacks-to-promises">From callbacks to promises</a></h2>
+<p>You might start to wonder by now, when are we going to talk about Futures?</p>
+<p>Well, we're getting there. You see <code>promises</code>, <code>futures</code> and other names for
+deferred computations are often used interchangeably. </p>
+<p>There are formal differences between them but we'll not cover that here but it's
+worth explaining <code>promises</code> a bit since they're widely known due to being used
+in Javascript and have a lot in common with Rusts Futures.</p>
+<p>First of all, many languages has a concept of promises but I'll use the ones
+from Javascript in the examples below.</p>
+<p>Promises is one way to deal with the complexity which comes with a callback
+based approach.</p>
+<p>Instead of:</p>
+<pre><code class="language-js ignore">setTimer(200, () =&gt; {
+  setTimer(100, () =&gt; {
+    setTimer(50, () =&gt; {
+      console.log(&quot;I'm the last one&quot;);
+    });
+  });
+});
+</code></pre>
+<p>We can to this:</p>
+<pre><code class="language-js ignore">function timer(ms) {
+    return new Promise((resolve) =&gt; setTimeout(resolve, ms))
+}
+
+timer(200)
+.then(() =&gt; return timer(100))
+.then(() =&gt; return timer(50))
+.then(() =&gt; console.log(&quot;I'm the last one));
+</code></pre>
+<p>The change is even more substantial under the hood. You see, promises return
+a state machine which can be in one of three states: <code>pending</code>, <code>fulfilled</code> or 
+<code>rejected</code>. </p>
+<p>When we call <code>timer(200)</code> in the sample above, we get back a promise in the state <code>pending</code>.</p>
+<p>Since promises are re-written as state machines they also enable an even better
+syntax which allows us to write our last example like this:</p>
+<pre><code class="language-js ignore">async function run() {
+    await timer(200);
+    await timer(100);
+    await timer(50);
+    console.log(&quot;I'm the last one&quot;);
+}
+</code></pre>
+<p>You can consider the <code>run</code> function a <em>pausable</em> task consisting of several
+sub-tasks. On each &quot;await&quot; point it yields control to the scheduler (in this
+case it's the well known Javascript event loop). </p>
+<p>Once one of the sub-tasks changes state to either <code>fulfilled</code> or <code>rejected</code> the
+task is scheduled to continue to the next step.</p>
+<p>Syntactically, Rusts Futures 0.1 was a lot like the promises example above and
+Rusts Futures 0.3 is a lot like async/await in our last example.</p>
+<p>Now this is also where the similarities with Rusts Futures stop. The reason we 
+go through all this is to get an introduction and get into the right mindset for
+exploring Rusts Futures.</p>
+<blockquote>
+<p>To avoid confusion later on: There's one difference you should know. Javascript
+promises are <em>eagerly</em> evaluated. That means that once it's created, it starts
+running a task. Rusts Futures on the other hand is <em>lazily</em> evaluated. They
+need to be polled once before they do any work.</p>
+</blockquote>
+<br />
+<div style="text-align: center;  padding-top: 2em;"> 
+<a href="/books-futures-explained/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
+</div><h1><a class="header" href="#futures-in-rust" id="futures-in-rust">Futures in Rust</a></h1>
+<blockquote>
+<p><strong>Overview:</strong></p>
+<ul>
+<li>Get a high level introduction to concurrency in Rust</li>
+<li>Know what Rust provides and not when working with async code</li>
+<li>Get to know why we need a runtime-library in Rust</li>
+<li>Understand the difference between  &quot;leaf-future&quot; and a &quot;non-leaf-future&quot;</li>
+<li>Get insight on how to handle CPU intensive tasks</li>
+</ul>
+</blockquote>
+<h2><a class="header" href="#futures" id="futures">Futures</a></h2>
+<p>So what is a future?</p>
+<p>A future is a representation of some operation which will complete in the
+future.</p>
+<p>Async in Rust uses a <code>Poll</code> based approach, in which an asynchronous task will
+have three phases.</p>
+<ol>
+<li><strong>The Poll phase.</strong> A Future is polled which result in the task progressing until
+a point where it can no longer make progress. We often refer to the part of the
+runtime which polls a Future as an executor.</li>
+<li><strong>The Wait phase.</strong> An event source, most often referred to as a reactor,
+registers that a Future is waiting for an event to happen and makes sure that it
+will wake the Future when that event is ready.</li>
+<li><strong>The Wake phase.</strong> The event happens and the Future is woken up. It's now up
+to the executor which polled the Future in step 1 to schedule the future to be
+polled again and make further progress until it completes or reaches a new point
+where it can't make further progress and the cycle repeats.</li>
+</ol>
+<p>Now, when we talk about futures I find it useful to make a distinction between
+<strong>non-leaf</strong> futures and <strong>leaf</strong> futures early on because in practice they're
+pretty different from one another.</p>
+<h3><a class="header" href="#leaf-futures" id="leaf-futures">Leaf futures</a></h3>
+<p>Runtimes create <em>leaf futures</em> which represents a resource like a socket.</p>
+<pre><code class="language-rust ignore noplaypen">// stream is a **leaf-future**
+let mut stream = tokio::net::TcpStream::connect(&quot;127.0.0.1:3000&quot;);
+</code></pre>
+<p>Operations on these resources, like a <code>Read</code> on a socket, will be non-blocking
+and return a future which we call a leaf future since it's the future which
+we're actually waiting on.</p>
+<p>It's unlikely that you'll implement a leaf future yourself unless you're writing
+a runtime, but we'll go through how they're constructed in this book as well.</p>
+<p>It's also unlikely that you'll pass a leaf-future to a runtime and run it to
+completion alone as you'll understand by reading the next paragraph.</p>
+<h3><a class="header" href="#non-leaf-futures" id="non-leaf-futures">Non-leaf-futures</a></h3>
+<p>Non-leaf-futures is the kind of futures we as <em>users</em> of a runtime writes
+ourselves using the <code>async</code> keyword to create a <strong>task</strong> which can be run on the
+executor.</p>
+<p>The bulk of an async program will consist of non-leaf-futures, which are a kind
+of pause-able computation. This is an important distinction since these futures represents a <em>set of operations</em>. Often, such a task will <code>await</code> a leaf future
+as one of many operations to complete the task.</p>
+<pre><code class="language-rust ignore noplaypen edition2018">// Non-leaf-future
+let non_leaf = async {
+    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap();// &lt;- yield
+    println!(&quot;connected!&quot;);
+    let result = stream.write(b&quot;hello world\n&quot;).await; // &lt;- yield
+    println!(&quot;message sent!&quot;);
+    ...
+};
+</code></pre>
+<p>The key to these tasks is that they're able to yield control to the runtime's
+scheduler and then resume execution again where it left off at a later point.</p>
+<p>In contrast to leaf futures, these kind of futures does not themselves represent
+an I/O resource. When we poll these futures we either run some code or we yield
+to the scheduler while waiting for some resource to signal us that it's ready so
+we can resume where we left off.</p>
+<h2><a class="header" href="#runtimes" id="runtimes">Runtimes</a></h2>
+<p>Languages like C#, JavaScript, Java, GO and many others comes with a runtime
+for handling concurrency. So if you come from one of those languages this will
+seem a bit strange to you.</p>
+<p>Rust is different from these languages in the sense that Rust doesn't come with
+a runtime for handling concurrency, so you need to use a library which provide
+this for you.</p>
+<p>Quite a bit of complexity attributed to <code>Futures</code> is actually complexity rooted
+in runtimes. Creating an efficient runtime is hard.</p>
+<p>Learning how to use one correctly requires quite a bit of effort as well, but
+you'll see that there are several similarities between these kind of runtimes so
+learning one makes learning the next much easier.</p>
+<p>The difference between Rust and other languages is that you have to make an
+active choice when it comes to picking a runtime. Most often, in other languages
+you'll just use the one provided for you.</p>
+<p><strong>An async runtime can be divided into two parts:</strong></p>
+<ol>
+<li>The Executor</li>
+<li>The Reactor</li>
+</ol>
+<p>When Rusts Futures were designed there was a desire to separate the job of
+notifying a <code>Future</code> that it can do more work, and actually doing the work
+on the <code>Future</code>.</p>
+<p>You can think of the former as the reactor's job, and the latter as the
+executors job. These two parts of a runtime interacts using the <code>Waker</code> type.</p>
+<p>The two most popular runtimes for <code>Futures</code> as of writing this is:</p>
+<ul>
+<li><a href="https://github.com/async-rs/async-std">async-std</a></li>
+<li><a href="https://github.com/tokio-rs/tokio">Tokio</a></li>
+</ul>
+<h3><a class="header" href="#what-rusts-standard-library-takes-care-of" id="what-rusts-standard-library-takes-care-of">What Rust's standard library takes care of</a></h3>
+<ol>
+<li>A common interface representing an operation which will be completed in the
+future through the <code>Future</code> trait.</li>
+<li>An ergonomic way of creating tasks which can be suspended and resumed through
+the <code>async</code> and <code>await</code> keywords.</li>
+<li>A defined interface wake up a suspended task through the <code>Waker</code> type.</li>
+</ol>
+<p>That's really what Rusts standard library does. As you see there is no definition
+of non-blocking I/O, how these tasks are created or how they're run.</p>
+<h2><a class="header" href="#io-vs-cpu-intensive-tasks" id="io-vs-cpu-intensive-tasks">I/O vs CPU intensive tasks</a></h2>
+<p>As you know now, what you normally write are called non-leaf futures. Let's
+take a look at this async block using pseudo-rust as example:</p>
+<pre><code class="language-rust ignore">let non_leaf = async {
+    let mut stream = TcpStream::connect(&quot;127.0.0.1:3000&quot;).await.unwrap(); // &lt;-- yield
+    
+    // request a large dataset
+    let result = stream.write(get_dataset_request).await.unwrap(); // &lt;-- yield
+    
+    // wait for the dataset
+    let mut response = vec![];
+    stream.read(&amp;mut response).await.unwrap(); // &lt;-- yield
+
+    // do some CPU-intensive analysis on the dataset
+    let report = analyzer::analyze_data(response).unwrap();
+    
+    // send the results back
+    stream.write(report).await.unwrap(); // &lt;-- yield
+};
+</code></pre>
+<p>Now, as you'll see when we go through how Futures work, the code we write between
+the yield points are run on the same thread as our executor.</p>
+<p>That means that while our <code>analyzer</code> is working on the dataset, the executor
+is busy doing calculations instead of handling new requests.</p>
+<p>Fortunately there are a few ways to handle this, and it's not difficult, but it's
+something you must be aware of:</p>
+<ol>
+<li>
+<p>We could create a new leaf future which sends our task to another thread and
+resolves when the task is finished. We could <code>await</code> this leaf-future like any
+other future.</p>
+</li>
+<li>
+<p>The runtime could have some kind of supervisor that monitors how much time
+different tasks take, and move the executor itself to a different thread so it can
+continue to run even though our <code>analyzer</code> task is blocking the original executor thread.</p>
+</li>
+<li>
+<p>You can create a reactor yourself which is compatible with the runtime which
+does the analysis any way you see fit, and returns a Future which can be awaited.</p>
+</li>
+</ol>
+<p>Now, #1 is the usual way of handling this, but some executors implement #2 as well.
+The problem with #2 is that if you switch runtime you need to make sure that it
+supports this kind of supervision as well or else you will end up blocking the
+executor.</p>
+<p>#3 is more of theoretical importance, normally you'd be happy by sending the task
+to the thread-pool most runtimes provide.</p>
+<p>Most executors have a way to accomplish #1 using methods like <code>spawn_blocking</code>.</p>
+<p>These methods send the task to a thread-pool created by the runtime where you
+can either perform CPU-intensive tasks or &quot;blocking&quot; tasks which is not supported
+by the runtime.</p>
+<p>Now, armed with this knowledge you are already on a good way for understanding
+Futures, but we're not gonna stop yet, there is lots of details to cover. </p>
+<p>Take a break or a cup of coffe and get ready as we go for a deep dive in the next chapters.</p>
+<h2><a class="header" href="#bonus-section" id="bonus-section">Bonus section</a></h2>
+<p>If you find the concepts of concurrency and async programming confusing in
+general, I know where you're coming from and I have written some resources to 
+try to give a high level overview that will make it easier to learn Rusts 
+<code>Futures</code> afterwards:</p>
+<ul>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/1_concurrent_vs_parallel.html">Async Basics - The difference between concurrency and parallelism</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/2_async_history.html">Async Basics - Async history</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/5_strategies_for_handling_io.html">Async Basics - Strategies for handling I/O</a></li>
+<li><a href="https://cfsamson.github.io/book-exploring-async-basics/6_epoll_kqueue_iocp.html">Async Basics - Epoll, Kqueue and IOCP</a></li>
+</ul>
+<p>Learning these concepts by studying futures is making it much harder than
+it needs to be, so go on and read these chapters if you feel a bit unsure. </p>
+<p>I'll be right here when you're back.</p>
+<p>However, if you feel that you have the basics covered, then let's get moving!</p>
+<h1><a class="header" href="#waker-and-context" id="waker-and-context">Waker and Context</a></h1>
+<blockquote>
+<p><strong>Overview:</strong></p>
+<ul>
+<li>Understand how the Waker object is constructed</li>
+<li>Learn how the runtime know when a leaf-future can resume</li>
+<li>Learn the basics of dynamic dispatch and trait objects</li>
+</ul>
+<p>The <code>Waker</code> type is described as part of <a href="https://github.com/rust-lang/rfcs/blob/master/text/2592-futures.md#waking-up">RFC#2592</a>.</p>
+</blockquote>
+<h2><a class="header" href="#the-waker" id="the-waker">The Waker</a></h2>
+<p>The <code>Waker</code> type allows for a loose coupling between the reactor-part and the executor-part of a runtime.</p>
+<p>By having a wake up mechanism that is <em>not</em> tied to the thing that executes
+the future, runtime-implementors can come up with interesting new wake-up
+mechanisms. An example of this can be spawning a thread to do some work that
+eventually notifies the future, completely independent of the current runtime.</p>
+<p>Without a waker, the executor would be the <em>only</em> way to notify a running
+task, whereas with the waker, we get a loose coupling where it's easy to
+extend the ecosystem with new leaf-level tasks.</p>
+<blockquote>
+<p>If you want to read more about the reasoning behind the <code>Waker</code> type I can
+recommend <a href="https://boats.gitlab.io/blog/post/wakers-i/">Withoutboats articles series about them</a>.</p>
+</blockquote>
+<h2><a class="header" href="#the-context-type" id="the-context-type">The Context type</a></h2>
+<p>As the docs state as of now this type only wrapps a <code>Waker</code>, but it gives some
+flexibility for future evolutions of the API in Rust. The context can for example hold
+task-local storage and provide space for debugging hooks in later iterations.</p>
+<h2><a class="header" href="#understanding-the-waker" id="understanding-the-waker">Understanding the <code>Waker</code></a></h2>
+<p>One of the most confusing things we encounter when implementing our own <code>Futures</code>
+is how we implement a <code>Waker</code> . Creating a <code>Waker</code> involves creating a <code>vtable</code>
+which allows us to use dynamic dispatch to call methods on a <em>type erased</em> trait
+object we construct our selves.</p>
+<blockquote>
+<p>If you want to know more about dynamic dispatch in Rust I can recommend  an 
+article written by Adam Schwalm called <a href="https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/">Exploring Dynamic Dispatch in Rust</a>.</p>
+</blockquote>
+<p>Let's explain this a bit more in detail.</p>
+<h2><a class="header" href="#fat-pointers-in-rust" id="fat-pointers-in-rust">Fat pointers in Rust</a></h2>
+<p>To get a better understanding of how we implement the <code>Waker</code> in Rust, we need
+to take a step back and talk about some fundamentals. Let's start by taking a
+look at the size of some different pointer types in Rust. </p>
+<p>Run the following code <em>(You'll have to press &quot;play&quot; to see the output)</em>:</p>
+<pre><pre class="playpen"><code class="language-rust"><span class="boring">use std::mem::size_of;
+</span>trait SomeTrait { }
+
+fn main() {
+    println!(&quot;======== The size of different pointers in Rust: ========&quot;);
+    println!(&quot;&amp;dyn Trait:-----{}&quot;, size_of::&lt;&amp;dyn SomeTrait&gt;());
+    println!(&quot;&amp;[&amp;dyn Trait]:--{}&quot;, size_of::&lt;&amp;[&amp;dyn SomeTrait]&gt;());
+    println!(&quot;Box&lt;Trait&gt;:-----{}&quot;, size_of::&lt;Box&lt;SomeTrait&gt;&gt;());
+    println!(&quot;&amp;i32:-----------{}&quot;, size_of::&lt;&amp;i32&gt;());
+    println!(&quot;&amp;[i32]:---------{}&quot;, size_of::&lt;&amp;[i32]&gt;());
+    println!(&quot;Box&lt;i32&gt;:-------{}&quot;, size_of::&lt;Box&lt;i32&gt;&gt;());
+    println!(&quot;&amp;Box&lt;i32&gt;:------{}&quot;, size_of::&lt;&amp;Box&lt;i32&gt;&gt;());
+    println!(&quot;[&amp;dyn Trait;4]:-{}&quot;, size_of::&lt;[&amp;dyn SomeTrait; 4]&gt;());
+    println!(&quot;[i32;4]:--------{}&quot;, size_of::&lt;[i32; 4]&gt;());
+}
+</code></pre></pre>
+<p>As you see from the output after running this, the sizes of the references varies.
+Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
+bytes.</p>
+<p>The 16 byte sized pointers are called &quot;fat pointers&quot; since they carry extra
+information.</p>
+<p><strong>Example <code>&amp;[i32]</code> :</strong></p>
+<ul>
+<li>The first 8 bytes is the actual pointer to the first element in the array (or part of an array the slice refers to)</li>
+<li>The second 8 bytes is the length of the slice.</li>
+</ul>
+<p><strong>Example <code>&amp;dyn SomeTrait</code>:</strong></p>
+<p>This is the type of fat pointer we'll concern ourselves about going forward.
+<code>&amp;dyn SomeTrait</code> is a reference to a trait, or what Rust calls a <em>trait object</em>.</p>
+<p>The layout for a pointer to a <em>trait object</em> looks like this:</p>
+<ul>
+<li>The first 8 bytes points to the <code>data</code> for the trait object</li>
+<li>The second 8 bytes points to the <code>vtable</code> for the trait object</li>
+</ul>
+<p>The reason for this is to allow us to refer to an object we know nothing about
+except that it implements the methods defined by our trait. To accomplish this
+we use <em>dynamic dispatch</em>.</p>
+<p>Let's explain this in code instead of words by implementing our own trait
+object from these parts:</p>
+<pre><pre class="playpen"><code class="language-rust">// A reference to a trait object is a fat pointer: (data_ptr, vtable_ptr)
+trait Test {
+    fn add(&amp;self) -&gt; i32;
+    fn sub(&amp;self) -&gt; i32;
+    fn mul(&amp;self) -&gt; i32;
+}
+
+// This will represent our home brewn fat pointer to a trait object
+#[repr(C)]
+struct FatPointer&lt;'a&gt; {
+    /// A reference is a pointer to an instantiated `Data` instance
+    data: &amp;'a mut Data,
+    /// Since we need to pass in literal values like length and alignment it's
+    /// easiest for us to convert pointers to usize-integers instead of the other way around.
+    vtable: *const usize,
+}
+
+// This is the data in our trait object. It's just two numbers we want to operate on.
+struct Data {
+    a: i32,
+    b: i32,
+}
+
+// ====== function definitions ======
+fn add(s: &amp;Data) -&gt; i32 {
+    s.a + s.b
+}
+fn sub(s: &amp;Data) -&gt; i32 {
+    s.a - s.b
+}
+fn mul(s: &amp;Data) -&gt; i32 {
+    s.a * s.b
+}
+
+fn main() {
+    let mut data = Data {a: 3, b: 2};
+    // vtable is like special purpose array of pointer-length types with a fixed
+    // format where the three first values has a special meaning like the
+    // length of the array is encoded in the array itself as the second value.
+    let vtable = vec![
+        0,            // pointer to `Drop` (which we're not implementing here)
+        6,            // lenght of vtable
+        8,            // alignment
+
+        // we need to make sure we add these in the same order as defined in the Trait.
+        add as usize, // function pointer - try changing the order of `add`
+        sub as usize, // function pointer - and `sub` to see what happens
+        mul as usize, // function pointer
+    ];
+
+    let fat_pointer = FatPointer { data: &amp;mut data, vtable: vtable.as_ptr()};
+    let test = unsafe { std::mem::transmute::&lt;FatPointer, &amp;dyn Test&gt;(fat_pointer) };
+
+    // And voalá, it's now a trait object we can call methods on
+    println!(&quot;Add: 3 + 2 = {}&quot;, test.add());
+    println!(&quot;Sub: 3 - 2 = {}&quot;, test.sub());
+    println!(&quot;Mul: 3 * 2 = {}&quot;, test.mul());
+}
+</code></pre></pre>
+<p>Later on, when we implement our own <code>Waker</code> we'll actually set up a <code>vtable</code>
+like we do here. The way we create it is slightly different, but now that you know
+how regular trait objects work you will probably recognize what we're doing which
+makes it much less mysterious.</p>
+<h2><a class="header" href="#bonus-section-1" id="bonus-section-1">Bonus section</a></h2>
+<p>You might wonder why the <code>Waker</code> was implemented like this and not just as a
+normal trait?</p>
+<p>The reason is flexibility. Implementing the Waker the way we do here gives a lot
+of flexibility of choosing what memory management scheme to use.</p>
+<p>The &quot;normal&quot; way is by using an <code>Arc</code> to use reference count keep track of when
+a Waker object can be dropped. However, this is not the only way, you could also
+use purely global functions and state, or any other way you wish.</p>
+<p>This leaves a lot of options on the table for runtime implementors.</p>
+<h1><a class="header" href="#generators-and-asyncawait" id="generators-and-asyncawait">Generators and async/await</a></h1>
+<blockquote>
+<p><strong>Overview:</strong></p>
+<ul>
+<li>Understand how the async/await syntax works under the hood</li>
+<li>See first hand why we need <code>Pin</code></li>
+<li>Understand what makes Rusts async model very memory efficient</li>
+</ul>
+<p>The motivation for <code>Generators</code> can be found in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#2033</a>. It's very
+well written and I can recommend reading through it (it talks as much about
+async/await as it does about generators).</p>
+</blockquote>
+<h2><a class="header" href="#why-learn-about-generators" id="why-learn-about-generators">Why learn about generators?</a></h2>
+<p>Generators/yield and async/await are so similar that once you understand one
+you should be able to understand the other.</p>
+<p>It's much easier for me to provide runnable and short examples using Generators
+instead of Futures which require us to introduce a lot of concepts now that
+we'll cover later just to show an example.</p>
+<p>Async/await works like generators but instead of returning a generator it returns
+a special object implementing the Future trait.</p>
+<p>A small bonus is that you'll have a pretty good introduction to both Generators
+and Async/Await by the end of this chapter.</p>
+<p>Basically, there were three main options discussed when designing how Rust would
+handle concurrency:</p>
+<ol>
+<li>Stackful coroutines, better known as green threads.</li>
+<li>Using combinators.</li>
+<li>Stackless coroutines, better known as generators.</li>
+</ol>
+<p>We covered <a href="0_background_information.html#green-threads">green threads in the background information</a>
+so we won't repeat that here. We'll concentrate on the variants of stackless
+coroutines which Rust uses today.</p>
+<h3><a class="header" href="#combinators" id="combinators">Combinators</a></h3>
+<p><code>Futures 0.1</code> used combinators. If you've worked with <code>Promises</code> in JavaScript,
+you already know combinators. In Rust they look like this:</p>
+<pre><code class="language-rust noplaypen ignore">let future = Connection::connect(conn_str).and_then(|conn| {
+    conn.query(&quot;somerequest&quot;).map(|row|{
+        SomeStruct::from(row)
+    }).collect::&lt;Vec&lt;SomeStruct&gt;&gt;()
+});
+
+let rows: Result&lt;Vec&lt;SomeStruct&gt;, SomeLibraryError&gt; = block_on(future);
+
+</code></pre>
+<p><strong>There are mainly three downsides I'll focus on using this technique:</strong></p>
+<ol>
+<li>The error messages produced could be extremely long and arcane</li>
+<li>Not optimal memory usage</li>
+<li>Did not allow to borrow across combinator steps.</li>
+</ol>
+<p>Point #3, is actually a major drawback with <code>Futures 0.1</code>.</p>
+<p>Not allowing borrows across suspension points ends up being very
+un-ergonomic and to accomplish some tasks it requires extra allocations or
+copying which is inefficient.</p>
+<p>The reason for the higher than optimal memory usage is that this is basically
+a callback-based approach, where each closure stores all the data it needs
+for computation. This means that as we chain these, the memory required to store
+the needed state increases with each added step.</p>
+<h3><a class="header" href="#stackless-coroutinesgenerators" id="stackless-coroutinesgenerators">Stackless coroutines/generators</a></h3>
+<p>This is the model used in Rust today. It has a few notable advantages:</p>
+<ol>
+<li>It's easy to convert normal Rust code to a stackless coroutine using using
+async/await as keywords (it can even be done using a macro).</li>
+<li>No need for context switching and saving/restoring CPU state</li>
+<li>No need to handle dynamic stack allocation</li>
+<li>Very memory efficient</li>
+<li>Allows us to borrow across suspension points</li>
+</ol>
+<p>The last point is in contrast to <code>Futures 0.1</code>. With async/await we can do this:</p>
+<pre><code class="language-rust ignore">async fn myfn() {
+    let text = String::from(&quot;Hello world&quot;);
+    let borrowed = &amp;text[0..5];
+    somefuture.await;
+    println!(&quot;{}&quot;, borrowed);
+}
+</code></pre>
+<p>Async in Rust is implemented using Generators. So to understand how async really
+works we need to understand generators first. Generators in Rust are implemented
+as state machines. </p>
+<p>The memory footprint of a chain of computations is defined by <em>the largest footprint
+that a single step requires</em>.</p>
+<p>That means that adding steps to a chain of computations might not require any
+increased memory at all and it's one of the reasons why Futures and Async in
+Rust has very little overhead.</p>
+<h2><a class="header" href="#how-generators-work" id="how-generators-work">How generators work</a></h2>
+<p>In Nightly Rust today you can use the <code>yield</code> keyword. Basically using this
+keyword in a closure, converts it to a generator. A closure could look like this
+before we had a concept of <code>Pin</code>:</p>
+<pre><code class="language-rust noplaypen ignore">#![feature(generators, generator_trait)]
+use std::ops::{Generator, GeneratorState};
+
+fn main() {
+    let a: i32 = 4;
+    let mut gen = move || {
+        println!(&quot;Hello&quot;);
+        yield a * 2;
+        println!(&quot;world!&quot;);
+    };
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+</code></pre>
+<p>Early on, before there was a consensus about the design of <code>Pin</code>, this
+compiled to something looking similar to this:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut gen = GeneratorA::start(4);
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+
+// If you've ever wondered why the parameters are called Y and R the naming from
+// the original rfc most likely holds the answer
+enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  // originally called `Yield(Y)`
+    Complete(R), // originally called `Return(R)`
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+}
+
+enum GeneratorA {
+    Enter(i32),
+    Yield1(i32),
+    Exit,
+}
+
+impl GeneratorA {
+    fn start(a1: i32) -&gt; Self {
+        GeneratorA::Enter(a1)
+    }
+}
+
+impl Generator for GeneratorA {
+    type Yield = i32;
+    type Return = ();
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+        // lets us get ownership over current state
+        match std::mem::replace(self, GeneratorA::Exit) {
+            GeneratorA::Enter(a1) =&gt; {
+
+          /*----code before yield----*/
+                println!(&quot;Hello&quot;);
+                let a = a1 * 2;
+
+                *self = GeneratorA::Yield1(a);
+                GeneratorState::Yielded(a)
+            }
+
+            GeneratorA::Yield1(_) =&gt; {
+          /*-----code after yield-----*/
+                println!(&quot;world!&quot;);
+
+                *self = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+
+</code></pre></pre>
+<blockquote>
+<p>The <code>yield</code> keyword was discussed first in <a href="https://github.com/rust-lang/rfcs/pull/1823">RFC#1823</a> and in <a href="https://github.com/rust-lang/rfcs/pull/1832">RFC#1832</a>.</p>
+</blockquote>
+<p>Now that you know that the <code>yield</code> keyword in reality rewrites your code to become a state machine,
+you'll also know the basics of how <code>await</code> works. It's very similar.</p>
+<p>Now, there are some limitations in our naive state machine above. What happens when you have a 
+<code>borrow</code> across a <code>yield</code> point?</p>
+<p>We could forbid that, but <strong>one of the major design goals for the async/await syntax has been
+to allow this</strong>. These kinds of borrows were not possible using <code>Futures 0.1</code> so we can't let this
+limitation just slip and call it a day yet.</p>
+<p>Instead of discussing it in theory, let's look at some code.</p>
+<blockquote>
+<p>We'll use the optimized version of the state machines which is used in Rust today. For a more
+in depth explanation see <a href="https://tmandry.gitlab.io/blog/posts/optimizing-await-1/">Tyler Mandry's excellent article: How Rust optimizes async/await</a></p>
+</blockquote>
+<pre><code class="language-rust noplaypen ignore">let mut generator = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>We'll be hand-coding some versions of a state-machines representing a state
+machine for the generator defined aboce.</p>
+<p>We step through each step &quot;manually&quot; in every example, so it looks pretty
+unfamiliar. We could add some syntactic sugar like implementing the <code>Iterator</code>
+trait for our generators which would let us do this:</p>
+<pre><code class="language-rust ignore">while let Some(val) = generator.next() {
+    println!(&quot;{}&quot;, val);
+}
+</code></pre>
+<p>It's a pretty trivial change to make, but this chapter is already getting long.
+Just keep this in the back of your head as we move forward.</p>
+<p>Now what does our rewritten state machine look like with this example?</p>
+<pre><pre class="playpen"><code class="language-rust compile_fail">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span><span class="boring">enum GeneratorState&lt;Y, R&gt; {
+</span><span class="boring">    Yielded(Y), 
+</span><span class="boring">    Complete(R),
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Generator {
+</span><span class="boring">    type Yield;
+</span><span class="boring">    type Return;
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+</span><span class="boring">}
+</span>
+enum GeneratorA {
+    Enter,
+    Yield1 {
+        to_borrow: String,
+        borrowed: &amp;String, // uh, what lifetime should this have?
+    },
+    Exit,
+}
+
+<span class="boring">impl GeneratorA {
+</span><span class="boring">    fn start() -&gt; Self {
+</span><span class="boring">        GeneratorA::Enter
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>
+impl Generator for GeneratorA {
+    type Yield = usize;
+    type Return = ();
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+        // lets us get ownership over current state
+        match std::mem::replace(self, GeneratorA::Exit) {
+            GeneratorA::Enter =&gt; {
+                let to_borrow = String::from(&quot;Hello&quot;);
+                let borrowed = &amp;to_borrow; // &lt;--- NB!
+                let res = borrowed.len();
+
+                *self = GeneratorA::Yield1 {to_borrow, borrowed};
+                GeneratorState::Yielded(res)
+            }
+
+            GeneratorA::Yield1 {to_borrow, borrowed} =&gt; {
+                println!(&quot;Hello {}&quot;, borrowed);
+                *self = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>If you try to compile this you'll get an error (just try it yourself by pressing play).</p>
+<p>What is the lifetime of <code>&amp;String</code>. It's not the same as the lifetime of <code>Self</code>. It's not <code>static</code>.
+Turns out that it's not possible for us in Rusts syntax to describe this lifetime, which means, that
+to make this work, we'll have to let the compiler know that <em>we</em> control this correctly ourselves.</p>
+<p>That means turning to unsafe.</p>
+<p>Let's try to write an implementation that will compiler using <code>unsafe</code>. As you'll
+see we end up in a <em>self referential struct</em>. A struct which holds references
+into itself.</p>
+<p>As you'll notice, this compiles just fine!</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  
+    Complete(R), 
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+}
+
+enum GeneratorA {
+    Enter,
+    Yield1 {
+        to_borrow: String,
+        borrowed: *const String, // NB! This is now a raw pointer!
+    },
+    Exit,
+}
+
+impl GeneratorA {
+    fn start() -&gt; Self {
+        GeneratorA::Enter
+    }
+}
+impl Generator for GeneratorA {
+    type Yield = usize;
+    type Return = ();
+    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+            match self {
+            GeneratorA::Enter =&gt; {
+                let to_borrow = String::from(&quot;Hello&quot;);
+                let borrowed = &amp;to_borrow;
+                let res = borrowed.len();
+                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+                
+                // NB! And we set the pointer to reference the to_borrow string here
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+                    *borrowed = to_borrow;
+                }
+               
+                GeneratorState::Yielded(res)
+            }
+
+            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+                println!(&quot;{} world&quot;, borrowed);
+                *self = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Remember that our example is the generator we crated which looked like this:</p>
+<pre><code class="language-rust noplaypen ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>Below is an example of how we could run this state-machine and as you see it
+does what we'd expect. But there is still one huge problem with this:</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+<span class="boring">enum GeneratorState&lt;Y, R&gt; {
+</span><span class="boring">    Yielded(Y),  
+</span><span class="boring">    Complete(R), 
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Generator {
+</span><span class="boring">    type Yield;
+</span><span class="boring">    type Return;
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">enum GeneratorA {
+</span><span class="boring">    Enter,
+</span><span class="boring">    Yield1 {
+</span><span class="boring">        to_borrow: String,
+</span><span class="boring">        borrowed: *const String,
+</span><span class="boring">    },
+</span><span class="boring">    Exit,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GeneratorA {
+</span><span class="boring">    fn start() -&gt; Self {
+</span><span class="boring">        GeneratorA::Enter
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">impl Generator for GeneratorA {
+</span><span class="boring">    type Yield = usize;
+</span><span class="boring">    type Return = ();
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+</span><span class="boring">            match self {
+</span><span class="boring">            GeneratorA::Enter =&gt; {
+</span><span class="boring">                let to_borrow = String::from(&quot;Hello&quot;);
+</span><span class="boring">                let borrowed = &amp;to_borrow;
+</span><span class="boring">                let res = borrowed.len();
+</span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+</span><span class="boring">                
+</span><span class="boring">                // We set the self-reference here
+</span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+</span><span class="boring">                    *borrowed = to_borrow;
+</span><span class="boring">                }
+</span><span class="boring">               
+</span><span class="boring">                GeneratorState::Yielded(res)
+</span><span class="boring">            }
+</span><span class="boring">
+</span><span class="boring">            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+</span><span class="boring">                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+</span><span class="boring">                println!(&quot;{} world&quot;, borrowed);
+</span><span class="boring">                *self = GeneratorA::Exit;
+</span><span class="boring">                GeneratorState::Complete(())
+</span><span class="boring">            }
+</span><span class="boring">            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>The problem is that in safe Rust we can still do this:</p>
+<p><em>Run the code and compare the results. Do you see the problem?</em></p>
+<pre><pre class="playpen"><code class="language-rust should_panic"><span class="boring">#![feature(never_type)] // Force nightly compiler to be used in playground
+</span><span class="boring">// by betting on it's true that this type is named after it's stabilization date...
+</span>pub fn main() {
+    let mut gen = GeneratorA::start();
+    let mut gen2 = GeneratorA::start();
+
+    if let GeneratorState::Yielded(n) = gen.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    std::mem::swap(&amp;mut gen, &amp;mut gen2); // &lt;--- Big problem!
+
+    if let GeneratorState::Yielded(n) = gen2.resume() {
+        println!(&quot;Got value {}&quot;, n);
+    }
+
+    // This would now start gen2 since we swapped them.
+    if let GeneratorState::Complete(()) = gen.resume() {
+        ()
+    };
+}
+<span class="boring">enum GeneratorState&lt;Y, R&gt; {
+</span><span class="boring">    Yielded(Y),  
+</span><span class="boring">    Complete(R), 
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Generator {
+</span><span class="boring">    type Yield;
+</span><span class="boring">    type Return;
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">enum GeneratorA {
+</span><span class="boring">    Enter,
+</span><span class="boring">    Yield1 {
+</span><span class="boring">        to_borrow: String,
+</span><span class="boring">        borrowed: *const String,
+</span><span class="boring">    },
+</span><span class="boring">    Exit,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl GeneratorA {
+</span><span class="boring">    fn start() -&gt; Self {
+</span><span class="boring">        GeneratorA::Enter
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">impl Generator for GeneratorA {
+</span><span class="boring">    type Yield = usize;
+</span><span class="boring">    type Return = ();
+</span><span class="boring">    fn resume(&amp;mut self) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+</span><span class="boring">            match self {
+</span><span class="boring">            GeneratorA::Enter =&gt; {
+</span><span class="boring">                let to_borrow = String::from(&quot;Hello&quot;);
+</span><span class="boring">                let borrowed = &amp;to_borrow;
+</span><span class="boring">                let res = borrowed.len();
+</span><span class="boring">                *self = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+</span><span class="boring">                
+</span><span class="boring">                // We set the self-reference here
+</span><span class="boring">                if let GeneratorA::Yield1 {to_borrow, borrowed} = self {
+</span><span class="boring">                    *borrowed = to_borrow;
+</span><span class="boring">                }
+</span><span class="boring">               
+</span><span class="boring">                GeneratorState::Yielded(res)
+</span><span class="boring">            }
+</span><span class="boring">
+</span><span class="boring">            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+</span><span class="boring">                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+</span><span class="boring">                println!(&quot;{} world&quot;, borrowed);
+</span><span class="boring">                *self = GeneratorA::Exit;
+</span><span class="boring">                GeneratorState::Complete(())
+</span><span class="boring">            }
+</span><span class="boring">            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>Wait? What happened to &quot;Hello&quot;? And why did our code segfault?</p>
+<p>Turns out that while the example above compiles just fine, we expose consumers
+of this this API to both possible undefined behavior and other memory errors
+while using just safe Rust. This is a big problem!</p>
+<blockquote>
+<p>I've actually forced the code above to use the nightly version of the compiler.
+If you run <a href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2018&amp;gist=5cbe9897c0e23a502afd2740c7e78b98">the example above on the playground</a>,
+you'll see that it runs without panicing on the current stable (1.42.0) but
+panics on the current nightly (1.44.0). Scary!</p>
+</blockquote>
+<p>We'll explain exactly what happened here using a slightly simpler example in the next
+chapter and we'll fix our generator using <code>Pin</code> so don't worry, you'll see exactly
+what goes wrong and see how <code>Pin</code> can help us deal with self-referential types safely in a
+second.</p>
+<p>Before we go and explain the problem in detail, let's finish off this chapter
+by looking at how generators and the async keyword is related.</p>
+<h2><a class="header" href="#async-and-generators" id="async-and-generators">Async and generators</a></h2>
+<p>Futures in Rust are implemented as state machines much the same way Generators
+are state machines.</p>
+<p>You might have noticed the similarites in the syntax used in async blocks and
+the syntax used in generators:</p>
+<pre><code class="language-rust ignore">let mut gen = move || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>Compare that with a similar example using async blocks:</p>
+<pre><code class="language-rust ignore">let mut fut = async {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        SomeResource::some_task().await;
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+</code></pre>
+<p>The difference is that Futures has different states than what a <code>Generator</code> would
+have.</p>
+<p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
+a Future works and the way a Generator work internally is similar.</p>
+<p>Instead of calling <code>Generator::resume</code> we call <code>Future::poll</code>, and instead of
+returning <code>Yielded</code> or <code>Complete</code> it returns <code>Pending</code> or <code>Ready</code>. Each <code>await</code>
+point in a future is like a <code>yield</code> point in a generator.</p>
+<p>Do you see how they're connected now?</p>
+<p>Thats why kowing how generators work and the challanges they pose also teaches
+you how futures work and the challenges we need to tackle when working with them.</p>
+<p>The same goes for the challenges of borrowing across yield/await points.</p>
+<h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
+<p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
+example in Rust today using the <code>static</code> keyword on nightly. Try it for
+yourself:</p>
+<blockquote>
+<p>Beware that the API is changing rapidly. As I was writing this book, generators
+had an API change adding support for a &quot;resume&quot; argument to get passed into the
+generator closure.</p>
+<p>Follow the progress on the <a href="https://github.com/rust-lang/rust/issues/43122">tracking issue #4312</a> for <a href="https://github.com/rust-lang/rfcs/blob/master/text/2033-experimental-coroutines.md">RFC#033</a>.</p>
+</blockquote>
+<pre><pre class="playpen"><code class="language-rust">#![feature(generators, generator_trait)]
+use std::ops::{Generator, GeneratorState};
+
+
+pub fn main() {
+    let gen1 = static || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+    
+    let gen2 = static || {
+        let to_borrow = String::from(&quot;Hello&quot;);
+        let borrowed = &amp;to_borrow;
+        yield borrowed.len();
+        println!(&quot;{} world!&quot;, borrowed);
+    };
+
+    let mut pinned1 = Box::pin(gen1);
+    let mut pinned2 = Box::pin(gen2);
+
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume(()) {
+        println!(&quot;Gen1 got value {}&quot;, n);
+    }
+    
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume(()) {
+        println!(&quot;Gen2 got value {}&quot;, n);
+    };
+
+    let _ = pinned1.as_mut().resume(());
+    let _ = pinned2.as_mut().resume(());
+}
+</code></pre></pre>
+<h1><a class="header" href="#pin" id="pin">Pin</a></h1>
+<blockquote>
+<p><strong>Overview</strong></p>
+<ol>
+<li>Learn how to use <code>Pin</code> and why it's required when implementing your own <code>Future</code></li>
+<li>Understand how to make self-referential types safe to use in Rust</li>
+<li>Learn how borrowing across <code>await</code> points is accomplished</li>
+<li>Get a set of practical rules to help you work with <code>Pin</code></li>
+</ol>
+<p><code>Pin</code> was suggested in <a href="https://github.com/rust-lang/rfcs/blob/master/text/2349-pin.md">RFC#2349</a></p>
+</blockquote>
+<p>Let's jump strait to it. Pinning is one of those subjects which is hard to wrap
+your head around in the start, but once you unlock a mental model for it
+it gets significantly easier to reason about.</p>
+<h2><a class="header" href="#definitions" id="definitions">Definitions</a></h2>
+<p>Pin is only relevant for pointers. A reference to an object is a pointer.</p>
+<p>Pin consists of the <code>Pin</code> type and the <code>Unpin</code> marker. Pin's purpose in life is
+to govern the rules that need to apply for types which implement <code>!Unpin</code>.</p>
+<p>Yep, you're right, that's double negation right there. <code>!Unpin</code> means
+&quot;not-un-pin&quot;.</p>
+<blockquote>
+<p><em>This naming scheme is one of Rusts safety features where it deliberately
+tests if you're too tired to safely implement a type with this marker. If
+you're starting to get confused, or even angry, by <code>!Unpin</code> it's a good sign
+that it's time to lay down the work and start over tomorrow with a fresh mind.</em></p>
+</blockquote>
+<p>On a more serious note, I feel obliged to mention that there are valid reasons
+for the names that were chosen. Naming is not easy, and I considered renaming
+<code>Unpin</code> and <code>!Unpin</code> in this book to make them easier to reason about. </p>
+<p>However, an experienced member of the Rust community convinced me that that there
+is just too many nuances and edge-cases to consider which is easily overlooked when
+naively giving these markers different names, and I'm convinced that we'll
+just have to get used to them and use them as is.</p>
+<p>If you want to you can read a bit of the discussion from the
+<a href="https://internals.rust-lang.org/t/naming-pin-anchor-move/6864/12">internals thread</a>.</p>
+<h2><a class="header" href="#pinning-and-self-referential-structs" id="pinning-and-self-referential-structs">Pinning and self-referential structs</a></h2>
+<p>Let's start where we left off in the last chapter by making the problem we
+saw using a self-referential struct in our generator a lot simpler by making
+some self-referential structs that are easier to reason about than our
+state machines:</p>
+<p>For now our example will look like this:</p>
+<pre><code class="language-rust ignore">use std::pin::Pin;
+
+#[derive(Debug)]
+struct Test {
+    a: String,
+    b: *const String,
+}
+
+impl Test {
+    fn new(txt: &amp;str) -&gt; Self {
+        let a = String::from(txt);
+        Test {
+            a,
+            b: std::ptr::null(),
+        }
+    }
+
+    fn init(&amp;mut self) {
+        let self_ref: *const String = &amp;self.a;
+        self.b = self_ref;
+    }
+    
+    fn a(&amp;self) -&gt; &amp;str {
+        &amp;self.a
+    } 
+    
+    fn b(&amp;self) -&gt; &amp;String {
+        unsafe {&amp;*(self.b)}
+    }
+}
+</code></pre>
+<p>Let's walk through this example since we'll be using it the rest of this chapter.</p>
+<p>We have a self-referential struct <code>Test</code>. <code>Test</code> needs an <code>init</code> method to be
+created which is strange but we'll need that to keep this example as short as
+possible.</p>
+<p><code>Test</code> provides two methods to get a reference to the value of the fields
+<code>a</code> and <code>b</code>. Since <code>b</code> is a reference to <code>a</code> we store it as a pointer since
+the borrowing rules of Rust doesn't allow us to define this lifetime.</p>
+<p>Now, let's use this example to explain the problem we encounter in detail. As
+you see, this works as expected:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+<span class="boring">use std::pin::Pin;
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Test {
+</span><span class="boring">    a: String,
+</span><span class="boring">    b: *const String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Test {
+</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
+</span><span class="boring">        let a = String::from(txt);
+</span><span class="boring">        Test {
+</span><span class="boring">            a,
+</span><span class="boring">            b: std::ptr::null(),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    // We need an `init` method to actually set our self-reference
+</span><span class="boring">    fn init(&amp;mut self) {
+</span><span class="boring">        let self_ref: *const String = &amp;self.a;
+</span><span class="boring">        self.b = self_ref;
+</span><span class="boring">    }
+</span><span class="boring">    
+</span><span class="boring">    fn a(&amp;self) -&gt; &amp;str {
+</span><span class="boring">        &amp;self.a
+</span><span class="boring">    } 
+</span><span class="boring">    
+</span><span class="boring">    fn b(&amp;self) -&gt; &amp;String {
+</span><span class="boring">        unsafe {&amp;*(self.b)}
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>In our main method we first instantiate two instances of <code>Test</code> and print out
+the value of the fields on <code>test1</code>. We get what we'd expect:</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test2, b: test2
+</code></pre>
+<p>Let's see what happens if we swap the data stored at the memory location
+which <code>test1</code> is pointing to with the data stored at the memory location
+<code>test2</code> is pointing to and vice a versa.</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    std::mem::swap(&amp;mut test1, &amp;mut test2);
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+<span class="boring">use std::pin::Pin;
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Test {
+</span><span class="boring">    a: String,
+</span><span class="boring">    b: *const String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Test {
+</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
+</span><span class="boring">        let a = String::from(txt);
+</span><span class="boring">        Test {
+</span><span class="boring">            a,
+</span><span class="boring">            b: std::ptr::null(),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn init(&amp;mut self) {
+</span><span class="boring">        let self_ref: *const String = &amp;self.a;
+</span><span class="boring">        self.b = self_ref;
+</span><span class="boring">    }
+</span><span class="boring">    
+</span><span class="boring">    fn a(&amp;self) -&gt; &amp;str {
+</span><span class="boring">        &amp;self.a
+</span><span class="boring">    } 
+</span><span class="boring">    
+</span><span class="boring">    fn b(&amp;self) -&gt; &amp;String {
+</span><span class="boring">        unsafe {&amp;*(self.b)}
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>Naively, we could think that what we should get a debug print of <code>test1</code> two
+times like this</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test1, b: test1
+</code></pre>
+<p>But instead we get:</p>
+<pre><code class="language-rust ignore">a: test1, b: test1
+a: test1, b: test2
+</code></pre>
+<p>The pointer to <code>test2.b</code> still points to the old location which is inside <code>test1</code>
+now. The struct is not self-referential anymore, it holds a pointer to a field
+in a different object. That means we can't rely on the lifetime of <code>test2.b</code> to
+be tied to the lifetime of <code>test2</code> anymore.</p>
+<p>If your still not convinced, this should at least convince you:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    test1.init();
+    let mut test2 = Test::new(&quot;test2&quot;);
+    test2.init();
+
+    println!(&quot;a: {}, b: {}&quot;, test1.a(), test1.b());
+    std::mem::swap(&amp;mut test1, &amp;mut test2);
+    test1.a = &quot;I've totally changed now!&quot;.to_string();
+    println!(&quot;a: {}, b: {}&quot;, test2.a(), test2.b());
+
+}
+<span class="boring">use std::pin::Pin;
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Test {
+</span><span class="boring">    a: String,
+</span><span class="boring">    b: *const String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Test {
+</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
+</span><span class="boring">        let a = String::from(txt);
+</span><span class="boring">        Test {
+</span><span class="boring">            a,
+</span><span class="boring">            b: std::ptr::null(),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn init(&amp;mut self) {
+</span><span class="boring">        let self_ref: *const String = &amp;self.a;
+</span><span class="boring">        self.b = self_ref;
+</span><span class="boring">    }
+</span><span class="boring">    
+</span><span class="boring">    fn a(&amp;self) -&gt; &amp;str {
+</span><span class="boring">        &amp;self.a
+</span><span class="boring">    } 
+</span><span class="boring">    
+</span><span class="boring">    fn b(&amp;self) -&gt; &amp;String {
+</span><span class="boring">        unsafe {&amp;*(self.b)}
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>That shouldn't happen. There is no serious error yet, but as you can imagine
+it's easy to create serious bugs using this code.</p>
+<p>I created a diagram to help visualize what's going on:</p>
+<p><strong>Fig 1: Before and after swap</strong>
+<img src="./assets/swap_problem.jpg" alt="swap_problem" /></p>
+<p>As you can see this results in unwanted behavior. It's easy to get this to 
+segfault, show UB and fail in other spectacular ways as well.</p>
+<h2><a class="header" href="#pinning-to-the-stack" id="pinning-to-the-stack">Pinning to the stack</a></h2>
+<p>Now, we can solve this problem by using <code>Pin</code> instead. Let's take a look at what
+our example would look like then:</p>
+<pre><code class="language-rust ignore">use std::pin::Pin;
+use std::marker::PhantomPinned;
+
+#[derive(Debug)]
+struct Test {
+    a: String,
+    b: *const String,
+    _marker: PhantomPinned,
+}
+
+
+impl Test {
+    fn new(txt: &amp;str) -&gt; Self {
+        let a = String::from(txt);
+        Test {
+            a,
+            b: std::ptr::null(),
+            // This makes our type `!Unpin`
+            _marker: PhantomPinned,
+        }
+    }
+    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+        let self_ptr: *const String = &amp;self.a;
+        let this = unsafe { self.get_unchecked_mut() };
+        this.b = self_ptr;
+    }
+
+    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+        &amp;self.get_ref().a
+    }
+
+    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+        unsafe { &amp;*(self.b) }
+    }
+}
+</code></pre>
+<p>Now, what we've done here is pinning a stack address. That will always be
+<code>unsafe</code> if our type implements <code>!Unpin</code>.</p>
+<p>We use the same tricks here, including requiring an <code>init</code>. If we want to fix that
+and let users avoid <code>unsafe</code> we need to pin our data on the heap instead which
+we'll show in a second.</p>
+<p>Let's see what happens if we run our example now:</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    // test1 is safe to move before we initialize it
+    let mut test1 = Test::new(&quot;test1&quot;);
+    // Notice how we shadow `test1` to prevent it from beeing accessed again
+    let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
+    Test::init(test1.as_mut());
+     
+    let mut test2 = Test::new(&quot;test2&quot;);
+    let mut test2 = unsafe { Pin::new_unchecked(&amp;mut test2) };
+    Test::init(test2.as_mut());
+
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1.as_ref()), Test::b(test1.as_ref()));
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2.as_ref()), Test::b(test2.as_ref()));
+}
+<span class="boring">use std::pin::Pin;
+</span><span class="boring">use std::marker::PhantomPinned;
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Test {
+</span><span class="boring">    a: String,
+</span><span class="boring">    b: *const String,
+</span><span class="boring">    _marker: PhantomPinned,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">
+</span><span class="boring">impl Test {
+</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
+</span><span class="boring">        let a = String::from(txt);
+</span><span class="boring">        Test {
+</span><span class="boring">            a,
+</span><span class="boring">            b: std::ptr::null(),
+</span><span class="boring">            // This makes our type `!Unpin`
+</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+</span><span class="boring">        let self_ptr: *const String = &amp;self.a;
+</span><span class="boring">        let this = unsafe { self.get_unchecked_mut() };
+</span><span class="boring">        this.b = self_ptr;
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+</span><span class="boring">        &amp;self.get_ref().a
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+</span><span class="boring">        unsafe { &amp;*(self.b) }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>Now, if we try to pull the same trick which got us in to trouble the last time
+you'll get a compilation error.</p>
+<pre><pre class="playpen"><code class="language-rust compile_fail">pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    let mut test1 = unsafe { Pin::new_unchecked(&amp;mut test1) };
+    Test::init(test1.as_mut());
+     
+    let mut test2 = Test::new(&quot;test2&quot;);
+    let mut test2 = unsafe { Pin::new_unchecked(&amp;mut test2) };
+    Test::init(test2.as_mut());
+
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test1.as_ref()), Test::b(test1.as_ref()));
+    std::mem::swap(test1.as_mut(), test2.as_mut());
+    println!(&quot;a: {}, b: {}&quot;, Test::a(test2.as_ref()), Test::b(test2.as_ref()));
+}
+<span class="boring">use std::pin::Pin;
+</span><span class="boring">use std::marker::PhantomPinned;
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Test {
+</span><span class="boring">    a: String,
+</span><span class="boring">    b: *const String,
+</span><span class="boring">    _marker: PhantomPinned,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">
+</span><span class="boring">impl Test {
+</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
+</span><span class="boring">        let a = String::from(txt);
+</span><span class="boring">        Test {
+</span><span class="boring">            a,
+</span><span class="boring">            b: std::ptr::null(),
+</span><span class="boring">            // This makes our type `!Unpin`
+</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+</span><span class="boring">        let self_ptr: *const String = &amp;self.a;
+</span><span class="boring">        let this = unsafe { self.get_unchecked_mut() };
+</span><span class="boring">        this.b = self_ptr;
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+</span><span class="boring">        &amp;self.get_ref().a
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+</span><span class="boring">        unsafe { &amp;*(self.b) }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>As you see from the error you get by running the code the type system prevents
+us from swapping the pinned pointers.</p>
+<blockquote>
+<p>It's important to note that stack pinning will always depend on the current
+stack frame we're in, so we can't create a self referential object in one
+stack frame and return it since any pointers we take to &quot;self&quot; is invalidated.</p>
+<p>It also puts a lot of responsibility in your hands if you pin a value to the
+stack. A mistake that is easy to make is, forgetting to shadow the original variable 
+since you could drop the pinned pointer and access the old value
+after it's initialized like this:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+   let mut test1 = Test::new(&quot;test1&quot;);
+   let mut test1_pin = unsafe { Pin::new_unchecked(&amp;mut test1) };
+   Test::init(test1_pin.as_mut());
+   drop(test1_pin);
+   
+   let mut test2 = Test::new(&quot;test2&quot;);
+   mem::swap(&amp;mut test1, &amp;mut test2);
+   println!(&quot;Not self referential anymore: {:?}&quot;, test1.b);
+}
+<span class="boring">use std::pin::Pin;
+</span><span class="boring">use std::marker::PhantomPinned;
+</span><span class="boring">use std::mem;
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Test {
+</span><span class="boring">    a: String,
+</span><span class="boring">    b: *const String,
+</span><span class="boring">    _marker: PhantomPinned,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">
+</span><span class="boring">impl Test {
+</span><span class="boring">    fn new(txt: &amp;str) -&gt; Self {
+</span><span class="boring">        let a = String::from(txt);
+</span><span class="boring">        Test {
+</span><span class="boring">            a,
+</span><span class="boring">            b: std::ptr::null(),
+</span><span class="boring">            // This makes our type `!Unpin`
+</span><span class="boring">            _marker: PhantomPinned,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">    fn init&lt;'a&gt;(self: Pin&lt;&amp;'a mut Self&gt;) {
+</span><span class="boring">        let self_ptr: *const String = &amp;self.a;
+</span><span class="boring">        let this = unsafe { self.get_unchecked_mut() };
+</span><span class="boring">        this.b = self_ptr;
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+</span><span class="boring">        &amp;self.get_ref().a
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+</span><span class="boring">        unsafe { &amp;*(self.b) }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+</blockquote>
+<h2><a class="header" href="#pinning-to-the-heap" id="pinning-to-the-heap">Pinning to the heap</a></h2>
+<p>For completeness let's remove some unsafe and the need for an <code>init</code> method
+at the cost of a heap allocation. Pinning to the heap is safe so the user
+doesn't need to implement any unsafe code:</p>
+<pre><pre class="playpen"><code class="language-rust">use std::pin::Pin;
+use std::marker::PhantomPinned;
+
+#[derive(Debug)]
+struct Test {
+    a: String,
+    b: *const String,
+    _marker: PhantomPinned,
+}
+
+impl Test {
+    fn new(txt: &amp;str) -&gt; Pin&lt;Box&lt;Self&gt;&gt; {
+        let a = String::from(txt);
+        let t = Test {
+            a,
+            b: std::ptr::null(),
+            _marker: PhantomPinned,
+        };
+        let mut boxed = Box::pin(t);
+        let self_ptr: *const String = &amp;boxed.as_ref().a;
+        unsafe { boxed.as_mut().get_unchecked_mut().b = self_ptr };
+
+        boxed
+    }
+
+    fn a&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a str {
+        &amp;self.get_ref().a
+    }
+
+    fn b&lt;'a&gt;(self: Pin&lt;&amp;'a Self&gt;) -&gt; &amp;'a String {
+        unsafe { &amp;*(self.b) }
+    }
+}
+
+pub fn main() {
+    let mut test1 = Test::new(&quot;test1&quot;);
+    let mut test2 = Test::new(&quot;test2&quot;);
+
+    println!(&quot;a: {}, b: {}&quot;,test1.as_ref().a(), test1.as_ref().b());
+    println!(&quot;a: {}, b: {}&quot;,test2.as_ref().a(), test2.as_ref().b());
+}
+</code></pre></pre>
+<p>The fact that it's safe to pin a heap allocated value even if it is <code>!Unpin</code>
+makes sense. Once the data is allocated on the heap it will have a stable address.</p>
+<p>There is no need for us as users of the API to take special care and ensure
+that the self-referential pointer stays valid.</p>
+<p>There are ways to safely give some guarantees on stack pinning as well, but right
+now you need to use a crate like <a href="https://docs.rs/pin-project/">pin_project</a> to do that.</p>
+<h2><a class="header" href="#practical-rules-for-pinning" id="practical-rules-for-pinning">Practical rules for Pinning</a></h2>
+<ol>
+<li>
+<p>If <code>T: Unpin</code> (which is the default), then <code>Pin&lt;'a, T&gt;</code> is entirely
+equivalent to <code>&amp;'a mut T</code>. in other words: <code>Unpin</code> means it's OK for this type
+to be moved even when pinned, so <code>Pin</code> will have no effect on such a type.</p>
+</li>
+<li>
+<p>Getting a <code>&amp;mut T</code> to a pinned T requires unsafe if <code>T: !Unpin</code>. In
+other words: requiring a pinned pointer to a type which is <code>!Unpin</code> prevents
+the <em>user</em> of that API from moving that value unless it choses to write <code>unsafe</code>
+code.</p>
+</li>
+<li>
+<p>Pinning does nothing special with memory allocation like putting it into some
+&quot;read only&quot; memory or anything fancy. It only uses the type system to prevent
+certain operations on this value.</p>
+</li>
+<li>
+<p>Most standard library types implement <code>Unpin</code>. The same goes for most
+&quot;normal&quot; types you encounter in Rust. <code>Futures</code> and <code>Generators</code> are two
+exceptions.</p>
+</li>
+<li>
+<p>The main use case for <code>Pin</code> is to allow self referential types, the whole
+justification for stabilizing them was to allow that. There are still corner
+cases in the API which are being explored.</p>
+</li>
+<li>
+<p>The implementation behind objects that are <code>!Unpin</code> is most likely unsafe.
+Moving such a type after it has been pinned can cause the universe to crash. As of the time of writing
+this book, creating and reading fields of a self referential struct still requires <code>unsafe</code>
+(the only way to do it is to create a struct containing raw pointers to itself).</p>
+</li>
+<li>
+<p>You can add a <code>!Unpin</code> bound on a type on nightly with a feature flag, or
+by adding <code>std::marker::PhantomPinned</code> to your type on stable.</p>
+</li>
+<li>
+<p>You can either pin a value to memory on the stack or on the heap.</p>
+</li>
+<li>
+<p>Pinning a <code>!Unpin</code> pointer to the stack requires <code>unsafe</code></p>
+</li>
+<li>
+<p>Pinning a <code>!Unpin</code> pointer to the heap does not require <code>unsafe</code>. There is a shortcut for doing this using <code>Box::pin</code>.</p>
+</li>
+</ol>
+<blockquote>
+<p>Unsafe code does not mean it's literally &quot;unsafe&quot;, it only relieves the 
+guarantees you normally get from the compiler. An <code>unsafe</code> implementation can 
+be perfectly safe to do, but you have no safety net.</p>
+</blockquote>
+<h3><a class="header" href="#projectionstructural-pinning" id="projectionstructural-pinning">Projection/structural pinning</a></h3>
+<p>In short, projection is a programming language term. <code>mystruct.field1</code> is a
+projection. Structural pinning is using <code>Pin</code> on fields. This has several
+caveats and is not something you'll normally see so I refer to the documentation
+for that.</p>
+<h3><a class="header" href="#pin-and-drop" id="pin-and-drop">Pin and Drop</a></h3>
+<p>The <code>Pin</code> guarantee exists from the moment the value is pinned until it's dropped.
+In the <code>Drop</code> implementation you take a mutable reference to <code>self</code>, which means
+extra care must be taken when implementing <code>Drop</code> for pinned types.</p>
+<h2><a class="header" href="#putting-it-all-together" id="putting-it-all-together">Putting it all together</a></h2>
+<p>This is exactly what we'll do when we implement our own <code>Futures</code> stay tuned, 
+we're soon finished.</p>
+<h2><a class="header" href="#bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin" id="bonus-section-fixing-our-self-referential-generator-and-learning-more-about-pin">Bonus section: Fixing our self-referential generator and learning more about Pin</a></h2>
+<p>But now, let's prevent this problem using <code>Pin</code>. We'll discuss
+<code>Pin</code> more in the next chapter, but you'll get an introduction here by just
+reading the comments.</p>
+<pre><pre class="playpen"><code class="language-rust">#![feature(optin_builtin_traits, negative_impls)] // needed to implement `!Unpin`
+use std::pin::Pin;
+
+pub fn main() {
+    let gen1 = GeneratorA::start();
+    let gen2 = GeneratorA::start();
+    // Before we pin the pointers, this is safe to do
+    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
+
+    // constructing a `Pin::new()` on a type which does not implement `Unpin` is
+    // unsafe. A value pinned to heap can be constructed while staying in safe
+    // Rust so we can use that to avoid unsafe. You can also use crates like
+    // `pin_utils` to pin to the stack safely, just remember that they use
+    // unsafe under the hood so it's like using an already-reviewed unsafe
+    // implementation.
+
+    let mut pinned1 = Box::pin(gen1);
+    let mut pinned2 = Box::pin(gen2);
+
+    // Uncomment these if you think it's safe to pin the values to the stack instead 
+    // (it is in this case). Remember to comment out the two previous lines first.
+    //let mut pinned1 = unsafe { Pin::new_unchecked(&amp;mut gen1) };
+    //let mut pinned2 = unsafe { Pin::new_unchecked(&amp;mut gen2) };
+
+    if let GeneratorState::Yielded(n) = pinned1.as_mut().resume() {
+        println!(&quot;Gen1 got value {}&quot;, n);
+    }
+    
+    if let GeneratorState::Yielded(n) = pinned2.as_mut().resume() {
+        println!(&quot;Gen2 got value {}&quot;, n);
+    };
+
+    // This won't work:
+    // std::mem::swap(&amp;mut gen, &amp;mut gen2);
+    // This will work but will just swap the pointers so nothing bad happens here:
+    // std::mem::swap(&amp;mut pinned1, &amp;mut pinned2);
+
+    let _ = pinned1.as_mut().resume();
+    let _ = pinned2.as_mut().resume();
+}
+
+enum GeneratorState&lt;Y, R&gt; {
+    Yielded(Y),  
+    Complete(R), 
+}
+
+trait Generator {
+    type Yield;
+    type Return;
+    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt;;
+}
+
+enum GeneratorA {
+    Enter,
+    Yield1 {
+        to_borrow: String,
+        borrowed: *const String,
+    },
+    Exit,
+}
+
+impl GeneratorA {
+    fn start() -&gt; Self {
+        GeneratorA::Enter
+    }
+}
+
+// This tells us that the underlying pointer is not safe to move after pinning.
+// In this case, only we as implementors &quot;feel&quot; this, however, if someone is
+// relying on our Pinned pointer this will prevent them from moving it. You need
+// to enable the feature flag `#![feature(optin_builtin_traits)]` and use the
+// nightly compiler to implement `!Unpin`. Normally, you would use
+// `std::marker::PhantomPinned` to indicate that the struct is `!Unpin`.
+impl !Unpin for GeneratorA { }
+
+impl Generator for GeneratorA {
+    type Yield = usize;
+    type Return = ();
+    fn resume(self: Pin&lt;&amp;mut Self&gt;) -&gt; GeneratorState&lt;Self::Yield, Self::Return&gt; {
+        // lets us get ownership over current state
+        let this = unsafe { self.get_unchecked_mut() };
+            match this {
+            GeneratorA::Enter =&gt; {
+                let to_borrow = String::from(&quot;Hello&quot;);
+                let borrowed = &amp;to_borrow;
+                let res = borrowed.len();
+                *this = GeneratorA::Yield1 {to_borrow, borrowed: std::ptr::null()};
+
+                // Trick to actually get a self reference. We can't reference
+                // the `String` earlier since these references will point to the
+                // location in this stack frame which will not be valid anymore
+                // when this function returns.
+                if let GeneratorA::Yield1 {to_borrow, borrowed} = this {
+                    *borrowed = to_borrow;
+                }
+
+                GeneratorState::Yielded(res)
+            }
+
+            GeneratorA::Yield1 {borrowed, ..} =&gt; {
+                let borrowed: &amp;String = unsafe {&amp;**borrowed};
+                println!(&quot;{} world&quot;, borrowed);
+                *this = GeneratorA::Exit;
+                GeneratorState::Complete(())
+            }
+            GeneratorA::Exit =&gt; panic!(&quot;Can't advance an exited generator!&quot;),
+        }
+    }
+}
+</code></pre></pre>
+<p>Now, as you see, the consumer of this API must either:</p>
+<ol>
+<li>Box the value and thereby allocating it on the heap</li>
+<li>Use <code>unsafe</code> and pin the value to the stack. The user knows that if they move
+the value afterwards it will violate the guarantee they promise to uphold when
+they did their unsafe implementation.</li>
+</ol>
+<p>Hopefully, after this you'll have an idea of what happens when you use the
+<code>yield</code> or <code>await</code> keywords inside an async function, and why we need <code>Pin</code> if
+we want to be able to safely borrow across <code>yield/await</code> points.</p>
+<h1><a class="header" href="#futures-in-rust-1" id="futures-in-rust-1">Futures in Rust</a></h1>
+<p>We'll create our own <code>Futures</code> together with a fake reactor and a simple
+executor which allows you to edit, run an play around with the code right here
+in your browser.</p>
+<p>I'll walk you through the example, but if you want to check it out closer, you
+can always <a href="https://github.com/cfsamson/examples-futures">clone the repository</a> and play around with the code
+yourself or just copy it from the next chapter.</p>
+<p>There are several branches explained in the readme, but two are
+relevant for this chapter. The <code>main</code> branch is the example we go through here,
+and the <code>basic_example_commented</code> branch is this example with extensive
+comments.</p>
+<blockquote>
+<p>If you want to follow along as we go through, initialize a new cargo project
+by creating a new folder and run <code>cargo init</code> inside it. Everything we write
+here will be in <code>main.rs</code></p>
+</blockquote>
+<h2><a class="header" href="#implementing-our-own-futures" id="implementing-our-own-futures">Implementing our own Futures</a></h2>
+<p>Let's start off by getting all our imports right away so you can follow along</p>
+<pre><code class="language-rust noplaypen ignore">use std::{
+    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    thread::{self, JoinHandle}, time::{Duration, Instant}
+};
+</code></pre>
+<h2><a class="header" href="#the-executor" id="the-executor">The Executor</a></h2>
+<p>The executors responsibility is to take one or more futures and run them to completion.</p>
+<p>The first thing an <code>executor</code> does when it gets a <code>Future</code> is polling it.</p>
+<p><strong>When polled one of three things can happen:</strong></p>
+<ul>
+<li>The future returns <code>Ready</code> and we schedule whatever chained operations to run</li>
+<li>The future hasn't been polled before so we pass it a <code>Waker</code> and suspend it</li>
+<li>The futures has been polled before but is not ready and returns <code>Pending</code></li>
+</ul>
+<p>Rust provides a way for the Reactor and Executor to communicate through the <code>Waker</code>. The reactor stores this <code>Waker</code> and calls <code>Waker::wake()</code> on it once
+a <code>Future</code> has resolved and should be polled again.</p>
+<p><strong>Our Executor will look like this:</strong></p>
+<pre><code class="language-rust noplaypen ignore">// Our executor takes any object which implements the `Future` trait
+fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+
+    // the first thing we do is to construct a `Waker` which we'll pass on to
+    // the `reactor` so it can wake us up when an event is ready. 
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let waker = waker_into_waker(Arc::into_raw(mywaker));
+
+    // The context struct is just a wrapper for a `Waker` object. Maybe in the
+    // future this will do more, but right now it's just a wrapper.
+    let mut cx = Context::from_waker(&amp;waker);
+
+    // So, since we run this on one thread and run one future to completion
+    // we can pin the `Future` to the stack. This is unsafe, but saves an
+    // allocation. We could `Box::pin` it too if we wanted. This is however
+    // safe since we shadow `future` so it can't be accessed again and will
+    // not move until it's dropped.
+    let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
+
+    // We poll in a loop, but it's not a busy loop. It will only run when
+    // an event occurs, or a thread has a &quot;spurious wakeup&quot; (an unexpected wakeup
+    // that can happen for no good reason).
+    let val = loop {
+        
+        match Future::poll(pinned, &amp;mut cx) {
+
+            // when the Future is ready we're finished
+            Poll::Ready(val) =&gt; break val,
+
+            // If we get a `pending` future we just go to sleep...
+            Poll::Pending =&gt; thread::park(),
+        };
+    };
+    val
+}
+</code></pre>
+<p>In all the examples you'll see in this chapter I've chosen to comment the code
+extensively. I find it easier to follow along that way so I'll not repeat myself
+here and focus only on some important aspects that might need further explanation.</p>
+<p>Now that you've read so much about <code>Generators</code> and <code>Pin</code> already this should
+be rather easy to understand. <code>Future</code> is a state machine, every <code>await</code> point
+is a <code>yield</code> point. We could borrow data across <code>await</code> points and we meet the
+exact same challenges as we do when borrowing across <code>yield</code> points.</p>
+<blockquote>
+<p><code>Context</code> is just a wrapper around the <code>Waker</code>. At the time of writing this
+book it's nothing more. In the future it might be possible that the <code>Context</code>
+object will do more than just wrapping a <code>Future</code> so having this extra 
+abstraction gives some flexibility.</p>
+</blockquote>
+<p>As explained in the <a href="./3_generators_pin.html">chapter about generators</a>, we use
+<code>Pin</code> and the guarantees that give us to allow <code>Futures</code> to have self
+references.</p>
+<h2><a class="header" href="#the-future-implementation" id="the-future-implementation">The <code>Future</code> implementation</a></h2>
+<p>Futures has a well defined interface, which means they can be used across the
+entire ecosystem. </p>
+<p>We can chain these <code>Futures</code> so that once a <strong>leaf-future</strong> is
+ready we'll perform a set of operations until either the task is finished or we
+reach yet another <strong>leaf-future</strong> which we'll wait for and yield control to the
+scheduler.</p>
+<p><strong>Our Future implementation looks like this:</strong></p>
+<pre><code class="language-rust noplaypen ignore">// This is the definition of our `Waker`. We use a regular thread-handle here.
+// It works but it's not a good solution. It's easy to fix though, I'll explain
+// after this code snippet.
+#[derive(Clone)]
+struct MyWaker {
+    thread: thread::Thread,
+}
+
+// This is the definition of our `Future`. It keeps all the information we
+// need. This one holds a reference to our `reactor`, that's just to make
+// this example as easy as possible. It doesn't need to hold a reference to
+// the whole reactor, but it needs to be able to register itself with the
+// reactor.
+#[derive(Clone)]
+pub struct Task {
+    id: usize,
+    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    data: u64,
+    is_registered: bool,
+}
+
+// These are function definitions we'll use for our waker. Remember the
+// &quot;Trait Objects&quot; chapter earlier.
+fn mywaker_wake(s: &amp;MyWaker) {
+    let waker_ptr: *const MyWaker = s;
+    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+    waker_arc.thread.unpark();
+}
+
+// Since we use an `Arc` cloning is just increasing the refcount on the smart
+// pointer.
+fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+    let arc = unsafe { Arc::from_raw(s) };
+    std::mem::forget(arc.clone()); // increase ref count
+    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+}
+
+// This is actually a &quot;helper funtcion&quot; to create a `Waker` vtable. In contrast
+// to when we created a `Trait Object` from scratch we don't need to concern
+// ourselves with the actual layout of the `vtable` and only provide a fixed
+// set of functions
+const VTABLE: RawWakerVTable = unsafe {
+    RawWakerVTable::new(
+        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
+        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
+        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
+        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+    )
+};
+
+// Instead of implementing this on the `MyWaker` oject in `impl Mywaker...` we
+// just use this pattern instead since it saves us some lines of code.
+fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+    unsafe { Waker::from_raw(raw_waker) }
+}
+
+impl Task {
+    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task {
+            id,
+            reactor,
+            data,
+            is_registered: false,
+        }
+    }
+}
+
+// This is our `Future` implementation
+impl Future for Task {
+
+    // The output for our kind of `leaf future` is just an `usize`. For other
+    // futures this could be something more interesting like a byte array.
+    type Output = usize;
+    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+        let mut r = self.reactor.lock().unwrap();
+
+        // we check with the `Reactor` if this future is in its &quot;readylist&quot;
+        // i.e. if it's `Ready`
+        if r.is_ready(self.id) {
+
+            // if it is, we return the data. In this case it's just the ID of
+            // the task since this is just a very simple example.
+            Poll::Ready(self.id)
+        } else if self.is_registered {
+
+            // If the future is registered alredy, we just return `Pending`
+            Poll::Pending
+        } else {
+
+            // If we get here, it must be the first time this `Future` is polled
+            // so we register a task with our `reactor`
+            r.register(self.data, cx.waker().clone(), self.id);
+
+            // oh, we have to drop the lock on our `Mutex` here because we can't
+            // have a shared and exclusive borrow at the same time
+            drop(r);
+            self.is_registered = true;
+            Poll::Pending
+        }
+    }
+}
+</code></pre>
+<p>This is mostly pretty straight forward. The confusing part is the strange way
+we need to construct the <code>Waker</code>, but since we've already created our own
+<em>trait objects</em> from raw parts, this looks pretty familiar. Actually, it's
+even a bit easier.</p>
+<p>We use an <code>Arc</code> here to pass out a ref-counted borrow of our <code>MyWaker</code>. This
+is pretty normal, and makes this easy and safe to work with. Cloning a <code>Waker</code>
+is just increasing the refcount in this case.</p>
+<p>Dropping a <code>Waker</code> is as easy as decreasing the refcount. Now, in special
+cases we could choose to not use an <code>Arc</code>. So this low-level method is there
+to allow such cases. </p>
+<p>Indeed, if we only used <code>Arc</code> there is no reason for us to go through all the 
+trouble of creating our own <code>vtable</code> and a <code>RawWaker</code>. We could just implement
+a normal trait.</p>
+<p>Fortunately, in the future this will probably be possible in the standard
+library as well. For now, <a href="https://rust-lang-nursery.github.io/futures-api-docs/0.3.0-alpha.13/futures/task/trait.ArcWake.html">this trait lives in the nursery</a>, but my
+guess is that this will be a part of the standard library after som maturing.</p>
+<p>We choose to pass in a reference to the whole <code>Reactor</code> here. This isn't normal.
+The reactor will often be a global resource which let's us register interests
+without passing around a reference.</p>
+<blockquote>
+<h3><a class="header" href="#why-using-thread-parkunpark-is-a-bad-idea-for-a-library" id="why-using-thread-parkunpark-is-a-bad-idea-for-a-library">Why using thread park/unpark is a bad idea for a library</a></h3>
+<p>It could deadlock easily since anyone could get a handle to the <code>executor thread</code>
+and call park/unpark on it.</p>
+<ol>
+<li>A future could call <code>unpark</code> on the executor thread from a different thread</li>
+<li>Our <code>executor</code> thinks that data is ready and wakes up and polls the future</li>
+<li>The future is not ready yet when polled, but at that exact same time the 
+<code>Reactor</code> gets an event and calls <code>wake()</code> which also unparks our thread.</li>
+<li>This could happen before we go to sleep again since these processes
+run in parallel.</li>
+<li>Our reactor has called <code>wake</code> but our thread is still sleeping since it was
+awake already at that point.</li>
+<li>We're deadlocked and our program stops working</li>
+</ol>
+</blockquote>
+<blockquote>
+<p>There is also the case that our thread could have what's called a
+<code>spurious wakeup</code> (<a href="https://cfsamson.github.io/book-exploring-async-basics/9_3_http_module.html#bonus-section">which can happen unexpectedly</a>), which
+could cause the same deadlock if we're unlucky.</p>
+</blockquote>
+<p>There are several better solutions, here are some:</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html">std::sync::CondVar</a></li>
+<li><a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html">crossbeam::sync::Parker</a></li>
+</ul>
+<h2><a class="header" href="#the-reactor" id="the-reactor">The Reactor</a></h2>
+<p>This is the home stretch, and not strictly <code>Future</code> related, but we need one
+to have an example to run.</p>
+<p>Since concurrency mostly makes sense when interacting with the outside world (or
+at least some peripheral), we need something to actually abstract over this
+interaction in an asynchronous way.</p>
+<p>This is the <code>Reactors</code> job. Most often you'll see reactors in Rust use a library
+called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non blocking APIs and event notification for
+several platforms.</p>
+<p>The reactor will typically give you something like a <code>TcpStream</code> (or any other
+resource) which you'll use to create an I/O request. What you get in return is a
+<code>Future</code>. </p>
+<blockquote>
+<p>If our reactor did some real I/O work our <code>Task</code> in would instead be represent
+a non-blocking <code>TcpStream</code> which registers interest with the global <code>Reactor</code>.
+Passing around a reference to the Reactor itself is pretty uncommon but I find
+it makes reasoning about what's happening easier.</p>
+</blockquote>
+<p>Our example task is a timer that only spawns a thread and puts it to sleep for
+the number of seconds we specify. The reactor we create here will create a
+<strong>leaf-future</strong> representing each timer. In return the Reactor receives a waker
+which it will call once the task is finished.</p>
+<p>To be able to run the code here in the browser there is not much real I/O we
+can do so just pretend that this is actually represents some useful I/O operation
+for the sake of this example.</p>
+<p><strong>Our Reactor will look like this:</strong></p>
+<pre><code class="language-rust noplaypen ignore">// This is a &quot;fake&quot; reactor. It does no real I/O, but that also makes our
+// code possible to run in the book and in the playground
+struct Reactor {
+
+    // we need some way of registering a Task with the reactor. Normally this
+    // would be an &quot;interest&quot; in an I/O event
+    dispatcher: Sender&lt;Event&gt;,
+    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+
+    // This is a list of tasks that are ready, which means they should be polled
+    // for data.
+    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+}
+
+// We just have two kind of events. An event called `Timeout`
+// and a `Close` event to close down our reactor.
+#[derive(Debug)]
+enum Event {
+    Close,
+    Timeout(Waker, u64, usize),
+}
+
+impl Reactor {
+    fn new() -&gt; Self {
+        // The way we register new events with our reactor is using a regular
+        // channel
+        let (tx, rx) = channel::&lt;Event&gt;();
+        let readylist = Arc::new(Mutex::new(vec![]));
+        let rl_clone = readylist.clone();
+
+        // This `Vec` will hold handles to all the threads we spawn so we can
+        // join them later on and finish our programm in a good manner
+        let mut handles = vec![];
+
+        // This will be the &quot;Reactor thread&quot;
+        let handle = thread::spawn(move || {
+            for event in rx {
+                let rl_clone = rl_clone.clone();
+                match event {
+
+                    // If we get a close event we break out of the loop we're in
+                    Event::Close =&gt; break,
+                    Event::Timeout(waker, duration, id) =&gt; {
+
+                        // When we get an event we simply spawn a new thread
+                        // which will simulate some I/O resource...
+                        let event_handle = thread::spawn(move || {
+
+                            //... by sleeping for the number of seconds
+                            // we provided when creating the `Task`.
+                            thread::sleep(Duration::from_secs(duration));
+
+                            // When it's done sleeping we put the ID of this task
+                            // on the &quot;readylist&quot;
+                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
+
+                            // Then we call `wake` which will wake up our
+                            // executor and start polling the futures
+                            waker.wake();
+                        });
+
+                        handles.push(event_handle);
+                    }
+                }
+            }
+
+            // When we exit the Reactor we first join all the handles on
+            // the child threads we've spawned so we catch any panics and
+            // release any resources.
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+
+        Reactor {
+            readylist,
+            dispatcher: tx,
+            handle: Some(handle),
+        }
+    }
+
+    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
+
+        // registering an event is as simple as sending an `Event` through
+        // the channel.
+        self.dispatcher
+            .send(Event::Timeout(waker, duration, data))
+            .unwrap();
+    }
+
+    fn close(&amp;mut self) {
+        self.dispatcher.send(Event::Close).unwrap();
+    }
+
+    // We need a way to check if any event's are ready. This will simply
+    // look through the &quot;readylist&quot; for an event macthing the ID we want to
+    // check for.
+    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
+        self.readylist
+            .lock()
+            .map(|rl| rl.iter().any(|id| *id == id_to_check))
+            .unwrap()
+    }
+}
+
+// When our `Reactor` is dropped we join the reactor thread with the thread
+// owning our `Reactor` so we catch any panics and release all resources.
+// It's not needed for this to work, but it really is a best practice to join
+// all threads you spawn.
+impl Drop for Reactor {
+    fn drop(&amp;mut self) {
+        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+    }
+}
+</code></pre>
+<p>It's a lot of code though, but essentially we just spawn off a new thread
+and make it sleep for some time which we specify when we create a <code>Task</code>.</p>
+<p>Now, let's test our code and see if it works. Since we're sleeping for a couple
+of seconds here, just give it some time to run.</p>
+<p>In the last chapter we have the <a href="./8_finished_example.html">whole 200 lines in an editable window</a>
+which you can edit and change the way you like.</p>
+<pre><pre class="playpen"><code class="language-rust edition2018"><span class="boring">use std::{
+</span><span class="boring">    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
+</span><span class="boring">    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+</span><span class="boring">    thread::{self, JoinHandle}, time::{Duration, Instant}
+</span><span class="boring">};
+</span><span class="boring">
+</span>fn main() {
+    // This is just to make it easier for us to see when our Future was resolved
+    let start = Instant::now();
+
+    // Many runtimes create a glocal `reactor` we pass it as an argument
+    let reactor = Reactor::new();
+
+    // Since we'll share this between threads we wrap it in a 
+    // atmically-refcounted- mutex.
+    let reactor = Arc::new(Mutex::new(reactor));
+    
+    // We create two tasks:
+    // - first parameter is the `reactor`
+    // - the second is a timeout in seconds
+    // - the third is an `id` to identify the task
+    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future2 = Task::new(reactor.clone(), 2, 2);
+
+    // an `async` block works the same way as an `async fn` in that it compiles
+    // our code into a state machine, `yielding` at every `await` point.
+    let fut1 = async {
+        let val = future1.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let fut2 = async {
+        let val = future2.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    // Our executor can only run one and one future, this is pretty normal
+    // though. You have a set of operations containing many futures that
+    // ends up as a single future that drives them all to completion.
+    let mainfut = async {
+        fut1.await;
+        fut2.await;
+    };
+
+    // This executor will block the main thread until the futures is resolved
+    block_on(mainfut);
+
+    // When we're done, we want to shut down our reactor thread so our program
+    // ends nicely.
+    reactor.lock().map(|mut r| r.close()).unwrap();
+}
+
+<span class="boring">// ============================= EXECUTOR ====================================
+</span><span class="boring">fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+</span><span class="boring">    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+</span><span class="boring">    let waker = waker_into_waker(Arc::into_raw(mywaker));
+</span><span class="boring">    let mut cx = Context::from_waker(&amp;waker);
+</span><span class="boring">    let val = loop {
+</span><span class="boring">        let pinned = unsafe { Pin::new_unchecked(&amp;mut future) };
+</span><span class="boring">        match Future::poll(pinned, &amp;mut cx) {
+</span><span class="boring">            Poll::Ready(val) =&gt; break val,
+</span><span class="boring">            Poll::Pending =&gt; thread::park(),
+</span><span class="boring">        };
+</span><span class="boring">    };
+</span><span class="boring">    val
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">// ====================== FUTURE IMPLEMENTATION ==============================
+</span><span class="boring">#[derive(Clone)]
+</span><span class="boring">struct MyWaker {
+</span><span class="boring">    thread: thread::Thread,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(Clone)]
+</span><span class="boring">pub struct Task {
+</span><span class="boring">    id: usize,
+</span><span class="boring">    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+</span><span class="boring">    data: u64,
+</span><span class="boring">    is_registered: bool,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn mywaker_wake(s: &amp;MyWaker) {
+</span><span class="boring">    let waker_ptr: *const MyWaker = s;
+</span><span class="boring">    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+</span><span class="boring">    waker_arc.thread.unpark();
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+</span><span class="boring">    let arc = unsafe { Arc::from_raw(s).clone() };
+</span><span class="boring">    std::mem::forget(arc.clone()); // increase ref count
+</span><span class="boring">    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">const VTABLE: RawWakerVTable = unsafe {
+</span><span class="boring">    RawWakerVTable::new(
+</span><span class="boring">        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
+</span><span class="boring">        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
+</span><span class="boring">        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
+</span><span class="boring">        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+</span><span class="boring">    )
+</span><span class="boring">};
+</span><span class="boring">
+</span><span class="boring">fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+</span><span class="boring">    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+</span><span class="boring">    unsafe { Waker::from_raw(raw_waker) }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Task {
+</span><span class="boring">    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
+</span><span class="boring">        Task {
+</span><span class="boring">            id,
+</span><span class="boring">            reactor,
+</span><span class="boring">            data,
+</span><span class="boring">            is_registered: false,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Future for Task {
+</span><span class="boring">    type Output = usize;
+</span><span class="boring">    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+</span><span class="boring">        let mut r = self.reactor.lock().unwrap();
+</span><span class="boring">        if r.is_ready(self.id) {
+</span><span class="boring">            Poll::Ready(self.id)
+</span><span class="boring">        } else if self.is_registered {
+</span><span class="boring">            Poll::Pending
+</span><span class="boring">        } else {
+</span><span class="boring">            r.register(self.data, cx.waker().clone(), self.id);
+</span><span class="boring">            drop(r);
+</span><span class="boring">            self.is_registered = true;
+</span><span class="boring">            Poll::Pending
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">// =============================== REACTOR ===================================
+</span><span class="boring">struct Reactor {
+</span><span class="boring">    dispatcher: Sender&lt;Event&gt;,
+</span><span class="boring">    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+</span><span class="boring">    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+</span><span class="boring">}
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">enum Event {
+</span><span class="boring">    Close,
+</span><span class="boring">    Timeout(Waker, u64, usize),
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Reactor {
+</span><span class="boring">    fn new() -&gt; Self {
+</span><span class="boring">        let (tx, rx) = channel::&lt;Event&gt;();
+</span><span class="boring">        let readylist = Arc::new(Mutex::new(vec![]));
+</span><span class="boring">        let rl_clone = readylist.clone();
+</span><span class="boring">        let mut handles = vec![];
+</span><span class="boring">        let handle = thread::spawn(move || {
+</span><span class="boring">            // This simulates some I/O resource
+</span><span class="boring">            for event in rx {
+</span><span class="boring">                println!(&quot;REACTOR: {:?}&quot;, event);
+</span><span class="boring">                let rl_clone = rl_clone.clone();
+</span><span class="boring">                match event {
+</span><span class="boring">                    Event::Close =&gt; break,
+</span><span class="boring">                    Event::Timeout(waker, duration, id) =&gt; {
+</span><span class="boring">                        let event_handle = thread::spawn(move || {
+</span><span class="boring">                            thread::sleep(Duration::from_secs(duration));
+</span><span class="boring">                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
+</span><span class="boring">                            waker.wake();
+</span><span class="boring">                        });
+</span><span class="boring">
+</span><span class="boring">                        handles.push(event_handle);
+</span><span class="boring">                    }
+</span><span class="boring">                }
+</span><span class="boring">            }
+</span><span class="boring">
+</span><span class="boring">            for handle in handles {
+</span><span class="boring">                handle.join().unwrap();
+</span><span class="boring">            }
+</span><span class="boring">        });
+</span><span class="boring">
+</span><span class="boring">        Reactor {
+</span><span class="boring">            readylist,
+</span><span class="boring">            dispatcher: tx,
+</span><span class="boring">            handle: Some(handle),
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
+</span><span class="boring">        self.dispatcher
+</span><span class="boring">            .send(Event::Timeout(waker, duration, data))
+</span><span class="boring">            .unwrap();
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn close(&amp;mut self) {
+</span><span class="boring">        self.dispatcher.send(Event::Close).unwrap();
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
+</span><span class="boring">        self.readylist
+</span><span class="boring">            .lock()
+</span><span class="boring">            .map(|rl| rl.iter().any(|id| *id == id_to_check))
+</span><span class="boring">            .unwrap()
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Drop for Reactor {
+</span><span class="boring">    fn drop(&amp;mut self) {
+</span><span class="boring">        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>I added a debug printout of the events the reactor registered interest for so we can observe
+two things:</p>
+<ol>
+<li>How the <code>Waker</code> object looks just like the <em>trait object</em> we talked about in an earlier chapter</li>
+<li>In what order the events register interest with the reactor</li>
+</ol>
+<p>The last point is relevant when we move on the the last paragraph.</p>
+<h2><a class="header" href="#asyncawait-and-concurrecy" id="asyncawait-and-concurrecy">Async/Await and concurrecy</a></h2>
+<p>The <code>async</code> keyword can be used on functions as in <code>async fn(...)</code> or on a
+block as in <code>async { ... }</code>. Both will turn your function, or block, into a
+<code>Future</code>.</p>
+<p>These <code>Futures</code> are rather simple. Imagine our generator from a few chapters
+back. Every <code>await</code> point is like a <code>yield</code> point.</p>
+<p>Instead of <code>yielding</code> a value we pass in, we yield the result of calling <code>poll</code> on
+the next <code>Future</code> we're awaiting.</p>
+<p>Our <code>mainfut</code> contains two non-leaf futures which it will call <code>poll</code> on. <strong>Non-leaf-futures</strong>
+has a <code>poll</code> method that simply polls their inner futures and these state machines
+are polled until some &quot;leaf future&quot; in the end either returns <code>Ready</code> or <code>Pending</code>.</p>
+<p>The way our example is right now, it's not much better than regular synchronous
+code. For us to actually await multiple futures at the same time we somehow need
+to <code>spawn</code> them so the executor starts running them concurrently.</p>
+<p>Our example as it stands now returns this:</p>
+<pre><code class="language-ignore">Future got 1 at time: 1.00.
+Future got 2 at time: 3.00.
+</code></pre>
+<p>If these <code>Futures</code> were executed asynchronously we would expect to see:</p>
+<pre><code class="language-ignore">Future got 1 at time: 1.00.
+Future got 2 at time: 2.00.
+</code></pre>
+<blockquote>
+<p>Note that this doesn't mean they need to run in parallel. They <em>can</em> run in
+parallel but there is no requirement. Remember that we're waiting for some
+external resource so we can fire off many such calls on a single thread and
+handle each event as it resolves.</p>
+</blockquote>
+<p>Now, this is the point where I'll refer you to some better resources for
+implementing a better executor. You should have a pretty good understanding of
+the concept of Futures by now helping you along the way.</p>
+<p>The next step should be getting to know how more advanced runtimes work and
+how they implement different ways of running Futures to completion.</p>
+<p><a href="./conclusion.html#building-a-better-exectuor">If I were you I would read this next, and try to implement it for our example.</a>.</p>
+<p>That's actually it for now. There as probably much more to learn, this is enough
+for today. </p>
+<p>I hope exploring Futures and async in general gets easier after this read and I
+do really hope that you do continue to explore further.</p>
+<p>Don't forget the exercises in the last chapter 😊.</p>
+<h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
+<p>Here is the whole example. You can edit it right here in your browser and
+run it yourself. Have fun!</p>
+<pre><pre class="playpen"><code class="language-rust editable edition2018">use std::{
+    future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
+    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    thread::{self, JoinHandle}, time::{Duration, Instant}
+};
+
+fn main() {
+    let start = Instant::now();
+    let reactor = Reactor::new();
+    let reactor = Arc::new(Mutex::new(reactor));
+    let future1 = Task::new(reactor.clone(), 1, 1);
+    let future2 = Task::new(reactor.clone(), 2, 2);
+
+    let fut1 = async {
+        let val = future1.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let fut2 = async {
+        let val = future2.await;
+        let dur = (Instant::now() - start).as_secs_f32();
+        println!(&quot;Future got {} at time: {:.2}.&quot;, val, dur);
+    };
+
+    let mainfut = async {
+        fut1.await;
+        fut2.await;
+    };
+
+    block_on(mainfut);
+    reactor.lock().map(|mut r| r.close()).unwrap();
+}
+
+// ============================= EXECUTOR ====================================
+fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
+    let mywaker = Arc::new(MyWaker{ thread: thread::current() }); 
+    let waker = waker_into_waker(Arc::into_raw(mywaker));
+    let mut cx = Context::from_waker(&amp;waker);
+
+    // SAFETY: we shadow `future` so it can't be accessed again.
+    let mut future = unsafe { Pin::new_unchecked(&amp;mut future) };
+    let val = loop {
+        match Future::poll(future.as_mut(), &amp;mut cx) {
+            Poll::Ready(val) =&gt; break val,
+            Poll::Pending =&gt; thread::park(),
+        };
+    };
+    val
+}
+
+// ====================== FUTURE IMPLEMENTATION ==============================
+#[derive(Clone)]
+struct MyWaker {
+    thread: thread::Thread,
+}
+
+#[derive(Clone)]
+pub struct Task {
+    id: usize,
+    reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;,
+    data: u64,
+    is_registered: bool,
+}
+
+fn mywaker_wake(s: &amp;MyWaker) {
+    let waker_ptr: *const MyWaker = s;
+    let waker_arc = unsafe {Arc::from_raw(waker_ptr)};
+    waker_arc.thread.unpark();
+}
+
+fn mywaker_clone(s: &amp;MyWaker) -&gt; RawWaker {
+    let arc = unsafe { Arc::from_raw(s) };
+    std::mem::forget(arc.clone()); // increase ref count
+    RawWaker::new(Arc::into_raw(arc) as *const (), &amp;VTABLE)
+}
+
+const VTABLE: RawWakerVTable = unsafe {
+    RawWakerVTable::new(
+        |s| mywaker_clone(&amp;*(s as *const MyWaker)),     // clone
+        |s| mywaker_wake(&amp;*(s as *const MyWaker)),      // wake
+        |s| mywaker_wake(*(s as *const &amp;MyWaker)),      // wake by ref
+        |s| drop(Arc::from_raw(s as *const MyWaker)),   // decrease refcount
+    )
+};
+
+fn waker_into_waker(s: *const MyWaker) -&gt; Waker {
+    let raw_waker = RawWaker::new(s as *const (), &amp;VTABLE);
+    unsafe { Waker::from_raw(raw_waker) }
+}
+
+impl Task {
+    fn new(reactor: Arc&lt;Mutex&lt;Reactor&gt;&gt;, data: u64, id: usize) -&gt; Self {
+        Task {
+            id,
+            reactor,
+            data,
+            is_registered: false,
+        }
+    }
+}
+
+impl Future for Task {
+    type Output = usize;
+    fn poll(mut self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context&lt;'_&gt;) -&gt; Poll&lt;Self::Output&gt; {
+        let mut r = self.reactor.lock().unwrap();
+        if r.is_ready(self.id) {
+            Poll::Ready(self.id)
+        } else if self.is_registered {
+            Poll::Pending
+        } else {
+            r.register(self.data, cx.waker().clone(), self.id);
+            drop(r);
+            self.is_registered = true;
+            Poll::Pending
+        }
+    }
+}
+
+// =============================== REACTOR ===================================
+struct Reactor {
+    dispatcher: Sender&lt;Event&gt;,
+    handle: Option&lt;JoinHandle&lt;()&gt;&gt;,
+    readylist: Arc&lt;Mutex&lt;Vec&lt;usize&gt;&gt;&gt;,
+}
+#[derive(Debug)]
+enum Event {
+    Close,
+    Timeout(Waker, u64, usize),
+}
+
+impl Reactor {
+    fn new() -&gt; Self {
+        let (tx, rx) = channel::&lt;Event&gt;();
+        let readylist = Arc::new(Mutex::new(vec![]));
+        let rl_clone = readylist.clone();
+        let mut handles = vec![];
+        let handle = thread::spawn(move || {
+            // This simulates some I/O resource
+            for event in rx {
+                println!(&quot;REACTOR: {:?}&quot;, event);
+                let rl_clone = rl_clone.clone();
+                match event {
+                    Event::Close =&gt; break,
+                    Event::Timeout(waker, duration, id) =&gt; {
+                        let event_handle = thread::spawn(move || {
+                            thread::sleep(Duration::from_secs(duration));
+                            rl_clone.lock().map(|mut rl| rl.push(id)).unwrap();
+                            waker.wake();
+                        });
+
+                        handles.push(event_handle);
+                    }
+                }
+            }
+
+            for handle in handles {
+                handle.join().unwrap();
+            }
+        });
+
+        Reactor {
+            readylist,
+            dispatcher: tx,
+            handle: Some(handle),
+        }
+    }
+
+    fn register(&amp;mut self, duration: u64, waker: Waker, data: usize) {
+        self.dispatcher
+            .send(Event::Timeout(waker, duration, data))
+            .unwrap();
+    }
+
+    fn close(&amp;mut self) {
+        self.dispatcher.send(Event::Close).unwrap();
+    }
+
+    fn is_ready(&amp;self, id_to_check: usize) -&gt; bool {
+        self.readylist
+            .lock()
+            .map(|rl| rl.iter().any(|id| *id == id_to_check))
+            .unwrap()
+    }
+}
+
+impl Drop for Reactor {
+    fn drop(&amp;mut self) {
+        self.handle.take().map(|h| h.join().unwrap()).unwrap();
+    }
+}
+</code></pre></pre>
+<h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
+<p>Congratulations. Good job! If you got this far you must have stayed with me
+all the way. I hope you enjoyed the ride!</p>
+<p>Remember that you call always leave feedback, suggest improvements or ask questions
+in the <a href="https://github.com/cfsamson/books-futures-explained/issues">issue_tracker</a> for this book.
+I'll try my best to respond to each one of them.</p>
+<p>I'll leave you with some suggestions for exercises if you want to explore a little further below.</p>
+<p>Until next time!</p>
+<h2><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h2>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. 
+Actually digging into the code and try things yourself is a good way to learn. Here are
+some good exercises if you want to explore more:</p>
+<h3><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h3>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these
+same methods from their own code. Try to use another method to suspend our thread and wake
+it up again on our command. Some hints:</p>
+<ul>
+<li>Check out <code>CondVars</code>, here are two sources <a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Wikipedia</a> and the
+docs for <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html"><code>CondVar</code></a></li>
+<li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
+</ul>
+<h3><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h3>
+<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only
+interested in synchronizing some parts of the information it contains. Try to refactor that
+out and only synchronize access to what's really needed.</p>
+<p>I'd encourage you to have a look at how <a href="https://github.com/async-rs/async-std/blob/master/src/net/driver/mod.rs">the async_std driver is implemented</a>
+and <a href="https://github.com/tokio-rs/tokio/blob/master/tokio/src/runtime/basic_scheduler.rs">how tokios scheduler is implemented</a> to get some inspiration.</p>
+<ul>
+<li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
+<li>Do you want to make a global <code>Reactor</code> so it can be accessed from anywhere?</li>
+</ul>
+<h3><a class="header" href="#building-a-better-exectuor" id="building-a-better-exectuor">Building a better exectuor</a></h3>
+<p>Right now, we can only run one and one future. Most runtimes has a <code>spawn</code> 
+function which let's you start off a future and <code>await</code> it later so you
+can run multiple futures concurrently.</p>
+<p>As I suggested in the start of this book, visiting <a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">@stjepan'sblog series about implementing your own executors</a>
+is the place I would start and take it from there.</p>
+<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<p>There are many great resources. In addition to the RFCs and articles I've already
+linked to in the book, here are some of my suggestions:</p>
+<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a></p>
+<p><a href="https://book.async.rs/">The async_std book</a></p>
+<p><a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a></p>
+<p><a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a></p>
+<p><a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a></p>
+<p><a href="https://stjepang.github.io/">Stjepan's blog with a series where he implements an Executor</a></p>
+<p><a href="https://youtu.be/DkMwYxfSYNQ">Jon Gjengset's video on The Why, What and How of Pinning in Rust</a></p>
+<p><a href="https://boats.gitlab.io/blog/post/2018-01-25-async-i-self-referential-structs/">Withoutboats blog series about async/await</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-157536992-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playpen_line_numbers = true;
+        </script>
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>

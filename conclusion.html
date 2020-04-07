@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Conclusion and exercises - Futures Explained in 200 Lines of Rust</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="This book aims to explain Futures in Rust using an example driven approach.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="chapter-item expanded "><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="chapter-item expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="chapter-item expanded "><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="chapter-item expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="chapter-item expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="chapter-item expanded "><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="chapter-item expanded affix "><a href="conclusion.html" class="active">Conclusion and exercises</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Futures Explained in 200 Lines of Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        <a href="https://github.com/cfsamson/books-futures-explained" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#conclusion-and-exercises" id="conclusion-and-exercises">Conclusion and exercises</a></h1>
+<p>Congratulations. Good job! If you got this far you must have stayed with me
+all the way. I hope you enjoyed the ride!</p>
+<p>Remember that you call always leave feedback, suggest improvements or ask questions
+in the <a href="https://github.com/cfsamson/books-futures-explained/issues">issue_tracker</a> for this book.
+I'll try my best to respond to each one of them.</p>
+<p>I'll leave you with some suggestions for exercises if you want to explore a little further below.</p>
+<p>Until next time!</p>
+<h2><a class="header" href="#reader-exercises" id="reader-exercises">Reader exercises</a></h2>
+<p>So our implementation has taken some obvious shortcuts and could use some improvement. 
+Actually digging into the code and try things yourself is a good way to learn. Here are
+some good exercises if you want to explore more:</p>
+<h3><a class="header" href="#avoid-threadpark" id="avoid-threadpark">Avoid <code>thread::park</code></a></h3>
+<p>The big problem using <code>Thread::park</code> and <code>Thread::unpark</code> is that the user can access these
+same methods from their own code. Try to use another method to suspend our thread and wake
+it up again on our command. Some hints:</p>
+<ul>
+<li>Check out <code>CondVars</code>, here are two sources <a href="https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables">Wikipedia</a> and the
+docs for <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html"><code>CondVar</code></a></li>
+<li>Take a look at crates that help you with this exact problem like <a href="https://github.com/crossbeam-rs/crossbeam">Crossbeam </a>(specifically the <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html"><code>Parker</code></a>)</li>
+</ul>
+<h3><a class="header" href="#avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around" id="avoid-wrapping-the-whole-reactor-in-a-mutex-and-pass-it-around">Avoid wrapping the whole <code>Reactor</code> in a mutex and pass it around</a></h3>
+<p>First of all, protecting the whole <code>Reactor</code> and passing it around is overkill. We're only
+interested in synchronizing some parts of the information it contains. Try to refactor that
+out and only synchronize access to what's really needed.</p>
+<p>I'd encourage you to have a look at how <a href="https://github.com/async-rs/async-std/blob/master/src/net/driver/mod.rs">the async_std driver is implemented</a>
+and <a href="https://github.com/tokio-rs/tokio/blob/master/tokio/src/runtime/basic_scheduler.rs">how tokios scheduler is implemented</a> to get some inspiration.</p>
+<ul>
+<li>Do you want to pass around a reference to this information using an <code>Arc</code>?</li>
+<li>Do you want to make a global <code>Reactor</code> so it can be accessed from anywhere?</li>
+</ul>
+<h3><a class="header" href="#building-a-better-exectuor" id="building-a-better-exectuor">Building a better exectuor</a></h3>
+<p>Right now, we can only run one and one future. Most runtimes has a <code>spawn</code> 
+function which let's you start off a future and <code>await</code> it later so you
+can run multiple futures concurrently.</p>
+<p>As I suggested in the start of this book, visiting <a href="https://stjepang.github.io/2020/01/31/build-your-own-executor.html">@stjepan'sblog series about implementing your own executors</a>
+is the place I would start and take it from there.</p>
+<h2><a class="header" href="#further-reading" id="further-reading">Further reading</a></h2>
+<p>There are many great resources. In addition to the RFCs and articles I've already
+linked to in the book, here are some of my suggestions:</p>
+<p><a href="https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html">The official Asyc book</a></p>
+<p><a href="https://book.async.rs/">The async_std book</a></p>
+<p><a href="https://aturon.github.io/blog/2016/09/07/futures-design/">Aron Turon: Designing futures for Rust</a></p>
+<p><a href="https://www.infoq.com/presentations/rust-2019/">Steve Klabnik's presentation: Rust's journey to Async/Await</a></p>
+<p><a href="https://tokio.rs/blog/2019-10-scheduler/">The Tokio Blog</a></p>
+<p><a href="https://stjepang.github.io/">Stjepan's blog with a series where he implements an Executor</a></p>
+<p><a href="https://youtu.be/DkMwYxfSYNQ">Jon Gjengset's video on The Why, What and How of Pinning in Rust</a></p>
+<p><a href="https://boats.gitlab.io/blog/post/2018-01-25-async-i-self-referential-structs/">Withoutboats blog series about async/await</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="8_finished_example.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="8_finished_example.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-157536992-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playpen_line_numbers = true;
+        </script>
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

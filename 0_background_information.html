@@ -1,0 +1,760 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Background information - Futures Explained in 200 Lines of Rust</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="This book aims to explain Futures in Rust using an example driven approach.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="0_background_information.html" class="active"><strong aria-hidden="true">1.</strong> Background information</a></li><li class="chapter-item expanded "><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li class="chapter-item expanded "><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li class="chapter-item expanded "><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li class="chapter-item expanded "><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li class="chapter-item expanded "><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li class="chapter-item expanded "><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="chapter-item expanded affix "><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Futures Explained in 200 Lines of Rust</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        <a href="https://github.com/cfsamson/books-futures-explained" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#some-background-information" id="some-background-information">Some Background Information</a></h1>
+<p>Before we go into the details about Futures in Rust, let's take a quick look
+at the alternatives for handling concurrent programming in general and some
+pros and cons for each of them.</p>
+<p>While we do that we'll also explain some aspects when it comes to concurrency which
+will make it easier for us when we dive in to Futures specifically.</p>
+<blockquote>
+<p>For fun, I've added a small snipped of runnable code with most of the examples.
+If you're like me, things get way more interesting then and maybe you'll se some
+things you haven't seen before along the way.</p>
+</blockquote>
+<h2><a class="header" href="#threads-provided-by-the-operating-system" id="threads-provided-by-the-operating-system">Threads provided by the operating system</a></h2>
+<p>Now, one way of accomplishing this is letting the OS take care of everything for
+us. We do this by simply spawning a new OS thread for each task we want to
+accomplish and write code like we normally would.</p>
+<p>The runtime we use to handle concurrency for us is the operating system itself.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Simple</li>
+<li>Easy to use</li>
+<li>Switching between tasks is reasonably fast</li>
+<li>You get parallelism for free</li>
+</ul>
+<p><strong>Drawbacks:</strong></p>
+<ul>
+<li>OS level threads come with a rather large stack. If you have many tasks
+waiting simultaneously (like you would in a web-server under heavy load) you'll
+run out of memory pretty fast.</li>
+<li>There are a lot of syscalls involved. This can be pretty costly when the number
+of tasks is high.</li>
+<li>The OS has many things it needs to handle. It might not switch back to your
+thread as fast as you'd wish.</li>
+<li>Might not be an option on some systems</li>
+</ul>
+<p><strong>Using OS threads in Rust looks like this:</strong></p>
+<pre><pre class="playpen"><code class="language-rust">use std::thread;
+
+fn main() {
+    println!(&quot;So we start the program here!&quot;);
+    let t1 = thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(200));
+        println!(&quot;We create tasks which gets run when they're finished!&quot;);
+    });
+
+    let t2 = thread::spawn(move || {
+        thread::sleep(std::time::Duration::from_millis(100));
+        println!(&quot;We can even chain callbacks...&quot;);
+        let t3 = thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(50));
+            println!(&quot;...like this!&quot;);
+        });
+        t3.join().unwrap();
+    });
+    println!(&quot;While our tasks are executing we can do other stuff here.&quot;);
+
+    t1.join().unwrap();
+    t2.join().unwrap();
+}
+</code></pre></pre>
+<p>OS threads sure has some pretty big advantages. So why all this talk about
+&quot;async&quot; and concurrency in the first place?</p>
+<p>First of all. For computers to be <a href="https://en.wikipedia.org/wiki/Efficiency"><em>efficient</em></a> they needs to multitask. Once you
+start to look under the covers (like <a href="https://os.phil-opp.com/async-await/">how an operating system works</a>)
+you'll see concurrency everywhere. It's very fundamental in everything we do.</p>
+<p>Secondly, we have the web. </p>
+<p>Webservers is all about I/O and handling small tasks
+(requests). When the number of small tasks is large it's not a good fit for OS
+threads as of today because of the memory they require and the overhead involved
+when creating new threads. </p>
+<p>This gets even more problematic when the load is variable which means the current number of tasks a
+program has at any point in time is unpredictable. That's why you'll see so many async web
+frameworks and database drivers today.</p>
+<p>However, for a huge number of problems, the standard OS threads will often be the
+right solution. So, just think twice about your problem before you reach for an
+async library.</p>
+<p>Now, let's look at some other options for multitasking. They all have in common
+that they implement a way to do multitasking by having a &quot;userland&quot;
+runtime:</p>
+<h2><a class="header" href="#green-threads" id="green-threads">Green threads</a></h2>
+<p>Green threads uses the same mechanism as an OS does by creating a thread for
+each task, setting up a stack, save the CPU's state and jump from one
+task(thread) to another by doing a &quot;context switch&quot;.</p>
+<p>We yield control to the scheduler (which is a central part of the runtime in
+such a system) which then continues running a different task.</p>
+<p>Rust had green threads once, but they were removed before it hit 1.0. The state
+of execution is stored in each stack so in such a solution there would be no
+need for <code>async</code>, <code>await</code>, <code>Futures</code> or <code>Pin</code>. </p>
+<p><strong>The typical flow looks like this:</strong></p>
+<ol>
+<li>Run some non-blocking code</li>
+<li>Make a blocking call to some external resource</li>
+<li>CPU jumps to the &quot;main&quot; thread which schedules a different thread to run and
+&quot;jumps&quot; to that stack</li>
+<li>Run some non-blocking code on the new thread until a new blocking call or the
+task is finished</li>
+<li>&quot;jumps&quot; back to the &quot;main&quot; thread, schedule a new thread which is ready to make
+progress and jump to that.</li>
+</ol>
+<p>These &quot;jumps&quot; are know as <strong>context switches</strong>. Your OS is doing it many times each
+second as you read this.</p>
+<p><strong>Advantages:</strong></p>
+<ol>
+<li>Simple to use. The code will look like it does when using OS threads.</li>
+<li>A &quot;context switch&quot; is reasonably fast</li>
+<li>Each stack only gets a little memory to start with so you can have hundred of
+thousands of green threads running.</li>
+<li>It's easy to incorporate <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/green-threads#preemptive-multitasking"><em>preemtion</em></a>
+which puts a lot of control in the hands of the runtime implementors.</li>
+</ol>
+<p><strong>Drawbacks:</strong></p>
+<ol>
+<li>The stacks might need to grow. Solving this is not easy and will have a cost.</li>
+<li>You need to save all the CPU state on every switch</li>
+<li>It's not a <em>zero cost abstraction</em> (Rust had green threads early on and this
+was one of the reasons they were removed).</li>
+<li>Complicated to implement correctly if you want to support many different
+platforms.</li>
+</ol>
+<p>A green threads example could look something like this:</p>
+<blockquote>
+<p>The example presented below is an adapted example from an earlier gitbook I
+wrote about green threads called <a href="https://cfsamson.gitbook.io/green-threads-explained-in-200-lines-of-rust/">Green Threads Explained in 200 lines of Rust.</a>
+If you want to know what's going on you'll find everything explained in detail
+in that book. The code below is wildly unsafe and it's just to show a real example.
+It's not in any way meant to showcase &quot;best practice&quot;. Just so we're on
+the same page.</p>
+</blockquote>
+<p><em><strong>Press the expand icon in the top right corner to show the example code.</strong></em> </p>
+<pre><pre class="playpen"><code class="language-rust edition2018"><span class="boring">#![feature(asm, naked_functions)]
+</span><span class="boring">use std::ptr;
+</span><span class="boring">
+</span><span class="boring">const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
+</span><span class="boring">const MAX_THREADS: usize = 4;
+</span><span class="boring">static mut RUNTIME: usize = 0;
+</span><span class="boring">
+</span><span class="boring">pub struct Runtime {
+</span><span class="boring">    threads: Vec&lt;Thread&gt;,
+</span><span class="boring">    current: usize,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(PartialEq, Eq, Debug)]
+</span><span class="boring">enum State {
+</span><span class="boring">    Available,
+</span><span class="boring">    Running,
+</span><span class="boring">    Ready,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct Thread {
+</span><span class="boring">    id: usize,
+</span><span class="boring">    stack: Vec&lt;u8&gt;,
+</span><span class="boring">    ctx: ThreadContext,
+</span><span class="boring">    state: State,
+</span><span class="boring">    task: Option&lt;Box&lt;dyn Fn()&gt;&gt;,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, Default)]
+</span><span class="boring">#[repr(C)]
+</span><span class="boring">struct ThreadContext {
+</span><span class="boring">    rsp: u64,
+</span><span class="boring">    r15: u64,
+</span><span class="boring">    r14: u64,
+</span><span class="boring">    r13: u64,
+</span><span class="boring">    r12: u64,
+</span><span class="boring">    rbx: u64,
+</span><span class="boring">    rbp: u64,
+</span><span class="boring">    thread_ptr: u64,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Thread {
+</span><span class="boring">    fn new(id: usize) -&gt; Self {
+</span><span class="boring">        Thread {
+</span><span class="boring">            id,
+</span><span class="boring">            stack: vec![0_u8; DEFAULT_STACK_SIZE],
+</span><span class="boring">            ctx: ThreadContext::default(),
+</span><span class="boring">            state: State::Available,
+</span><span class="boring">            task: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl Runtime {
+</span><span class="boring">    pub fn new() -&gt; Self {
+</span><span class="boring">        let base_thread = Thread {
+</span><span class="boring">            id: 0,
+</span><span class="boring">            stack: vec![0_u8; DEFAULT_STACK_SIZE],
+</span><span class="boring">            ctx: ThreadContext::default(),
+</span><span class="boring">            state: State::Running,
+</span><span class="boring">            task: None,
+</span><span class="boring">        };
+</span><span class="boring">
+</span><span class="boring">        let mut threads = vec![base_thread];
+</span><span class="boring">        threads[0].ctx.thread_ptr = &amp;threads[0] as *const Thread as u64;
+</span><span class="boring">        let mut available_threads: Vec&lt;Thread&gt; = (1..MAX_THREADS).map(|i| Thread::new(i)).collect();
+</span><span class="boring">        threads.append(&amp;mut available_threads);
+</span><span class="boring">
+</span><span class="boring">        Runtime {
+</span><span class="boring">            threads,
+</span><span class="boring">            current: 0,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    pub fn init(&amp;self) {
+</span><span class="boring">        unsafe {
+</span><span class="boring">            let r_ptr: *const Runtime = self;
+</span><span class="boring">            RUNTIME = r_ptr as usize;
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    pub fn run(&amp;mut self) -&gt; ! {
+</span><span class="boring">        while self.t_yield() {}
+</span><span class="boring">        std::process::exit(0);
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn t_return(&amp;mut self) {
+</span><span class="boring">        if self.current != 0 {
+</span><span class="boring">            self.threads[self.current].state = State::Available;
+</span><span class="boring">            self.t_yield();
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn t_yield(&amp;mut self) -&gt; bool {
+</span><span class="boring">        let mut pos = self.current;
+</span><span class="boring">        while self.threads[pos].state != State::Ready {
+</span><span class="boring">            pos += 1;
+</span><span class="boring">            if pos == self.threads.len() {
+</span><span class="boring">                pos = 0;
+</span><span class="boring">            }
+</span><span class="boring">            if pos == self.current {
+</span><span class="boring">                return false;
+</span><span class="boring">            }
+</span><span class="boring">        }
+</span><span class="boring">        
+</span><span class="boring">        if self.threads[self.current].state != State::Available {
+</span><span class="boring">            self.threads[self.current].state = State::Ready;
+</span><span class="boring">        }
+</span><span class="boring">
+</span><span class="boring">        self.threads[pos].state = State::Running;
+</span><span class="boring">        let old_pos = self.current;
+</span><span class="boring">        self.current = pos;
+</span><span class="boring">
+</span><span class="boring">        unsafe {
+</span><span class="boring">            switch(&amp;mut self.threads[old_pos].ctx, &amp;self.threads[pos].ctx);
+</span><span class="boring">        }
+</span><span class="boring">        true
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    pub fn spawn&lt;F: Fn() + 'static&gt;(f: F){
+</span><span class="boring">        unsafe {
+</span><span class="boring">            let rt_ptr = RUNTIME as *mut Runtime;
+</span><span class="boring">            let available = (*rt_ptr)
+</span><span class="boring">                .threads
+</span><span class="boring">                .iter_mut()
+</span><span class="boring">                .find(|t| t.state == State::Available)
+</span><span class="boring">                .expect(&quot;no available thread.&quot;);
+</span><span class="boring">                
+</span><span class="boring">            let size = available.stack.len();
+</span><span class="boring">            let s_ptr = available.stack.as_mut_ptr();
+</span><span class="boring">            available.task = Some(Box::new(f));
+</span><span class="boring">            available.ctx.thread_ptr = available as *const Thread as u64;
+</span><span class="boring">            ptr::write(s_ptr.offset((size - 8) as isize) as *mut u64, guard as u64);
+</span><span class="boring">            ptr::write(s_ptr.offset((size - 16) as isize) as *mut u64, call as u64);
+</span><span class="boring">            available.ctx.rsp = s_ptr.offset((size - 16) as isize) as u64;
+</span><span class="boring">            available.state = State::Ready;
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn call(thread: u64) {
+</span><span class="boring">    let thread = unsafe { &amp;*(thread as *const Thread) };
+</span><span class="boring">    if let Some(f) = &amp;thread.task {
+</span><span class="boring">        f();
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[naked]
+</span><span class="boring">fn guard() {
+</span><span class="boring">    unsafe {
+</span><span class="boring">        let rt_ptr = RUNTIME as *mut Runtime;
+</span><span class="boring">        let rt = &amp;mut *rt_ptr;
+</span><span class="boring">        println!(&quot;THREAD {} FINISHED.&quot;, rt.threads[rt.current].id);
+</span><span class="boring">        rt.t_return();
+</span><span class="boring">    };
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">pub fn yield_thread() {
+</span><span class="boring">    unsafe {
+</span><span class="boring">        let rt_ptr = RUNTIME as *mut Runtime;
+</span><span class="boring">        (*rt_ptr).t_yield();
+</span><span class="boring">    };
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[naked]
+</span><span class="boring">#[inline(never)]
+</span><span class="boring">unsafe fn switch(old: *mut ThreadContext, new: *const ThreadContext) {
+</span><span class="boring">    asm!(&quot;
+</span><span class="boring">        mov     %rsp, 0x00($0)
+</span><span class="boring">        mov     %r15, 0x08($0)
+</span><span class="boring">        mov     %r14, 0x10($0)
+</span><span class="boring">        mov     %r13, 0x18($0)
+</span><span class="boring">        mov     %r12, 0x20($0)
+</span><span class="boring">        mov     %rbx, 0x28($0)
+</span><span class="boring">        mov     %rbp, 0x30($0)
+</span><span class="boring">
+</span><span class="boring">        mov     0x00($1), %rsp
+</span><span class="boring">        mov     0x08($1), %r15
+</span><span class="boring">        mov     0x10($1), %r14
+</span><span class="boring">        mov     0x18($1), %r13
+</span><span class="boring">        mov     0x20($1), %r12
+</span><span class="boring">        mov     0x28($1), %rbx
+</span><span class="boring">        mov     0x30($1), %rbp
+</span><span class="boring">        mov     0x38($1), %rdi
+</span><span class="boring">        ret
+</span><span class="boring">        &quot;
+</span><span class="boring">    :
+</span><span class="boring">    : &quot;r&quot;(old), &quot;r&quot;(new)
+</span><span class="boring">    :
+</span><span class="boring">    : &quot;alignstack&quot;
+</span><span class="boring">    );
+</span><span class="boring">}
+</span><span class="boring">#[cfg(not(windows))]
+</span>fn main() {
+    let mut runtime = Runtime::new();
+    runtime.init();
+    Runtime::spawn(|| {
+        println!(&quot;I haven't implemented a timer in this example.&quot;);
+        yield_thread();
+        println!(&quot;Finally, notice how the tasks are executed concurrently.&quot;);
+    });
+    Runtime::spawn(|| {
+        println!(&quot;But we can still nest tasks...&quot;);
+        Runtime::spawn(|| {
+            println!(&quot;...like this!&quot;);
+        })
+    });
+    runtime.run();
+}
+<span class="boring">#[cfg(windows)]
+</span><span class="boring">fn main() { }
+</span></code></pre></pre>
+<p>Still hanging in there? Good. Don't get frustrated if the code above is
+difficult to understand. If I hadn't written it myself I would probably feel
+the same. You can always go back and read the book which explains it later.</p>
+<h2><a class="header" href="#callback-based-approaches" id="callback-based-approaches">Callback based approaches</a></h2>
+<p>You probably already know what we're going to talk about in the next paragraphs
+from Javascript which I assume most know. </p>
+<blockquote>
+<p>If your exposure to Javascript callbacks has given you any sorts of PTSD earlier
+in life, close your eyes now and scroll down for 2-3 seconds. You'll find a link
+there that takes you to safety.</p>
+</blockquote>
+<p>The whole idea behind a callback based approach is to save a pointer to a set of
+instructions we want to run later together with whatever state is needed. In rust this
+would be a <code>closure</code>. In the example below, we save this information in a <code>HashMap</code>
+but it's not the only option.</p>
+<p>The basic idea of <em>not</em> involving threads as a primary way to achieve concurrency
+is the common denominator for the rest of the approaches. Including the one
+Rust uses today which we'll soon get to.</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Easy to implement in most languages</li>
+<li>No context switching</li>
+<li>Relatively low memory overhead (in most cases)</li>
+</ul>
+<p><strong>Drawbacks:</strong></p>
+<ul>
+<li>Each task must save the state it needs for later, the memory usage will grow
+linearly with the number of callbacks in a chain of computations.</li>
+<li>Can be hard to reason about, many people already know this as as &quot;callback hell&quot;.</li>
+<li>It's a very different way of writing a program, and will require a substantial
+rewrite to go from a &quot;normal&quot; program flow to one that uses a &quot;callback based&quot; flow.</li>
+<li>Sharing state between tasks is a hard problem in Rust using this approach due
+to it's ownership model.</li>
+</ul>
+<p>An extremely simplified example of a how a callback based approach could look
+like is:</p>
+<pre><pre class="playpen"><code class="language-rust">fn program_main() {
+    println!(&quot;So we start the program here!&quot;);
+    set_timeout(200, || {
+        println!(&quot;We create tasks with a callback that runs once the task finished!&quot;);
+    });
+    set_timeout(100, || {
+        println!(&quot;We can even chain sub-tasks...&quot;);
+        set_timeout(50, || {
+            println!(&quot;...like this!&quot;);
+        })
+    });
+    println!(&quot;While our tasks are executing we can do other stuff instead of waiting.&quot;);
+}
+
+fn main() {
+    RT.with(|rt| rt.run(program_main));
+}
+
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{cell::RefCell, collections::HashMap, thread};
+
+thread_local! {
+    static RT: Runtime = Runtime::new();
+}
+
+struct Runtime {
+    callbacks: RefCell&lt;HashMap&lt;usize, Box&lt;dyn FnOnce() -&gt; ()&gt;&gt;&gt;,
+    next_id: RefCell&lt;usize&gt;,
+    evt_sender: Sender&lt;usize&gt;,
+    evt_reciever: Receiver&lt;usize&gt;,
+}
+
+fn set_timeout(ms: u64, cb: impl FnOnce() + 'static) {
+    RT.with(|rt| {
+        let id = *rt.next_id.borrow();
+        *rt.next_id.borrow_mut() += 1;
+        rt.callbacks.borrow_mut().insert(id, Box::new(cb));
+        let evt_sender = rt.evt_sender.clone();
+        thread::spawn(move || {
+            thread::sleep(std::time::Duration::from_millis(ms));
+            evt_sender.send(id).unwrap();
+        });
+    });
+}
+
+impl Runtime {
+    fn new() -&gt; Self {
+        let (evt_sender, evt_reciever) = channel();
+        Runtime {
+            callbacks: RefCell::new(HashMap::new()),
+            next_id: RefCell::new(1),
+            evt_sender,
+            evt_reciever,
+        }
+    }
+
+    fn run(&amp;self, program: fn()) {
+        program();
+        for evt_id in &amp;self.evt_reciever {
+            let cb = self.callbacks.borrow_mut().remove(&amp;evt_id).unwrap();
+            cb();
+            if self.callbacks.borrow().is_empty() {
+                break;
+            }
+        }
+    }
+}
+</code></pre></pre>
+<p>We're keeping this super simple, and you might wonder what's the difference
+between this approach and the one using OS threads an passing in the callbacks
+to the OS threads directly.</p>
+<p>The difference is that the callbacks are run on the
+same thread using this example. The OS threads we create are basically just used
+as timers but could represent any kind of resource that we'll have to wait for.</p>
+<h2><a class="header" href="#from-callbacks-to-promises" id="from-callbacks-to-promises">From callbacks to promises</a></h2>
+<p>You might start to wonder by now, when are we going to talk about Futures?</p>
+<p>Well, we're getting there. You see <code>promises</code>, <code>futures</code> and other names for
+deferred computations are often used interchangeably. </p>
+<p>There are formal differences between them but we'll not cover that here but it's
+worth explaining <code>promises</code> a bit since they're widely known due to being used
+in Javascript and have a lot in common with Rusts Futures.</p>
+<p>First of all, many languages has a concept of promises but I'll use the ones
+from Javascript in the examples below.</p>
+<p>Promises is one way to deal with the complexity which comes with a callback
+based approach.</p>
+<p>Instead of:</p>
+<pre><code class="language-js ignore">setTimer(200, () =&gt; {
+  setTimer(100, () =&gt; {
+    setTimer(50, () =&gt; {
+      console.log(&quot;I'm the last one&quot;);
+    });
+  });
+});
+</code></pre>
+<p>We can to this:</p>
+<pre><code class="language-js ignore">function timer(ms) {
+    return new Promise((resolve) =&gt; setTimeout(resolve, ms))
+}
+
+timer(200)
+.then(() =&gt; return timer(100))
+.then(() =&gt; return timer(50))
+.then(() =&gt; console.log(&quot;I'm the last one));
+</code></pre>
+<p>The change is even more substantial under the hood. You see, promises return
+a state machine which can be in one of three states: <code>pending</code>, <code>fulfilled</code> or 
+<code>rejected</code>. </p>
+<p>When we call <code>timer(200)</code> in the sample above, we get back a promise in the state <code>pending</code>.</p>
+<p>Since promises are re-written as state machines they also enable an even better
+syntax which allows us to write our last example like this:</p>
+<pre><code class="language-js ignore">async function run() {
+    await timer(200);
+    await timer(100);
+    await timer(50);
+    console.log(&quot;I'm the last one&quot;);
+}
+</code></pre>
+<p>You can consider the <code>run</code> function a <em>pausable</em> task consisting of several
+sub-tasks. On each &quot;await&quot; point it yields control to the scheduler (in this
+case it's the well known Javascript event loop). </p>
+<p>Once one of the sub-tasks changes state to either <code>fulfilled</code> or <code>rejected</code> the
+task is scheduled to continue to the next step.</p>
+<p>Syntactically, Rusts Futures 0.1 was a lot like the promises example above and
+Rusts Futures 0.3 is a lot like async/await in our last example.</p>
+<p>Now this is also where the similarities with Rusts Futures stop. The reason we 
+go through all this is to get an introduction and get into the right mindset for
+exploring Rusts Futures.</p>
+<blockquote>
+<p>To avoid confusion later on: There's one difference you should know. Javascript
+promises are <em>eagerly</em> evaluated. That means that once it's created, it starts
+running a task. Rusts Futures on the other hand is <em>lazily</em> evaluated. They
+need to be polled once before they do any work.</p>
+</blockquote>
+<br />
+<div style="text-align: center;  padding-top: 2em;"> 
+<a href="/books-futures-explained/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="1_futures_in_rust.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="1_futures_in_rust.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-157536992-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+        <script type="text/javascript">
+            window.playpen_line_numbers = true;
+        </script>
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
