@@ -147,8 +147,7 @@ this:
 > the same page.
 
 ```rust, edition2018
-#![feature(asm)]
-#![feature(naked_functions)]
+#![feature(asm, naked_functions)]
 use std::ptr;
 
 const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;

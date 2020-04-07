@@ -331,8 +331,7 @@ in that book. The code below is wildly unsafe and it's just to show a real examp
 It's not in any way meant to showcase &quot;best practice&quot;. Just so we're on
 the same page.</p>
 </blockquote>
-<pre><pre class="playpen"><code class="language-rust edition2018">#![feature(asm)]
-#![feature(naked_functions)]
+<pre><pre class="playpen"><code class="language-rust edition2018">#![feature(asm, naked_functions)]
 use std::ptr;
 
 const DEFAULT_STACK_SIZE: usize = 1024 * 1024 * 2;
