@@ -38,7 +38,7 @@ coroutines which Rust uses today.
 
 ### Combinators
 
-`Futures 1.0` used combinators. If you've worked with `Promises` in JavaScript,
+`Futures 0.1` used combinators. If you've worked with `Promises` in JavaScript,
 you already know combinators. In Rust they look like this:
 
 ```rust,noplaypen,ignore
@@ -58,7 +58,7 @@ let rows: Result<Vec<SomeStruct>, SomeLibraryError> = block_on(future);
 2. Not optimal memory usage
 3. Did not allow to borrow across combinator steps.
 
-Point #3, is actually a major drawback with `Futures 1.0`.
+Point #3, is actually a major drawback with `Futures 0.1`.
 
 Not allowing borrows across suspension points ends up being very
 un-ergonomic and to accomplish some tasks it requires extra allocations or
@@ -80,7 +80,7 @@ async/await as keywords (it can even be done using a macro).
 4. Very memory efficient
 5. Allows us to borrow across suspension points
 
-The last point is in contrast to `Futures 1.0`. With async/await we can do this:
+The last point is in contrast to `Futures 0.1`. With async/await we can do this:
 
 ```rust, ignore
 async fn myfn() {
@@ -210,7 +210,7 @@ Now, there are some limitations in our naive state machine above. What happens w
 `borrow` across a `yield` point?
 
 We could forbid that, but **one of the major design goals for the async/await syntax has been
-to allow this**. These kinds of borrows were not possible using `Futures 1.0` so we can't let this
+to allow this**. These kinds of borrows were not possible using `Futures 0.1` so we can't let this
 limitation just slip and call it a day yet.
 
 Instead of discussing it in theory, let's look at some code.

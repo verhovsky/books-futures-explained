@@ -13,7 +13,7 @@ Actually, at one point, Rust provided green threads for handling `async` program
 
 `Futures` in Rust comes in several versions, and that can be a source of some confusion for new users.
 
-#### Futures 1.0
+#### Futures 0.1
 
 This was the first iteration on how zero cost async programming could be implemented in Rust. Rusts 1.0 `Futures` is used using `combinators`. This means that we used methods on the `Futures` object themselves to chain operations on them.
 
@@ -36,9 +36,9 @@ As you can see, these chains quickly become long and hard to work with. Callback
 
 There were other issues as well, but the lack of ergonomics was one of the major ones.
 
-#### Futures 2.0
+#### Futures 0.2
 
-#### Futures 3.0
+#### Futures 0.3
 
 This is the current iteration over `Futures` and the one we'll use in our examples. This iteration solved a lot of the problems with 1.0, especially concerning ergonimics.
 

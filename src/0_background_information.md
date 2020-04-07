@@ -545,8 +545,8 @@ case it's the well known Javascript event loop).
 Once one of the sub-tasks changes state to either `fulfilled` or `rejected` the
 task is scheduled to continue to the next step.
 
-Syntactically, Rusts Futures 1.0 was a lot like the promises example above and
-Rusts Futures 3.0 is a lot like async/await in our last example.
+Syntactically, Rusts Futures 0.1 was a lot like the promises example above and
+Rusts Futures 0.3 is a lot like async/await in our last example.
 
 Now this is also where the similarities with Rusts Futures stop. The reason we 
 go through all this is to get an introduction and get into the right mindset for
