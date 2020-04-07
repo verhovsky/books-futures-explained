@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Generators - Futures Explained in 200 Lines of Rust</title>
+        <title>Generators and async/await - Futures Explained in 200 Lines of Rust</title>
         
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html" class="active"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_async_await.html" class="active"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,7 +149,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#generators" id="generators">Generators</a></h1>
+                        <h1><a class="header" href="#generators-and-asyncawait" id="generators-and-asyncawait">Generators and async/await</a></h1>
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
@@ -161,12 +161,14 @@
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
-<h2><a class="header" href="#why-generators" id="why-generators">Why generators?</a></h2>
+<h2><a class="header" href="#why-learn-about-generators" id="why-learn-about-generators">Why learn about generators?</a></h2>
 <p>Generators/yield and async/await are so similar that once you understand one
-you should be able to understand the other. </p>
+you should be able to understand the other.</p>
 <p>It's much easier for me to provide runnable and short examples using Generators
 instead of Futures which require us to introduce a lot of concepts now that
 we'll cover later just to show an example.</p>
+<p>Async/await works like generators but instead of returning a generator it returns
+a special object implementing the Future trait.</p>
 <p>A small bonus is that you'll have a pretty good introduction to both Generators
 and Async/Await by the end of this chapter.</p>
 <p>Basically, there were three main options discussed when designing how Rust would
@@ -653,7 +655,7 @@ what goes wrong and see how <code>Pin</code> can help us deal with self-referent
 second.</p>
 <p>Before we go and explain the problem in detail, let's finish off this chapter
 by looking at how generators and the async keyword is related.</p>
-<h2><a class="header" href="#async-blocks-and-generators" id="async-blocks-and-generators">Async blocks and generators</a></h2>
+<h2><a class="header" href="#async-and-generators" id="async-and-generators">Async and generators</a></h2>
 <p>Futures in Rust are implemented as state machines much the same way Generators
 are state machines.</p>
 <p>You might have noticed the similarites in the syntax used in async blocks and
@@ -674,9 +676,15 @@ the syntax used in generators:</p>
     };
 </code></pre>
 <p>The difference is that Futures has different states than what a <code>Generator</code> would
-have. The states of a Rust Futures is either: <code>Pending</code> or <code>Ready</code>.</p>
+have.</p>
 <p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
-a Future works and the way a Generator work internally is similar. </p>
+a Future works and the way a Generator work internally is similar.</p>
+<p>Instead of calling <code>Generator::resume</code> we call <code>Future::poll</code>, and instead of
+returning <code>Yielded</code> or <code>Complete</code> it returns <code>Pending</code> or <code>Ready</code>. Each <code>await</code>
+point in a future is like a <code>yield</code> point in a generator.</p>
+<p>Do you see how they're connected now?</p>
+<p>Thats why kowing how generators work and the challanges they pose also teaches
+you how futures work and the challenges we need to tackle when working with them.</p>
 <p>The same goes for the challenges of borrowing across yield/await points.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our

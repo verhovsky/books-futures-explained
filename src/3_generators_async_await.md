@@ -1,4 +1,4 @@
-# Generators
+# Generators and async/await
 
 >**Overview:**
 >
@@ -10,14 +10,17 @@
 >well written and I can recommend reading through it (it talks as much about
 >async/await as it does about generators).
 
-## Why generators?
+## Why learn about generators?
 
 Generators/yield and async/await are so similar that once you understand one
-you should be able to understand the other. 
+you should be able to understand the other.
 
 It's much easier for me to provide runnable and short examples using Generators
 instead of Futures which require us to introduce a lot of concepts now that
 we'll cover later just to show an example.
+
+Async/await works like generators but instead of returning a generator it returns
+a special object implementing the Future trait.
 
 A small bonus is that you'll have a pretty good introduction to both Generators
 and Async/Await by the end of this chapter.
@@ -553,7 +556,7 @@ second.
 Before we go and explain the problem in detail, let's finish off this chapter
 by looking at how generators and the async keyword is related.
 
-## Async blocks and generators
+## Async and generators
 
 Futures in Rust are implemented as state machines much the same way Generators
 are state machines.
@@ -582,10 +585,19 @@ let mut fut = async {
 ```
 
 The difference is that Futures has different states than what a `Generator` would
-have. The states of a Rust Futures is either: `Pending` or `Ready`.
+have.
 
 An async block will return a `Future` instead of a `Generator`, however, the way
-a Future works and the way a Generator work internally is similar. 
+a Future works and the way a Generator work internally is similar.
+
+Instead of calling `Generator::resume` we call `Future::poll`, and instead of
+returning `Yielded` or `Complete` it returns `Pending` or `Ready`. Each `await`
+point in a future is like a `yield` point in a generator.
+
+Do you see how they're connected now?
+
+Thats why kowing how generators work and the challanges they pose also teaches
+you how futures work and the challenges we need to tackle when working with them.
 
 The same goes for the challenges of borrowing across yield/await points.
 

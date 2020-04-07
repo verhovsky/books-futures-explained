@@ -62,7 +62,7 @@ async ecosystem and and rarely gets enough praise in my eyes.
 
 A special thanks to [jonhoo](https://twitter.com/jonhoo) who was kind enough to
 give me some valuable feedback on a very early draft of this book. He has not
-read the finished product, but a thanks is definitely due.
+read the finished product, but a big thanks is definitely due.
 
 [mdbook]: https://github.com/rust-lang/mdBook
 [book_repo]: https://github.com/cfsamson/books-futures-explained

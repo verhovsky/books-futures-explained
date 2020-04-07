@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_pin.html"><strong aria-hidden="true">4.</strong> Generators</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="0_background_information.html"><strong aria-hidden="true">1.</strong> Background information</a></li><li><a href="1_futures_in_rust.html"><strong aria-hidden="true">2.</strong> Futures in Rust</a></li><li><a href="2_waker_context.html"><strong aria-hidden="true">3.</strong> Waker and Context</a></li><li><a href="3_generators_async_await.html"><strong aria-hidden="true">4.</strong> Generators and async/await</a></li><li><a href="4_pin.html"><strong aria-hidden="true">5.</strong> Pin</a></li><li><a href="6_future_example.html"><strong aria-hidden="true">6.</strong> Implementing Futures</a></li><li><a href="8_finished_example.html"><strong aria-hidden="true">7.</strong> Finished example (editable)</a></li><li class="affix"><a href="conclusion.html">Conclusion and exercises</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -197,12 +197,12 @@ in Rust. If you like it, you might want to check out the others as well:</p>
 <li><a href="https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/">Epoll, Kqueue and IOCP Explained with Rust</a></li>
 </ul>
 <h2><a class="header" href="#credits-and-thanks" id="credits-and-thanks">Credits and thanks</a></h2>
-<p>I'll like to take the chance of thanking the people behind <code>mio</code>, <code>tokio</code>, 
-<code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> and many other libraries which so
-much is built upon.</p>
-<p>A special thanks to <a href="https://github.com/jonhoo">Johnhoo</a> who was kind enough to
-give me some feedback on an early draft of this book. He has not read the
-finished product and has in no way endorsed it, but a thanks is definitely due.</p>
+<p>I'd like to take this chance to thank the people behind <code>mio</code>, <code>tokio</code>,
+<code>async_std</code>, <code>Futures</code>, <code>libc</code>, <code>crossbeam</code> which underpins so much of the
+async ecosystem and and rarely gets enough praise in my eyes.</p>
+<p>A special thanks to <a href="https://twitter.com/jonhoo">jonhoo</a> who was kind enough to
+give me some valuable feedback on a very early draft of this book. He has not
+read the finished product, but a big thanks is definitely due.</p>
 <h1><a class="header" href="#some-background-information" id="some-background-information">Some Background Information</a></h1>
 <p>Before we go into the details about Futures in Rust, let's take a quick look
 at the alternatives for handling concurrent programming in general and some
@@ -714,7 +714,7 @@ need to be polled once before they do any work.</p>
 </blockquote>
 <br />
 <div style="text-align: center;  padding-top: 2em;"> 
-<a href="/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
+<a href="/books-futures-explained/1_futures_in_rust.html" style="background: red; color: white; padding:2em 2em 2em 2em; font-size: 1.2em;"><strong>PANIC BUTTON (next chapter)</strong></a>
 </div><h1><a class="header" href="#futures-in-rust" id="futures-in-rust">Futures in Rust</a></h1>
 <blockquote>
 <p><strong>Overview:</strong></p>
@@ -1044,7 +1044,7 @@ of flexibility of choosing what memory management scheme to use.</p>
 a Waker object can be dropped. However, this is not the only way, you could also
 use purely global functions and state, or any other way you wish.</p>
 <p>This leaves a lot of options on the table for runtime implementors.</p>
-<h1><a class="header" href="#generators" id="generators">Generators</a></h1>
+<h1><a class="header" href="#generators-and-asyncawait" id="generators-and-asyncawait">Generators and async/await</a></h1>
 <blockquote>
 <p><strong>Overview:</strong></p>
 <ul>
@@ -1056,12 +1056,14 @@ use purely global functions and state, or any other way you wish.</p>
 well written and I can recommend reading through it (it talks as much about
 async/await as it does about generators).</p>
 </blockquote>
-<h2><a class="header" href="#why-generators" id="why-generators">Why generators?</a></h2>
+<h2><a class="header" href="#why-learn-about-generators" id="why-learn-about-generators">Why learn about generators?</a></h2>
 <p>Generators/yield and async/await are so similar that once you understand one
-you should be able to understand the other. </p>
+you should be able to understand the other.</p>
 <p>It's much easier for me to provide runnable and short examples using Generators
 instead of Futures which require us to introduce a lot of concepts now that
 we'll cover later just to show an example.</p>
+<p>Async/await works like generators but instead of returning a generator it returns
+a special object implementing the Future trait.</p>
 <p>A small bonus is that you'll have a pretty good introduction to both Generators
 and Async/Await by the end of this chapter.</p>
 <p>Basically, there were three main options discussed when designing how Rust would
@@ -1548,7 +1550,7 @@ what goes wrong and see how <code>Pin</code> can help us deal with self-referent
 second.</p>
 <p>Before we go and explain the problem in detail, let's finish off this chapter
 by looking at how generators and the async keyword is related.</p>
-<h2><a class="header" href="#async-blocks-and-generators" id="async-blocks-and-generators">Async blocks and generators</a></h2>
+<h2><a class="header" href="#async-and-generators" id="async-and-generators">Async and generators</a></h2>
 <p>Futures in Rust are implemented as state machines much the same way Generators
 are state machines.</p>
 <p>You might have noticed the similarites in the syntax used in async blocks and
@@ -1569,9 +1571,15 @@ the syntax used in generators:</p>
     };
 </code></pre>
 <p>The difference is that Futures has different states than what a <code>Generator</code> would
-have. The states of a Rust Futures is either: <code>Pending</code> or <code>Ready</code>.</p>
+have.</p>
 <p>An async block will return a <code>Future</code> instead of a <code>Generator</code>, however, the way
-a Future works and the way a Generator work internally is similar. </p>
+a Future works and the way a Generator work internally is similar.</p>
+<p>Instead of calling <code>Generator::resume</code> we call <code>Future::poll</code>, and instead of
+returning <code>Yielded</code> or <code>Complete</code> it returns <code>Pending</code> or <code>Ready</code>. Each <code>await</code>
+point in a future is like a <code>yield</code> point in a generator.</p>
+<p>Do you see how they're connected now?</p>
+<p>Thats why kowing how generators work and the challanges they pose also teaches
+you how futures work and the challenges we need to tackle when working with them.</p>
 <p>The same goes for the challenges of borrowing across yield/await points.</p>
 <h2><a class="header" href="#bonus-section---self-referential-generators-in-rust-today" id="bonus-section---self-referential-generators-in-rust-today">Bonus section - self referential generators in Rust today</a></h2>
 <p>Thanks to <a href="https://github.com/rust-lang/rust/pull/45337/files">PR#45337</a> you can actually run code like the one in our
@@ -2301,7 +2309,8 @@ we want to be able to safely borrow across <code>yield/await</code> points.</p>
 executor which allows you to edit, run an play around with the code right here
 in your browser.</p>
 <p>I'll walk you through the example, but if you want to check it out closer, you
-can always <a href="https://github.com/cfsamson/examples-futures">clone the repository</a> and play around with the code yourself.</p>
+can always <a href="https://github.com/cfsamson/examples-futures">clone the repository</a> and play around with the code
+yourself or just copy it from the next chapter.</p>
 <p>There are several branches explained in the readme, but two are
 relevant for this chapter. The <code>main</code> branch is the example we go through here,
 and the <code>basic_example_commented</code> branch is this example with extensive
@@ -2367,29 +2376,29 @@ fn block_on&lt;F: Future&gt;(mut future: F) -&gt; F::Output {
     val
 }
 </code></pre>
-<p>Inn all the examples here I've chose to comment the code extensively. I find it
-easier to follow that way than dividing if up into many paragraphs.</p>
-<p>We'll see more about the <code>Waker</code> in the next paragraph, but just look at it like
-a <em>trait object</em> similar to the one we constructed  in the first chapter.</p>
+<p>In all the examples you'll see in this chapter I've chosen to comment the code
+extensively. I find it easier to follow along that way so I'll not repeat myself
+here and focus only on some important aspects that might need further explanation.</p>
+<p>Now that you've read so much about <code>Generators</code> and <code>Pin</code> already this should
+be rather easy to understand. <code>Future</code> is a state machine, every <code>await</code> point
+is a <code>yield</code> point. We could borrow data across <code>await</code> points and we meet the
+exact same challenges as we do when borrowing across <code>yield</code> points.</p>
 <blockquote>
 <p><code>Context</code> is just a wrapper around the <code>Waker</code>. At the time of writing this
 book it's nothing more. In the future it might be possible that the <code>Context</code>
 object will do more than just wrapping a <code>Future</code> so having this extra 
 abstraction gives some flexibility.</p>
 </blockquote>
-<p>You'll notice how we use <code>Pin</code> here to pin the future when we poll it.</p>
-<p>Now that you've read so much about <code>Generators</code> and <code>Pin</code> already this should
-be rather easy to understand. <code>Future</code> is a state machine, every <code>await</code> point
-is a <code>yield</code> point. We could borrow data across <code>await</code> points and we meet the
-exact same challenges as we do when borrowing across <code>yield</code> points.</p>
-<p>As we explained in the <a href="./3_generators_pin.html">chapter about generators</a>, we use
+<p>As explained in the <a href="./3_generators_pin.html">chapter about generators</a>, we use
 <code>Pin</code> and the guarantees that give us to allow <code>Futures</code> to have self
 references.</p>
 <h2><a class="header" href="#the-future-implementation" id="the-future-implementation">The <code>Future</code> implementation</a></h2>
-<p>In Rust we call an interruptible task a <code>Future</code>. Futures has a well defined interface, which means they can be used across the entire ecosystem. We can chain
-these <code>Futures</code> so that once a &quot;leaf future&quot; is ready we'll perform a set of
-operations.</p>
-<p>These chained operations can spawn new leaf futures themselves.</p>
+<p>Futures has a well defined interface, which means they can be used across the
+entire ecosystem. </p>
+<p>We can chain these <code>Futures</code> so that once a <strong>leaf-future</strong> is
+ready we'll perform a set of operations until either the task is finished or we
+reach yet another <strong>leaf-future</strong> which we'll wait for and yield control to the
+scheduler.</p>
 <p><strong>Our Future implementation looks like this:</strong></p>
 <pre><code class="language-rust noplaypen ignore">// This is the definition of our `Waker`. We use a regular thread-handle here.
 // It works but it's not a good solution. It's easy to fix though, I'll explain
@@ -2536,32 +2545,31 @@ could cause the same deadlock if we're unlucky.</p>
 </blockquote>
 <p>There are several better solutions, here are some:</p>
 <ul>
-<li>Use <a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html">std::sync::CondVar</a></li>
-<li>Use <a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html">crossbeam::sync::Parker</a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html">std::sync::CondVar</a></li>
+<li><a href="https://docs.rs/crossbeam/0.7.3/crossbeam/sync/struct.Parker.html">crossbeam::sync::Parker</a></li>
 </ul>
 <h2><a class="header" href="#the-reactor" id="the-reactor">The Reactor</a></h2>
 <p>This is the home stretch, and not strictly <code>Future</code> related, but we need one
 to have an example to run.</p>
 <p>Since concurrency mostly makes sense when interacting with the outside world (or
 at least some peripheral), we need something to actually abstract over this
-interaction in an asynchronous way. </p>
-<p>This is the <code>Reactors</code> job. Most often you'll see reactors in Rust use a library called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non 
-blocking APIs and event notification for several platforms.</p>
-<p>The reactor will typically give you something like a <code>TcpStream</code> (or any other resource) which you'll use to create an I/O request. What you get in return
-is a <code>Future</code>. </p>
+interaction in an asynchronous way.</p>
+<p>This is the <code>Reactors</code> job. Most often you'll see reactors in Rust use a library
+called <a href="https://github.com/tokio-rs/mio">Mio</a>, which provides non blocking APIs and event notification for
+several platforms.</p>
+<p>The reactor will typically give you something like a <code>TcpStream</code> (or any other
+resource) which you'll use to create an I/O request. What you get in return is a
+<code>Future</code>. </p>
 <blockquote>
-<p>If the <code>Reactor</code> is registered as a global resource (which
-is pretty normal), our <code>Task</code> in would instead be a special <code>TcpStream</code> which
-registers interest with the global <code>Reactor</code> and no reference is needed.</p>
+<p>If our reactor did some real I/O work our <code>Task</code> in would instead be represent
+a non-blocking <code>TcpStream</code> which registers interest with the global <code>Reactor</code>.
+Passing around a reference to the Reactor itself is pretty uncommon but I find
+it makes reasoning about what's happening easier.</p>
 </blockquote>
-<p>We can call this kind of <code>Future</code> a &quot;leaf Future&quot;, since it's some operation 
-we'll actually wait on and which we can chain operations on which are performed
-once the leaf future is ready.</p>
-<p>The reactor we create here will also create <strong>leaf-futures</strong>, accept a waker and
-call it once the task is finished.</p>
-<p>The task we're implementing is the simplest I could find. It's a timer that
-only spawns a thread and puts it to sleep for a number of seconds we specify
-when acquiring the leaf-future.</p>
+<p>Our example task is a timer that only spawns a thread and puts it to sleep for
+the number of seconds we specify. The reactor we create here will create a
+<strong>leaf-future</strong> representing each timer. In return the Reactor receives a waker
+which it will call once the task is finished.</p>
 <p>To be able to run the code here in the browser there is not much real I/O we
 can do so just pretend that this is actually represents some useful I/O operation
 for the sake of this example.</p>
@@ -2596,7 +2604,7 @@ impl Reactor {
         let readylist = Arc::new(Mutex::new(vec![]));
         let rl_clone = readylist.clone();
 
-        // This `Vec` will hold handles to all threads we spawn so we can
+        // This `Vec` will hold handles to all the threads we spawn so we can
         // join them later on and finish our programm in a good manner
         let mut handles = vec![];
 
@@ -2683,11 +2691,10 @@ impl Drop for Reactor {
 </code></pre>
 <p>It's a lot of code though, but essentially we just spawn off a new thread
 and make it sleep for some time which we specify when we create a <code>Task</code>.</p>
-<p>Now, let's test our code and see if it works. This code is actually runnable
-if you press the &quot;play&quot; button. Since we're sleeping for a couple of seconds
-here, just give it some time to run.</p>
-<p>In the last chapter we have the <a href="./8_finished_example.html">whole 200 lines in an editable window</a>. You can
-also copy that or edit it right in this book.</p>
+<p>Now, let's test our code and see if it works. Since we're sleeping for a couple
+of seconds here, just give it some time to run.</p>
+<p>In the last chapter we have the <a href="./8_finished_example.html">whole 200 lines in an editable window</a>
+which you can edit and change the way you like.</p>
 <pre><pre class="playpen"><code class="language-rust edition2018"># use std::{
 #     future::Future, pin::Pin, sync::{mpsc::{channel, Sender}, Arc, Mutex},
 #     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
@@ -2905,19 +2912,17 @@ two things:</p>
 <li>In what order the events register interest with the reactor</li>
 </ol>
 <p>The last point is relevant when we move on the the last paragraph.</p>
-<h2><a class="header" href="#asyncawait-and-concurrent-futures" id="asyncawait-and-concurrent-futures">Async/Await and concurrent Futures</a></h2>
+<h2><a class="header" href="#asyncawait-and-concurrecy" id="asyncawait-and-concurrecy">Async/Await and concurrecy</a></h2>
 <p>The <code>async</code> keyword can be used on functions as in <code>async fn(...)</code> or on a
 block as in <code>async { ... }</code>. Both will turn your function, or block, into a
 <code>Future</code>.</p>
 <p>These <code>Futures</code> are rather simple. Imagine our generator from a few chapters
 back. Every <code>await</code> point is like a <code>yield</code> point.</p>
-<p>Instead of <code>yielding</code> a value we pass in, it yields the <code>Future</code> we're awaiting,
-so when we poll a future the first time we run the code up until the first
-<code>await</code> point where it yields a new Future we poll and so on until we reach
-a <strong>leaf-future</strong>.</p>
-<p>Now, as is the case in our code, our <code>mainfut</code> contains two non-leaf futures
-which it awaits, and all that happens is that these state machines are polled
-until some &quot;leaf future&quot; in the end either returns <code>Ready</code> or <code>Pending</code>.</p>
+<p>Instead of <code>yielding</code> a value we pass in, we yield the result of calling <code>poll</code> on
+the next <code>Future</code> we're awaiting.</p>
+<p>Our <code>mainfut</code> contains two non-leaf futures which it will call <code>poll</code> on. <strong>Non-leaf-futures</strong>
+has a <code>poll</code> method that simply polls their inner futures and these state machines
+are polled until some &quot;leaf future&quot; in the end either returns <code>Ready</code> or <code>Pending</code>.</p>
 <p>The way our example is right now, it's not much better than regular synchronous
 code. For us to actually await multiple futures at the same time we somehow need
 to <code>spawn</code> them so the executor starts running them concurrently.</p>
@@ -2929,15 +2934,22 @@ Future got 2 at time: 3.00.
 <pre><code class="language-ignore">Future got 1 at time: 1.00.
 Future got 2 at time: 2.00.
 </code></pre>
+<blockquote>
+<p>Note that this doesn't mean they need to run in parallel. They <em>can</em> run in
+parallel but there is no requirement. Remember that we're waiting for some
+external resource so we can fire off many such calls on a single thread and
+handle each event as it resolves.</p>
+</blockquote>
 <p>Now, this is the point where I'll refer you to some better resources for
-implementing just that. You should have a pretty good understanding of the
-concept of Futures by now.</p>
+implementing a better executor. You should have a pretty good understanding of
+the concept of Futures by now helping you along the way.</p>
 <p>The next step should be getting to know how more advanced runtimes work and
 how they implement different ways of running Futures to completion.</p>
 <p><a href="./conclusion.html#building-a-better-exectuor">If I were you I would read this next, and try to implement it for our example.</a>.</p>
-<p>That's actually it for now. There are probably much more to learn, but I think it
-will be easier once the fundamental concepts are there and that further
-exploration will get a lot easier.</p>
+<p>That's actually it for now. There as probably much more to learn, this is enough
+for today. </p>
+<p>I hope exploring Futures and async in general gets easier after this read and I
+do really hope that you do continue to explore further.</p>
 <p>Don't forget the exercises in the last chapter 😊.</p>
 <h1><a class="header" href="#our-finished-code" id="our-finished-code">Our finished code</a></h1>
 <p>Here is the whole example. You can edit it right here in your browser and

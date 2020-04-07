@@ -648,7 +648,7 @@ two things:
 
 The last point is relevant when we move on the the last paragraph.
 
-## Async/Await and concurrent Futures
+## Async/Await and concurrecy
 
 The `async` keyword can be used on functions as in `async fn(...)` or on a
 block as in `async { ... }`. Both will turn your function, or block, into a
@@ -657,13 +657,12 @@ block as in `async { ... }`. Both will turn your function, or block, into a
 These `Futures` are rather simple. Imagine our generator from a few chapters
 back. Every `await` point is like a `yield` point.
 
-Instead of `yielding` a value we pass in, it yields the `Future` we're awaiting,
-so when we poll a future the first time we run the code up until the first
-`await` point where it yields a new Future we can poll.
+Instead of `yielding` a value we pass in, we yield the result of calling `poll` on
+the next `Future` we're awaiting.
 
-Our `mainfut` contains two non-leaf futures which it awaits, and all that
-happens is that these state machines are polled until some "leaf future" in the
-end either returns `Ready` or `Pending`.
+Our `mainfut` contains two non-leaf futures which it will call `poll` on. **Non-leaf-futures**
+has a `poll` method that simply polls their inner futures and these state machines
+are polled until some "leaf future" in the end either returns `Ready` or `Pending`.
 
 The way our example is right now, it's not much better than regular synchronous
 code. For us to actually await multiple futures at the same time we somehow need
