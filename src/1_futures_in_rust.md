@@ -54,7 +54,7 @@ completion alone as you'll understand by reading the next paragraph.
 
 ### Non-leaf-futures
 
-Non-leaf-futures is the kind of futures we as _users_ of a runtime writes
+Non-leaf-futures are the kind of futures we as _users_ of a runtime write
 ourselves using the `async` keyword to create a **task** which can be run on the
 executor.
 
@@ -76,19 +76,19 @@ let non_leaf = async {
 The key to these tasks is that they're able to yield control to the runtime's
 scheduler and then resume execution again where it left off at a later point.
 
-In contrast to leaf futures, these kind of futures does not themselves represent
+In contrast to leaf futures, these kind of futures do not themselves represent
 an I/O resource. When we poll these futures we either run some code or we yield
 to the scheduler while waiting for some resource to signal us that it's ready so
 we can resume where we left off.
 
 ## Runtimes
 
-Languages like C#, JavaScript, Java, GO and many others comes with a runtime
+Languages like C#, JavaScript, Java, GO and many others come with a runtime
 for handling concurrency. So if you come from one of those languages this will
 seem a bit strange to you.
 
 Rust is different from these languages in the sense that Rust doesn't come with
-a runtime for handling concurrency, so you need to use a library which provide
+a runtime for handling concurrency, so you need to use a library which provides
 this for you.
 
 Quite a bit of complexity attributed to `Futures` is actually complexity rooted
@@ -112,9 +112,9 @@ notifying a `Future` that it can do more work, and actually doing the work
 on the `Future`.
 
 You can think of the former as the reactor's job, and the latter as the
-executors job. These two parts of a runtime interacts using the `Waker` type.
+executors job. These two parts of a runtime interact using the `Waker` type.
 
-The two most popular runtimes for `Futures` as of writing this is:
+The two most popular runtimes for `Futures` as of March 2020 are:
 
 - [async-std](https://github.com/async-rs/async-std)
 - [Tokio](https://github.com/tokio-rs/tokio)
@@ -125,7 +125,7 @@ The two most popular runtimes for `Futures` as of writing this is:
 future through the `Future` trait.
 2. An ergonomic way of creating tasks which can be suspended and resumed through
 the `async` and `await` keywords.
-3. A defined interface wake up a suspended task through the `Waker` type.
+3. A defined interface to wake up a suspended task through the `Waker` type.
 
 That's really what Rusts standard library does. As you see there is no definition
 of non-blocking I/O, how these tasks are created or how they're run.
