@@ -3,7 +3,7 @@
 > **Overview:**
 >
 > - Understand how the Waker object is constructed
-> - Learn how the runtime know when a leaf-future can resume
+> - Learn how the runtime knows when a leaf-future can resume
 > - Learn the basics of dynamic dispatch and trait objects
 >
 > The `Waker` type is described as part of [RFC#2592][rfc2592].
@@ -22,11 +22,11 @@ task, whereas with the waker, we get a loose coupling where it's easy to
 extend the ecosystem with new leaf-level tasks.
 
 > If you want to read more about the reasoning behind the `Waker` type I can
-> recommend [Withoutboats articles series about them](https://boats.gitlab.io/blog/post/wakers-i/).
+> recommend [Withoutboats' series of articles about them](https://boats.gitlab.io/blog/post/wakers-i/).
 
 ## The Context type
 
-As the docs state as of now this type only wrapps a `Waker`, but it gives some
+As the docs state, as of now this type only wrapps a `Waker`, but it gives some
 flexibility for future evolutions of the API in Rust. The context can for example hold
 task-local storage and provide space for debugging hooks in later iterations.
 
@@ -35,7 +35,7 @@ task-local storage and provide space for debugging hooks in later iterations.
 One of the most confusing things we encounter when implementing our own `Futures`
 is how we implement a `Waker` . Creating a `Waker` involves creating a `vtable`
 which allows us to use dynamic dispatch to call methods on a _type erased_ trait
-object we construct our selves.
+object we construct ourselves.
 
 >If you want to know more about dynamic dispatch in Rust I can recommend  an 
 article written by Adam Schwalm called [Exploring Dynamic Dispatch in Rust](https://alschwalm.com/blog/static/2017/03/07/exploring-dynamic-dispatch-in-rust/).
@@ -68,7 +68,7 @@ fn main() {
 }
 ```
 
-As you see from the output after running this, the sizes of the references varies.
+As you see from the output after running this, the sizes of the references vary.
 Many are 8 bytes (which is a pointer size on 64 bit systems), but some are 16
 bytes.
 
@@ -77,12 +77,12 @@ information.
 
 **Example `&[i32]` :**
 
-- The first 8 bytes is the actual pointer to the first element in the array (or part of an array the slice refers to)
+- The first 8 bytes is the actual pointer to the first element in the array (or to the part of an array the slice refers to)
 - The second 8 bytes is the length of the slice.
 
 **Example `&dyn SomeTrait`:**
 
-This is the type of fat pointer we'll concern ourselves about going forward.
+This is the type of fat pointer we'll concern ourselves with going forward.
 `&dyn SomeTrait` is a reference to a trait, or what Rust calls a _trait object_.
 
 The layout for a pointer to a _trait object_ looks like this:
@@ -105,7 +105,7 @@ trait Test {
     fn mul(&self) -> i32;
 }
 
-// This will represent our home brewn fat pointer to a trait object
+// This will represent our homebrewed fat pointer to a trait object
 #[repr(C)]
 struct FatPointer<'a> {
     /// A reference is a pointer to an instantiated `Data` instance
@@ -134,8 +134,8 @@ fn mul(s: &Data) -> i32 {
 
 fn main() {
     let mut data = Data {a: 3, b: 2};
-    // vtable is like special purpose array of pointer-length types with a fixed
-    // format where the three first values has a special meaning like the
+    // vtable is like a special purpose array of pointer-length types with a fixed
+    // format where the three first values have a special meaning like the
     // length of the array is encoded in the array itself as the second value.
     let vtable = vec![
         0,            // pointer to `Drop` (which we're not implementing here)
@@ -151,7 +151,7 @@ fn main() {
     let fat_pointer = FatPointer { data: &mut data, vtable: vtable.as_ptr()};
     let test = unsafe { std::mem::transmute::<FatPointer, &dyn Test>(fat_pointer) };
 
-    // And voalá, it's now a trait object we can call methods on
+    // And voilá, it's now a trait object we can call methods on
     println!("Add: 3 + 2 = {}", test.add());
     println!("Sub: 3 - 2 = {}", test.sub());
     println!("Mul: 3 * 2 = {}", test.mul());
@@ -171,8 +171,8 @@ normal trait?
 The reason is flexibility. Implementing the Waker the way we do here gives a lot
 of flexibility of choosing what memory management scheme to use.
 
-The "normal" way is by using an `Arc` to use reference count keep track of when
-a Waker object can be dropped. However, this is not the only way, you could also
+The "normal" way is by using an `Arc` to use reference counting to keep track of when
+a `Waker` object can be dropped. However, this is not the only way, you could also
 use purely global functions and state, or any other way you wish.
 
 This leaves a lot of options on the table for runtime implementors.
