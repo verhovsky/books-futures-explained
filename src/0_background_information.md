@@ -8,7 +8,7 @@ While we do that we'll also explain some aspects when it comes to concurrency wh
 will make it easier for us when we dive in to Futures specifically.
 
 > For fun, I've added a small snipped of runnable code with most of the examples.
-> If you're like me, things get way more interesting then and maybe you'll se some
+> If you're like me, things get way more interesting then and maybe you'll see some
 > things you haven't seen before along the way.
 
 ## Threads provided by the operating system
@@ -46,7 +46,7 @@ fn main() {
     println!("So we start the program here!");
     let t1 = thread::spawn(move || {
         thread::sleep(std::time::Duration::from_millis(200));
-        println!("We create tasks which gets run when they're finished!");
+        println!("We create tasks which get run when they're finished!");
     });
 
     let t2 = thread::spawn(move || {
@@ -65,16 +65,16 @@ fn main() {
 }
 ```
 
-OS threads sure has some pretty big advantages. So why all this talk about
+OS threads sure have some pretty big advantages. So why all this talk about
 "async" and concurrency in the first place?
 
-First of all. For computers to be [_efficient_](https://en.wikipedia.org/wiki/Efficiency) they needs to multitask. Once you
+First of all. For computers to be [_efficient_](https://en.wikipedia.org/wiki/Efficiency) they need to multitask. Once you
 start to look under the covers (like [how an operating system works](https://os.phil-opp.com/async-await/))
 you'll see concurrency everywhere. It's very fundamental in everything we do.
 
 Secondly, we have the web. 
 
-Webservers is all about I/O and handling small tasks
+Webservers are all about I/O and handling small tasks
 (requests). When the number of small tasks is large it's not a good fit for OS
 threads as of today because of the memory they require and the overhead involved
 when creating new threads. 
@@ -83,7 +83,7 @@ This gets even more problematic when the load is variable which means the curren
 program has at any point in time is unpredictable. That's why you'll see so many async web
 frameworks and database drivers today.
 
-However, for a huge number of problems, the standard OS threads will often be the
+However, for a huge number of problems, standard OS threads will often be the
 right solution. So, just think twice about your problem before you reach for an
 async library.
 
@@ -93,9 +93,9 @@ runtime:
 
 ## Green threads
 
-Green threads uses the same mechanism as an OS does by creating a thread for
+Green threads use the same mechanism as an OS does by creating a thread for
 each task, setting up a stack, save the CPU's state and jump from one
-task(thread) to another by doing a "context switch".
+task (thread) to another by doing a "context switch".
 
 We yield control to the scheduler (which is a central part of the runtime in
 such a system) which then continues running a different task.
@@ -395,7 +395,7 @@ Rust uses today which we'll soon get to.
 - It's a very different way of writing a program, and will require a substantial
 rewrite to go from a "normal" program flow to one that uses a "callback based" flow.
 - Sharing state between tasks is a hard problem in Rust using this approach due
-  to it's ownership model.
+  to its ownership model.
 
 An extremely simplified example of a how a callback based approach could look
 like is:
@@ -471,7 +471,7 @@ impl Runtime {
 ```
 
 We're keeping this super simple, and you might wonder what's the difference
-between this approach and the one using OS threads an passing in the callbacks
+between this approach and the one using OS threads and passing in the callbacks
 to the OS threads directly.
 
 The difference is that the callbacks are run on the
@@ -487,12 +487,12 @@ deferred computations are often used interchangeably.
 
 There are formal differences between them but we'll not cover that here but it's
 worth explaining `promises` a bit since they're widely known due to being used
-in Javascript and have a lot in common with Rusts Futures.
+in Javascript and have a lot in common with Rust's Futures.
 
-First of all, many languages has a concept of promises but I'll use the ones
+First of all, many languages have a concept of promises but I'll use the ones
 from Javascript in the examples below.
 
-Promises is one way to deal with the complexity which comes with a callback
+Promises are one way to deal with the complexity which comes with a callback
 based approach.
 
 Instead of:
@@ -548,9 +548,9 @@ task is scheduled to continue to the next step.
 Syntactically, Rusts Futures 0.1 was a lot like the promises example above and
 Rusts Futures 0.3 is a lot like async/await in our last example.
 
-Now this is also where the similarities with Rusts Futures stop. The reason we 
+Now this is also where the similarities with Rust's Futures stop. The reason we 
 go through all this is to get an introduction and get into the right mindset for
-exploring Rusts Futures.
+exploring Rust's Futures.
 
 > To avoid confusion later on: There's one difference you should know. Javascript
 > promises are _eagerly_ evaluated. That means that once it's created, it starts
